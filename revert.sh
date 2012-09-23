@@ -10,7 +10,7 @@ remove_symlinked_files()
     for symlink in `find $HOME_DIR -name ".*" -type l -maxdepth 1`; do
         target=`readlink $symlink`
         target_dir=`dirname $target`
-        target_ext=`basename $target|cut -d . -f 2`
+        target_ext=`basename $target|sed 's/.*\.//'`
 
         if [[ $target_dir == *$PWD* && $target_ext == $SYMLINK_EXT ]]
         then
