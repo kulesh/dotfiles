@@ -19,3 +19,16 @@ cd ~/.dotfiles
 Revert does not uninstall packages; only reverts the dotfiles. Looks
 like install and revert can be run multiple times to switch between
 latest and prior versions of the dotfiles.
+
+## Toolchain
+Following packages/files and their dependencies are installed:
+* Homebrew
+ * grc
+ * coreutils
+ * hub
+ * tree
+ * aspell --lang=en
+* pip
+ * virtualenvwrapper
+* CLI Font: [Inconsolata](http://www.levien.com/type/myfonts/inconsolata.html)
+* [Janus](https://github.com/carlhuda/janus/) for vim
