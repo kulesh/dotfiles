@@ -2,7 +2,7 @@
 
 source include/shared_vars.sh
 
-BREWED_TOOLS=(grc coreutils hub aspell --lang=en) #tools to install via Homebrew
+BREWED_TOOLS=(grc coreutils hub tree aspell --lang=en) #tools to install via Homebrew
 PIP_TOOLS=(virtualenvwrapper) #tools to install via pip
 
 BACKUP_DIR='' #where we will backup this instance of install
@@ -39,13 +39,25 @@ install_janus()
     vim_home=$HOME/.vim
     if [ ! -d $vim_home/janus ]
     then
-        curl -Lo- https://bit.ly/janus-bootstrap | zsh
+        curl -Lo- https://bit.ly/janus-bootstrap | sh
     else
         #There must be a better way to do this! (like make -C)
-        current_dir=$PWD
         cd $vim_home
         rake default
-        cd $current_dir
+        cd -
+    fi
+}
+
+#install CLI font
+install_cli_font()
+{
+    #Using Inconsolata http://www.levien.com/type/myfonts/inconsolata.html
+    font_source=http://www.levien.com/type/myfonts/Inconsolata.otf
+    font_target=$HOME_DIR/Library/Fonts/Inconsolata.otf
+
+    if [ ! -f $font_target ]
+    then
+        curl $font_source -o $font_target
     fi
 }
 
@@ -81,6 +93,9 @@ initialize()
     install_pip
     echo "     [+] Installing Janus for vim"
     install_janus
+    echo "     [+] Installing CLI font"
+    install_cli_font
+
     create_backup_dir
 }
 
