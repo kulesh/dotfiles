@@ -1,6 +1,8 @@
 [user]
 	name = Kulesh Shanmugasundaram
 	email = kulesh@kulesh.org
+[core]
+  editor = vim
 [color]
 	ui = true
 [alias]
