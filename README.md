@@ -1,18 +1,21 @@
 # dotfiles
-Some simple dotfiles and install/revert scripts to make life easy and colorful.
+Simple OS X specific dotfiles and install/revert scripts to make life easy and colorful.
 ## install
-To install the dotfiles
+To install the dotfiles:
 ```sh
 git clone https://github.com/kulesh/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-source install.sh
+/bin/zsh install.sh
 ```
-This poor man's install backs up the files every time it is run.
+This poor man's install backs up the current dotfiles about to be
+replaced every time it is run.
 
 ## revert
-The <code>install.sh</code> backs up existing dotfiles. You can revert to an older version by
+To revert to the previous version:
 ```sh
 cd ~/.dotfiles
-source revert.sh
+/bin/zsh revert.sh
 ```
-Revert can be run multiple times to restore files from the latest backups.
+Revert does not uninstall packages; only reverts the dotfiles. Looks
+like install and revert can be run multiple times to switch between
+latest and prior versions of the dotfiles.

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/zsh
 
 source include/shared_vars.sh
 
