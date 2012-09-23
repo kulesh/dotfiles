@@ -37,7 +37,6 @@ install_homebrew()
 install_janus()
 {
     vim_home=$HOME/.vim
-    echo "     [+] Installing Janus for vim"
     if [ ! -d $vim_home/janus ]
     then
         curl -Lo- https://bit.ly/janus-bootstrap | zsh
@@ -80,6 +79,7 @@ initialize()
     install_homebrew
     echo "     [+] Installing pip and friends"
     install_pip
+    echo "     [+] Installing Janus for vim"
     install_janus
     create_backup_dir
 }
