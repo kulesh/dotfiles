@@ -57,7 +57,7 @@ install_cli_font()
 
     if [ ! -f $font_target ]
     then
-        curl $font_source -o $font_target
+        curl -L $font_source -o $font_target
     fi
 }
 
