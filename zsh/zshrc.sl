@@ -4,7 +4,7 @@ compinit
 
 #setup virtualenvwrapper
 VIRTUALENV_WRAPPER_SOURCE=/usr/local/bin/virtualenvwrapper.sh
-if [ -f $VIRTUALENV_WRAPPER ]
+if [ -f $VIRTUALENV_WRAPPER_SOURCE ]
 then
-    source $VIRTUALENV_WRAPPER
+    source $VIRTUALENV_WRAPPER_SOURCE
 fi
