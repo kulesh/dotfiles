@@ -18,3 +18,6 @@ export VIRTUALENVWRAPPER_VIRTUALENV_ARGS='--no-site-packages'
 #Make pip play well with virtualenvwrapper
 export PIP_RESPECT_VIRTUALENV=true
 export PIP_VIRTUALENV_BASE=$WORKON_HOME
+
+#Hub configurations
+export GITHUB_HOST=github.com
