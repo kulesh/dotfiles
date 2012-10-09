@@ -1,5 +1,5 @@
 #setup PATH to work with brew
-export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH"
 source "`brew --prefix`/etc/grc.bashrc"
 
