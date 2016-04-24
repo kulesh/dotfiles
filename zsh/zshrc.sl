@@ -1,3 +1,5 @@
+#umask for homrbrew multiuser
+umask 0002
 
 #vcs info
 autoload -Uz vcs_info
