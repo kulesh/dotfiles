@@ -51,3 +51,6 @@ if [ -f $VIRTUALENV_WRAPPER_SOURCE ]
 then
     source $VIRTUALENV_WRAPPER_SOURCE
 fi
+
+#initialize rbenv
+eval "$(rbenv init -)"

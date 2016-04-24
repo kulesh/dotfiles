@@ -2,9 +2,9 @@
 
 source include/shared_vars.sh
 
-BREWED_TOOLS=(grc coreutils hub tree aspell --lang=en) #tools to install via Homebrew
+BREWED_TOOLS=(rbenv ruby-build libpqxx grc coreutils hub tree aspell --lang=en) #tools to install via Homebrew
 PIP_TOOLS=(virtualenvwrapper) #tools to install via pip
-
+RUBY_GEMS=(bundler hoe bundler foreman pg rails thin)
 BACKUP_DIR='' #where we will backup this instance of install
 
 #install pip and friends
@@ -16,7 +16,7 @@ install_pip()
         sudo easy_install pip
     fi
 
-    pip install $PIP_TOOLS
+    pip install --ignore-installed $PIP_TOOLS
 }
 
 #install Homebrew and friends
@@ -26,11 +26,28 @@ install_homebrew()
     if test ! $(which brew)
     then
         echo "     [-] There is no Homebrew. Going to install Homebrew."
-        ruby <(curl -fsSkL raw.github.com/mxcl/homebrew/go)
+        ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go/install)"
     fi
 
     #brew me some goodness
+    brew update
     brew install $BREWED_TOOLS
+}
+
+#install Ruby Gems
+install_rubygems()
+{
+    #Install gems
+    if test ! $(which gem)
+    then
+      echo "     [-] There is no Gem. You need to install Ruby. (brew install ruby)"
+    else
+      eval "$(rbenv init -)"
+      rbenv install 2.3.0
+      rbenv global 2.3.0
+      gem update --system
+      gem install $RUBY_GEMS --no-rdoc --no-ri
+    fi
 }
 
 #install Janus
@@ -91,6 +108,8 @@ initialize()
     install_homebrew
     echo "     [+] Installing pip and friends"
     install_pip
+    echo "     [+] Installing Ruby Gems"
+    install_rubygems
     echo "     [+] Installing Janus for vim"
     install_janus
     echo "     [+] Installing CLI font"
