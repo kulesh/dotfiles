@@ -21,3 +21,4 @@ export PIP_VIRTUALENV_BASE=$WORKON_HOME
 
 #Hub configurations
 export GITHUB_HOST=github.com
+export JAVA_HOME=`which java`
