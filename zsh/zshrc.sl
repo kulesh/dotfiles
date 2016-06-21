@@ -1,3 +1,5 @@
+#umask for homrbrew multiuser
+umask 0002
 
 #vcs info
 autoload -Uz vcs_info
@@ -28,7 +30,7 @@ HISTFILE=~/.zsh_history
 
 #auto complete
 autoload -Uz compinit
-compinit
+compinit -u
 zstyle ':completion:*' auto-description 'specify: %d'
 zstyle ':completion:*' completer _expand _complete _correct _approximate
 zstyle ':completion:*' format 'Completing %d'
@@ -52,4 +54,5 @@ then
     source $VIRTUALENV_WRAPPER_SOURCE
 fi
 
+#initialize rbenv
 eval "$(rbenv init -)"
