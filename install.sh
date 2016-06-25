@@ -2,7 +2,7 @@
 
 source include/shared_vars.sh
 
-BREWED_TOOLS=(rbenv ruby-build libpqxx grc coreutils hub tree aspell --lang=en) #tools to install via Homebrew
+BREWED_TOOLS=(python python3 rbenv ruby-build libpqxx grc coreutils hub tree aspell --lang=en) #tools to install via Homebrew
 PIP_TOOLS=(virtualenvwrapper) #tools to install via pip
 RUBY_GEMS=(bundler hoe bundler foreman pg rails thin)
 BACKUP_DIR='' #where we will backup this instance of install
