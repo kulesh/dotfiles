@@ -1,7 +1,6 @@
 #setup PATH to work with brew
-export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+export PATH=/usr/local/opt/mysql@5.6/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 PATH="$(brew --prefix coreutils)/libexec/gnubin:$PATH"
-source "`brew --prefix`/etc/grc.bashrc"
 
 #default location of things
 export DOTFILES=$HOME/.dotfiles
@@ -22,3 +21,5 @@ export PIP_VIRTUALENV_BASE=$WORKON_HOME
 #Hub configurations
 export GITHUB_HOST=github.com
 export JAVA_HOME=`which java`
+
+umask 0002

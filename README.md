@@ -23,7 +23,6 @@ latest and prior versions of the dotfiles.
 ## Toolchain
 Following packages/files and their dependencies are installed:
 * Homebrew
- * grc
  * coreutils
  * hub
  * tree
