@@ -56,3 +56,4 @@ fi
 
 #initialize rbenv
 eval "$(rbenv init -)"
+alias retag='ctags -R --languages=ruby --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
