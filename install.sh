@@ -1,9 +1,9 @@
-#!/bin/zsh
 
+#!/bin/zsh
 source include/shared_vars.sh
 
-BREWED_TOOLS=(python python3 rbenv ruby-build libpqxx coreutils hub tree aspell --lang=en) #tools to install via Homebrew
-PIP_TOOLS=(virtualenvwrapper) #tools to install via pip
+BREWED_TOOLS=(python python3 rbenv ruby-build tree aspell --lang=en direnv fzf)
+PIP_TOOLS=(virtualenvwrapper)
 RUBY_GEMS=(bundler hoe bundler foreman pg rails thin)
 BACKUP_DIR='' #where we will backup this instance of install
 
@@ -22,22 +22,22 @@ install_pip()
 #install Homebrew and friends
 install_homebrew()
 {
-    #Install homebrew
     if test ! $(which brew)
     then
         echo "     [-] There is no Homebrew. Going to install Homebrew."
         ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go/install)"
     fi
 
-    #brew me some goodness
     brew update
+    brew upgrade
     brew install $BREWED_TOOLS
+
+    /usr/local/opt/fzf/install --all
 }
 
 #install Ruby Gems
 install_rubygems()
 {
-    #Install gems
     if test ! $(which gem)
     then
       echo "     [-] There is no Gem. You need to install Ruby. (brew install ruby)"
