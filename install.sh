@@ -10,8 +10,7 @@ BACKUP_DIR='' #where we will backup this instance of install
 #install pip and friends
 install_pip()
 {
-    if test ! $(which pip)
-    then
+    if ! type "$pip" &> /dev/null; then
         echo "     [-] There is no pip. Going to install pip. This will ask for your root password."
         sudo easy_install pip
     fi
@@ -22,10 +21,9 @@ install_pip()
 #install Homebrew and friends
 install_homebrew()
 {
-    if test ! $(which brew)
-    then
+    if ! type "$brew" &> /dev/null; then
         echo "     [-] There is no Homebrew. Going to install Homebrew."
-        ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go/install)"
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
 
     brew update
@@ -38,8 +36,7 @@ install_homebrew()
 #install Ruby Gems
 install_rubygems()
 {
-    if test ! $(which gem)
-    then
+    if ! type "$gem" &> /dev/null; then
       echo "     [-] There is no Gem. You need to install Ruby. (brew install ruby)"
     else
       eval "$(rbenv init -)"

@@ -18,8 +18,4 @@ export VIRTUALENVWRAPPER_VIRTUALENV_ARGS='--no-site-packages'
 export PIP_RESPECT_VIRTUALENV=true
 export PIP_VIRTUALENV_BASE=$WORKON_HOME
 
-#Hub configurations
-export GITHUB_HOST=github.com
-export JAVA_HOME="$(/usr/libexec/java_home)"
-
 umask 0002
