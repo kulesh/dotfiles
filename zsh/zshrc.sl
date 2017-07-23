@@ -49,16 +49,23 @@ zstyle ':completion:*' verbose true
 zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
 zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
-#setup virtualenvwrapper
-VIRTUALENV_WRAPPER_SOURCE=/usr/local/bin/virtualenvwrapper.sh
-if [ -f $VIRTUALENV_WRAPPER_SOURCE ]
-then
-    source $VIRTUALENV_WRAPPER_SOURCE
-fi
+##setup virtualenvwrapper
+# VIRTUALENV_WRAPPER_SOURCE=/usr/local/bin/virtualenvwrapper.sh
+# if [ -f $VIRTUALENV_WRAPPER_SOURCE ]
+# then
+#    source $VIRTUALENV_WRAPPER_SOURCE
+# fi
 
 #initialize rbenv
 eval "$(rbenv init -)"
 alias retag='ctags -R --languages=ruby --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
 eval "$(direnv hook zsh)"
+
+## setup direnvwrapper
+DIRENVWRAPPER_SOURCE=$DOTFILES/lib/direnvwrapper.sh
+if [ -f $DIRENVWRAPPER_SOURCE ]
+then
+  source $DIRENVWRAPPER_SOURCE
+fi
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
