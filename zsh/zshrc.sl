@@ -67,5 +67,7 @@ if [ -f $DIRENVWRAPPER_SOURCE ]
 then
   source $DIRENVWRAPPER_SOURCE
 fi
+#unload direnv before tmux to avoid mangling envvars in tmux
+alias tmux='direnv exec / tmux'
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
