@@ -20,20 +20,31 @@ workon() {
 }
 
 mkproject() {
-  if [ "$#" -ne 1 ]
+  if [[ "$#" -lt 1 || "$#" -gt 2 ]]
   then
     echo "$0 - Creates a direnv project"
-    echo "Usage: $0 project_name"
+    echo "Usage: $0 project_name [language]"
     return
   fi
 
   project_dir=$PROJECTS/$1
   if [ -d $project_dir ]
   then
-    echo "Project already exists in $project_dir"
+    echo "Project $1 already exists in $project_dir"
     return -1
-  else
-    mkdir $project_dir
-    cd $project_dir
   fi
+
+  mkdir $project_dir
+
+  envrc_template_dir=$DOTFILES/direnv/envrc/
+  envrc_template_file=envrc
+  if [ "$#" -eq 2 ]
+  then
+    envrc_template_dir=${envrc_template_dir}$2"/"
+  fi
+  envrc_source=${envrc_template_dir}${envrc_template_file}
+  envrc_target=${project_dir}"/.envrc"
+  cp $envrc_source $envrc_target
+  direnv allow $envrc_target
+  cd $project_dir
 }
