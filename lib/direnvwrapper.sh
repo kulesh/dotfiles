@@ -1,6 +1,12 @@
 #!/bin/zsh
 
 workon() {
+  __is_project_setup
+  if [ "$?" -ne 0 ]
+  then
+    return
+  fi
+
   if [ "$#" -ne 1 ]
   then
     for directory in `ls -d $PROJECTS/*`; do
@@ -34,7 +40,7 @@ mkproject() {
     return -1
   fi
 
-  mkdir $project_dir
+  mkdir -p $project_dir
 
   envrc_template_dir=$DOTFILES/direnv/envrc/
   envrc_template_file=envrc
@@ -47,4 +53,14 @@ mkproject() {
   cp $envrc_source $envrc_target
   direnv allow $envrc_target
   cd $project_dir
+}
+
+__is_project_setup() {
+  if [[ ! -d $PROJECTS ]]
+  then
+    echo "Use mkproject to make projects first"
+    return -1
+  fi
+
+  return 0
 }
