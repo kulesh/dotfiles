@@ -1,5 +1,9 @@
 #!/bin/zsh
 
+cdproject() {
+  [ -z $DIRENV_DIR ] && cd $HOME || cd ${DIRENV_DIR#-}
+}
+
 workon() {
   __is_project_setup
   if [ "$?" -ne 0 ]
