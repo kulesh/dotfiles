@@ -57,7 +57,7 @@ zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 # fi
 
 #initialize rbenv
-eval "$(rbenv init -)"
+#eval "$(rbenv init -)"
 alias retag='ctags -R --languages=ruby --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
 eval "$(direnv hook zsh)"
 

@@ -1,7 +1,38 @@
 #!/bin/zsh
 
+DIRENV_PROJECT_FILE=".project"
+
 cdproject() {
-  [ -z $DIRENV_DIR ] && cd $HOME || cd ${DIRENV_DIR#-}
+  if [ -z $DIRENV_DIR ]
+  then
+    cd $HOME
+    return
+  fi
+
+  direnv_dir=${DIRENV_DIR#-}
+  project_file=$direnv_dir/$DIRENV_PROJECT_FILE
+  if [ -e $project_file ]
+  then
+    cd `cat $project_file`
+    return
+  fi
+
+  cd $direnv_dir
+}
+
+setprojecthome() {
+  if [ -z $DIRENV_DIR ]
+  then
+    echo "You must be in a project to use this."
+    return
+  fi
+
+  project_home="$(pwd)"
+  direnv_dir=${DIRENV_DIR#-}
+  project_file=$DIRENV_PROJECT_FILE
+
+  echo "Setting project home to $project_home"
+  echo "$project_home" > "$direnv_dir/$project_file"
 }
 
 workon() {
