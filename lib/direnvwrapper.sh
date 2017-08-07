@@ -99,3 +99,16 @@ __is_project_setup() {
 
   return 0
 }
+
+list_projects() {
+  for directory in `ls -d $PROJECTS/*`; do
+    echo "${directory##*/}"
+  done
+}
+
+_list_projects() {
+  reply=( $(list_projects) )
+}
+
+#setup tab completion
+compctl -K _list_projects workon
