@@ -29,6 +29,8 @@ install_homebrew()
     brew update
     brew upgrade
     brew install $BREWED_TOOLS
+    brew tap universal-ctags/universal-ctags
+    brew install --HEAD universal-ctags
 
     /usr/local/opt/fzf/install --all
 }
