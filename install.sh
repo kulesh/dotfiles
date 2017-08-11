@@ -2,7 +2,7 @@
 #!/bin/zsh
 source include/shared_vars.sh
 
-BREWED_TOOLS=(python python3 rbenv ruby-build tree aspell --lang=en direnv fzf)
+BREWED_TOOLS=(python python3 rbenv ruby-build tree aspell --lang=en direnv ag fzf highlight)
 PIP_TOOLS=(virtualenvwrapper)
 RUBY_GEMS=(bundler hoe bundler foreman pg rails thin)
 BACKUP_DIR='' #where we will backup this instance of install
