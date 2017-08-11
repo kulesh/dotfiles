@@ -5,6 +5,7 @@ set nofoldenable        "dont fold by default
 set foldlevel=1         "this is just what i use
 
 "ctags
+set tags=./.tags,.tags
 map <C-\> :tab split<CR>:exec("tag ".expand("<cword>"))<CR>
 map <M-]> :vsp <CR>:exec("tag ".expand("<cword>"))<CR>
 

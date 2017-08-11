@@ -58,7 +58,7 @@ zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
 #initialize rbenv
 #eval "$(rbenv init -)"
-alias retag='ctags -R --languages=ruby --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
+alias retag='ctags -f ".tags" -R --totals --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
 eval "$(direnv hook zsh)"
 
 ## setup direnvwrapper
