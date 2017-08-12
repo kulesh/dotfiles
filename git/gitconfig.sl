@@ -15,6 +15,7 @@
 	st = status
 	ci = commit
 	co = checkout
+  sme = shortlog -sn
 
 [branch]
 	autosetupmerge = true
