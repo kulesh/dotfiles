@@ -53,6 +53,7 @@ install_rubygems()
 install_janus()
 {
     vim_home=$HOME/.vim
+    janus_plugin_dir=$HOME/.janus
     if [ ! -d $vim_home/janus ]
     then
         curl -Lo- https://bit.ly/janus-bootstrap | sh
@@ -62,6 +63,10 @@ install_janus()
         rake default
         cd -
     fi
+
+    # install plugins
+    mkdir -p $janus_plugin_dir
+    git clone git@github.com:junegunn/fzf.vim.git $janus_plugin_dir/fzf
 }
 
 #install CLI font
