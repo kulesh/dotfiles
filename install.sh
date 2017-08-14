@@ -2,7 +2,7 @@
 #!/bin/zsh
 source include/shared_vars.sh
 
-BREWED_TOOLS=(python python3 rbenv ruby-build tree aspell --lang=en direnv ag fzf highlight)
+BREWED_TOOLS=(python python3 golang rbenv ruby-build tree aspell --lang=en direnv ag fzf highlight)
 PIP_TOOLS=(virtualenvwrapper)
 RUBY_GEMS=(bundler hoe bundler foreman pg rails thin)
 BACKUP_DIR='' #where we will backup this instance of install
@@ -67,6 +67,8 @@ install_janus()
     # install plugins
     mkdir -p $janus_plugin_dir
     git clone git@github.com:junegunn/fzf.vim.git $janus_plugin_dir/fzf
+    git clone git@github.com:vim-airline/vim-airline.git $janus_plugin_dir/vim-airline
+    git clone git@github.com:tpope/vim-rails.git $janus_plugin_dir/vim-rails
 }
 
 #install CLI font
@@ -138,6 +140,12 @@ install_dotfiles()
 
        ln -s $f $target;
     done
+}
+
+#post install stuff
+post_install()
+{
+  git config --global init.templatedir '~/.git_template'
 }
 
 #unleash the dots!
