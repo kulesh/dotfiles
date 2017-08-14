@@ -142,12 +142,6 @@ install_dotfiles()
     done
 }
 
-#post install stuff
-post_install()
-{
-  git config --global init.templatedir '~/.git_template'
-}
-
 #unleash the dots!
 initialize
 if [ $? -eq 0 ]
