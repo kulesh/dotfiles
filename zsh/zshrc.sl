@@ -71,8 +71,8 @@ fi
 alias tmux='direnv exec / tmux'
 
 export FZF_DEFAULT_OPTS='--height 50% --reverse --border --inline-info'
-export export FZF_COMPLETION_TRIGGER='++'
-export FZF_DEFAULT_COMMAND='ag -g ""'
+export FZF_COMPLETION_TRIGGER='~~'
+export FZF_DEFAULT_COMMAND='rg -g ""'
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 export FZF_CTRL_T_OPTS="--preview '(highlight -O ansi -l {} 2> /dev/null || cat {} || tree -C {}) 2> /dev/null | head -200'"
 export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"

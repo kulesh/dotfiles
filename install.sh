@@ -31,6 +31,8 @@ install_homebrew()
     brew install $BREWED_TOOLS
     brew tap universal-ctags/universal-ctags
     brew install --HEAD universal-ctags
+    brew tap burntsushi/ripgrep https://github.com/BurntSushi/ripgrep.git
+    brew install burntsushi/ripgrep/ripgrep-bin
 
     /usr/local/opt/fzf/install --all
 }

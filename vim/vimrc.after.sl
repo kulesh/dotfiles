@@ -12,3 +12,5 @@ map <M-]> :vsp <CR>:exec("tag ".expand("<cword>"))<CR>
 "syntax and color
 syntax enable
 colorscheme getafe
+
+let g:ackprg = 'ag --nogroup --nocolor --column'
