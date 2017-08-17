@@ -13,6 +13,8 @@ map <M-]> :vsp <CR>:exec("tag ".expand("<cword>"))<CR>
 syntax enable
 colorscheme getafe
 
-if executable("ag")
+if executable("rg")
+  let g:ackprg = 'rg --vimgrep --no-heading'
+elseif executable("ag")
   let g:ackprg = 'ag --nogroup --nocolor --column'
 endif
