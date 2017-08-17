@@ -86,6 +86,7 @@ mkproject() {
   envrc_source=${envrc_template_dir}${envrc_template_file}
   envrc_target=${project_dir}"/.envrc"
   cp $envrc_source $envrc_target
+  sed -i '' "s|{project_dir}|${project_dir}|g" $envrc_target
   direnv allow $envrc_target
   cd $project_dir
 }

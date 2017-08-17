@@ -1,1 +1,2 @@
+export CURRENT_PROJECT_DIR={project_dir}
 layout python
