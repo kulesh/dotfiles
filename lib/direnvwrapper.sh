@@ -1,5 +1,6 @@
 #!/bin/zsh
 
+# I used to manage environments using virtualenvwrapper and it shows :-)
 DIRENV_PROJECT_FILE=".project"
 
 cdproject() {
@@ -111,5 +112,5 @@ _list_projects() {
   reply=( $(list_projects) )
 }
 
-#setup tab completion
+# Setup tab completion
 compctl -K _list_projects workon

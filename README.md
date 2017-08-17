@@ -21,13 +21,11 @@ like install and revert can be run multiple times to switch between
 latest and prior versions of the dotfiles.
 
 ## Toolchain
-Following packages/files and their dependencies are installed:
-* Homebrew
- * coreutils
- * hub
- * tree
- * aspell --lang=en
-* pip
- * virtualenvwrapper
-* CLI Font: [Inconsolata](http://www.levien.com/type/myfonts/inconsolata.html)
-* [Janus](https://github.com/carlhuda/janus/) for vim
+This is an ever evolving list of tools:
+* [Homebrew](https://brew.sh/) for package management
+* [Direnv](https://direnv.net/) for project/environment management
+* [FZF](https://github.com/junegunn/fzf) backed by [ripgrep](https://github.com/BurntSushi/ripgrep) for discovery
+* Git for version control
+* [Janus](https://github.com/carlhuda/janus/) for Vim
+* [Inconsolata](http://www.levien.com/type/myfonts/inconsolata.html) CLI
+  font
