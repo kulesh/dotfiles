@@ -58,8 +58,6 @@ if [ -f $DIRENVWRAPPER_SOURCE ]
 then
   source $DIRENVWRAPPER_SOURCE
 fi
-#unload direnv before tmux to avoid mangling envvars in tmux
-alias tmux='direnv exec / tmux'
 
 export FZF_DEFAULT_OPTS='--height 50% --reverse --border --inline-info'
 export FZF_COMPLETION_TRIGGER='~~'
