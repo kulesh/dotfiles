@@ -94,8 +94,6 @@ initialize()
 {
     echo "     [+] Installing Homebrew and friends"
     install_homebrew
-    echo "     [+] Installing pip and friends"
-    install_pip
     echo "     [+] Installing Ruby Gems"
     install_rubygems
     echo "     [+] Installing Janus for vim"
