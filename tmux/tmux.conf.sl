@@ -1,7 +1,7 @@
 # remap to familiar screen keys
-set -g prefix C-a
+set -g prefix 'C-\'
 unbind C-b
-bind C-a send-prefix
+bind 'C-\' send-prefix
 
 # force a reload of the config file
 unbind r
