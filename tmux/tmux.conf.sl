@@ -17,8 +17,12 @@ bind d resize-pane -D 10
 bind l resize-pane -L 10
 bind r resize-pane -R 10
 
-# chroma
+# chroma and scrolling
 set -g default-terminal "screen-256color"
+set -g mouse on
+# set -g mouse-select-pane on
+# bind-key -t vi-copy WheelUpPane scroll-up
+# bind-key -t vi-copy WheelDownPane scroll-down
 
 # direnv subshell mangling
 set-option -g update-environment "DIRENV_DIFF DIRENV_DIR DIRENV_WATCHES"
