@@ -1,0 +1,2 @@
+export CURRENT_PROJECT_DIR={project_dir}
+layout pyvenv python3.7
