@@ -9,7 +9,7 @@ install_homebrew()
 {
     if ! type "$brew" &> /dev/null; then
         echo "     [-] There is no Homebrew. Going to install Homebrew."
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
     brew update
