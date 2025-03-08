@@ -1,9 +1,10 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
+set -e 
+
 source include/shared_vars.sh
 
-BREWED_TOOLS=(python python3 golang rbenv ruby-build tree aspell --lang=en direnv fzf highlight)
-RUBY_GEMS=(bundler foreman)
 BACKUP_DIR='' # where we will backup this instance of install
+INSTALL_SCRIPT_AT="${0:a:h}"
 
 install_homebrew()
 {
@@ -12,48 +13,30 @@ install_homebrew()
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
-    brew update
-    brew upgrade
-    brew install $BREWED_TOOLS
-    brew tap universal-ctags/universal-ctags
-    brew install --HEAD universal-ctags
-    brew tap burntsushi/ripgrep https://github.com/BurntSushi/ripgrep.git
-    brew install burntsushi/ripgrep/ripgrep-bin
+		local BREWFILE_PATH="${INSTALL_SCRIPT_AT}/brew/Brewfile"
+		# Verify Brewfile exists and is readable
+		if [[ ! -f "$BREWFILE_PATH" ]]; then
+				echo "Error: Brewfile not found at ${BREWFILE_PATH}" >&2
+				exit 1
+		fi
 
-    /usr/local/opt/fzf/install --all
-}
+		if [[ ! -r "$BREWFILE_PATH" ]]; then
+				echo "Error: Cannot read Brewfile at ${BREWFILE_PATH}" >&2
+				echo "Please check file permissions" >&2
+				exit 1
+		fi
 
-# Install system-wide Ruby Gems
-install_rubygems()
-{
-    if ! type "$gem" &> /dev/null; then
-      echo "     [-] There is no Gem. You need to install Ruby. (brew install ruby)"
-    else
-      gem update --system
-      gem install $RUBY_GEMS --no-rdoc --no-ri
-    fi
-}
+		# Install Homebrew packages
+		echo "Installing packages from Brewfile..."
+		if brew bundle --file="$BREWFILE_PATH"; then
+				echo "✅ Homebrew packages installed successfully!"
+		else
+				echo "⚠️Some Homebrew installations may have failed. Please check the output above."
+				# We don't exit with error here to allow the script to continue with other setups
+		fi
 
-install_janus()
-{
-    vim_home=$HOME/.vim
-    janus_plugin_dir=$HOME/.janus
-    if [ ! -d $vim_home/janus ]
-    then
-        curl -Lo- https://bit.ly/janus-bootstrap | sh
-    else
-        # There must be a better way to do this! (like make -C)
-        # bundle exec rake default -f $vim_home
-        cd $vim_home
-        rake default
-        cd -
-    fi
-
-    # install plugins
-    mkdir -p $janus_plugin_dir
-    git clone git@github.com:junegunn/fzf.vim.git $janus_plugin_dir/fzf
-    git clone git@github.com:vim-airline/vim-airline.git $janus_plugin_dir/vim-airline
-    git clone git@github.com:tpope/vim-rails.git $janus_plugin_dir/vim-rails
+		brew bundle --file="$BREWFILE_PATH" cleanup
+		brew doctor
 }
 
 install_cli_font()
@@ -94,10 +77,6 @@ initialize()
 {
     echo "     [+] Installing Homebrew and friends"
     install_homebrew
-    echo "     [+] Installing Ruby Gems"
-    install_rubygems
-    echo "     [+] Installing Janus for vim"
-    install_janus
     echo "     [+] Installing CLI font"
     install_cli_font
 
@@ -107,19 +86,38 @@ initialize()
 # install the dot files in $HOME_DIR
 install_dotfiles()
 {
-
-    # glob *.SYMLINK_EXT from directories and create equivalent symlinks in $HOME_DIR
-    for f in `find $PWD -name "*.$SYMLINK_EXT"`; do
-        target=$HOME_DIR/.`basename -s .$SYMLINK_EXT $f`
-
-        # if the target exists then back it up
-        if [ -e $target ]
-        then
-            backup_file $BACKUP_DIR $target
-        fi
-
-       ln -s $f $target;
-    done
+	echo "🔗 Setting up dotfiles with stow..."
+  
+  # Check if stow is installed
+  if ! command -v stow &> /dev/null; then
+    echo "Error: stow is not installed"
+    echo "Installing stow with Homebrew..."
+    brew install stow
+  fi
+  
+  # Change to the dotfiles directory (required for stow to work correctly)
+  cd "$INSTALL_SCRIPT_AT"
+  
+  # List of packages to stow
+  local packages="${STOWED_PACKAGES}"
+  
+  # Stow each package
+  for package in "${packages[@]}"; do
+    if [[ -d "$package" ]]; then
+      echo "Stowing $package..."
+      stow --verbose --target="$HOME_DIR" --restow "$package"
+      
+      if [[ $? -eq 0 ]]; then
+        echo "✅ $package linked successfully"
+      else
+        echo "⚠️ Failed to stow $package"
+      fi
+    else
+      echo "⚠️ Package directory $package not found, skipping..."
+    fi
+  done
+  
+  return 0
 }
 
 # Unleash the dots!

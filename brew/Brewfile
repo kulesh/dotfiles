@@ -1,0 +1,38 @@
+# Brewfile
+# Created on March 5, 2025
+
+# Taps
+tap "homebrew/bundle"
+
+# Brews
+brew "stow"
+brew "fd"
+brew "ripgrep"
+brew "hyperfine"
+brew "eza"
+brew "tree"
+brew "aspell"
+brew "fzf"
+brew "mise"
+brew "highlight"
+brew "starship"
+brew "zoxide"
+brew "neovim"
+brew "zellij"
+brew "yazi"
+brew "git-delta"
+brew "bat"
+brew "htop"
+brew "ollama"
+brew "aider"
+
+# Optional: Add any casks you frequently use
+# cask "visual-studio-code"
+# cask "docker"
+cask "cursor"
+cask "ghostty"
+cask "zed"
+# Nerd Fonts for coding and terminal
+cask "font-fira-code-nerd-font"    # Great for coding
+cask "font-jetbrains-mono-nerd-font" # Alternative coding font
+cask "font-hack-nerd-font"         # Terminal-friendly

@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env zsh
 
 # Shared variables between install.sh and revert.sh
 HOME_DIR=$HOME # Makes it easy to test
 BACKUP_ROOT="$HOME_DIR/.dotbackup"
-SYMLINK_EXT="sl" # Extension of files to symlink
+STOWED_PACKAGES = ("zsh" "git" "mise" "nvim" "brew" "starship")
