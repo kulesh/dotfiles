@@ -30,13 +30,12 @@ install_homebrew()
 		echo "Installing packages from Brewfile..."
 		if brew bundle --file="$BREWFILE_PATH"; then
 				echo "✅ Homebrew packages installed successfully!"
+			  brew bundle --file="$BREWFILE_PATH" cleanup
+			  brew doctor
 		else
 				echo "⚠️Some Homebrew installations may have failed. Please check the output above."
 				# We don't exit with error here to allow the script to continue with other setups
 		fi
-
-		brew bundle --file="$BREWFILE_PATH" cleanup
-		brew doctor
 }
 
 install_cli_font()
