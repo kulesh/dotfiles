@@ -3,8 +3,9 @@
 # A wrapper script for mise-en-place (https://mise.jdx.dev)
 # Providing convenient project management functions
 
+source include/shared_vars.sh
 # Configuration
-typeset -g MISE_PROJECTS_DIR="${HOME}/projects"
+typeset -g MISE_PROJECTS_DIR=$PROJECT_DIR
 
 # Helper function to find the mise project root directory
 function find_mise_root() {
@@ -30,7 +31,7 @@ function cdproject() {
   
   if [[ -z "$mise_dir" ]]; then
     echo "Not in a mise project"
-    cd "$HOME"
+    cd "$HOME_DIR"
     return 1
   fi
 
