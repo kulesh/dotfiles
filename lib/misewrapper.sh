@@ -3,7 +3,9 @@
 # A wrapper script for mise-en-place (https://mise.jdx.dev)
 # Providing convenient project management functions
 
-source include/shared_vars.sh
+SCRIPT_DIR="${0:a:h:h}"
+source "$SCRIPT_DIR/include/shared_vars.sh"
+
 # Configuration
 typeset -g MISE_PROJECTS_DIR=$PROJECT_DIR
 
