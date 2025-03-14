@@ -62,6 +62,7 @@ export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 eval "$(mise activate zsh)"
 eval "$(starship init zsh)"
 eval "$(zoxide init zsh)"
+eval "$(/usr/libexec/path_helper)"
 
 # project management commands
 MISEWRAPPER_SOURCE="${DOTFILES}/lib/misewrapper.sh"

@@ -32,7 +32,7 @@ brew "aider"
 cask "cursor"
 cask "ghostty"
 cask "zed"
-cask "basictex" # ya ya, I still use LaTex for documents!
+cask "mactex" # ya ya, I still use LaTex for documents!
 # Nerd Fonts for coding and terminal
 cask "font-fira-code-nerd-font"    # Great for coding
 cask "font-jetbrains-mono-nerd-font" # Alternative coding font
