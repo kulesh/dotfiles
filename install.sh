@@ -119,11 +119,107 @@ install_dotfiles()
   return 0
 }
 
+# ssh keys for GitHub
+generate_ssh_keys() {
+  echo "🔑 Setting up SSH keys for GitHub..."
+ 
+  # Default location for SSH keys
+  local ssh_dir="$HOME_DIR/.ssh"
+  local key_file="$ssh_dir/id_ed25519"
+  local pub_file="$key_file.pub"
+ 
+  # Create SSH directory if it doesn't exist
+  if [[ ! -d "$ssh_dir" ]]; then
+    echo "Creating SSH directory..."
+    mkdir -p "$ssh_dir"
+    chmod 700 "$ssh_dir"
+  fi
+ 
+  # Check if keys already exist
+  if [[ -f "$key_file" ]]; then
+    echo "SSH key already exists at $key_file"
+    read -q "REPLY?Do you want to generate a new key anyway? (y/n) "
+    echo ""
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+      echo "Keeping existing SSH key."
+      return 0
+    fi
+    # Backup existing key
+    local backup_key="$key_file.backup-$(date +%Y%m%d%H%M%S)"
+    echo "Backing up existing SSH key to $backup_key"
+    cp "$key_file" "$backup_key"
+    cp "$pub_file" "$backup_key.pub"
+  fi
+ 
+  # Get user input for key
+  echo "Generating new SSH key for GitHub..."
+  read "email?Enter your GitHub email: "
+ 
+  # Generate the key
+  ssh-keygen -t ed25519 -C "$email" -f "$key_file"
+ 
+  # Start ssh-agent and add the key
+  eval "$(ssh-agent -s)"
+  ssh-add "$key_file"
+ 
+  # Copy public key to clipboard
+  if command -v pbcopy &> /dev/null; then
+    # macOS
+    pbcopy < "$pub_file"
+    echo "Public key copied to clipboard!"
+  else
+    echo "Your public key is:"
+    cat "$pub_file"
+    echo "Please copy it manually."
+  fi
+ 
+  # Ask user to add key to GitHub
+  echo ""
+  echo "Please add this key to your GitHub account:"
+  echo "1. Go to GitHub.com → Settings → SSH and GPG keys → New SSH key"
+  echo "2. Paste the key (it's already in your clipboard on macOS)"
+  echo "3. Give it a title (e.g., $(hostname))"
+  echo ""
+  read -q "REPLY?Press Y when you've added the key to GitHub (y/n) "
+  echo ""
+ 
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Test the connection
+    echo "Testing GitHub SSH connection..."
+    if ssh -T git@github.com -o StrictHostKeyChecking=accept-new; then
+      echo "✅ SSH connection to GitHub successful!"
+    else
+      echo "⚠️ SSH connection test returned a non-zero exit code."
+      echo "   This may be normal if GitHub printed the welcome message."
+      echo "   If you're unsure, please check your SSH connection manually."
+    fi
+  else
+    echo "Skipping GitHub connection test."
+  fi
+ 
+  # Set git config if email was provided
+  if [[ -n "$email" ]]; then
+    echo "Would you like to set this email in your git config? (y/n)"
+    read -q "REPLY?"
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      read "name?Enter your name for git config: "
+      git config --global user.email "$email"
+      git config --global user.name "$name"
+      echo "✅ Git config updated with your name and email!"
+    fi
+  fi
+ 
+  echo "🔑 SSH key setup complete!"
+  return 0
+}
+
 # Unleash the dots!
 initialize
 if [ $? -eq 0 ]
 then
-    install_dotfiles
+ 		install_dotfiles
+		generate_ssh_keys
     echo "     [+] dotfile installation complete"
     echo "     [+] Your old dot files are backed up in $BACKUP_DIR"
     echo "     [+] You can revert the changes with revert.sh"
