@@ -116,13 +116,13 @@ install_dotfiles()
   cd "$INSTALL_SCRIPT_AT"
   
   # List of packages to stow
-  local packages="${STOWED_PACKAGES}"
+  local packages=(${STOWED_PACKAGES})
   
   # Stow each package
   for package in "${packages[@]}"; do
     if [[ -d "$package" ]]; then
       echo "Stowing $package..."
-      stow --verbose --target="$HOME_DIR" --restow "$package"
+      stow --verbose --adopt --target="$HOME_DIR" --restow "$package"
       
       if [[ $? -eq 0 ]]; then
         echo "✅ $package linked successfully"
