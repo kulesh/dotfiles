@@ -8,34 +8,52 @@ INSTALL_SCRIPT_AT="${0:a:h}"
 
 install_homebrew()
 {
-    if ! type "$brew" &> /dev/null; then
+    if ! command -v brew &> /dev/null; then
         echo "     [-] There is no Homebrew. Going to install Homebrew."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        
+        # Determine the correct Homebrew path based on architecture
+        if [[ $(uname -m) == "arm64" ]]; then
+            # M1/M2 Mac
+            BREW_PATH="/opt/homebrew/bin/brew"
+        else
+            # Intel Mac
+            BREW_PATH="/usr/local/bin/brew"
+        fi
+        
+        # Check if Homebrew was installed and set the PATH for this session
+        if [[ -f "$BREW_PATH" ]]; then
+            echo "     [-] Homebrew installed. Initializing Homebrew in current shell..."
+            eval "$($BREW_PATH shellenv)"
+        else
+            echo "     [x] Homebrew installation may have failed. Brew executable not found."
+            return 1
+        fi
     fi
 
-		local BREWFILE_PATH="${INSTALL_SCRIPT_AT}/brew/Brewfile"
-		# Verify Brewfile exists and is readable
-		if [[ ! -f "$BREWFILE_PATH" ]]; then
-				echo "Error: Brewfile not found at ${BREWFILE_PATH}" >&2
-				exit 1
-		fi
+    local BREWFILE_PATH="${INSTALL_SCRIPT_AT}/brew/Brewfile"
+    # Verify Brewfile exists and is readable
+    if [[ ! -f "$BREWFILE_PATH" ]]; then
+        echo "Error: Brewfile not found at ${BREWFILE_PATH}" >&2
+        exit 1
+    fi
 
-		if [[ ! -r "$BREWFILE_PATH" ]]; then
-				echo "Error: Cannot read Brewfile at ${BREWFILE_PATH}" >&2
-				echo "Please check file permissions" >&2
-				exit 1
-		fi
+    if [[ ! -r "$BREWFILE_PATH" ]]; then
+        echo "Error: Cannot read Brewfile at ${BREWFILE_PATH}" >&2
+        echo "Please check file permissions" >&2
+        exit 1
+    fi
 
-		# Install Homebrew packages
-		echo "Installing packages from Brewfile..."
-		if brew bundle --file="$BREWFILE_PATH"; then
-				echo "✅ Homebrew packages installed successfully!"
-			  brew bundle --file="$BREWFILE_PATH" cleanup
-			  brew doctor
-		else
-				echo "⚠️Some Homebrew installations may have failed. Please check the output above."
-				# We don't exit with error here to allow the script to continue with other setups
-		fi
+    # Install Homebrew packages
+    echo "Installing packages from Brewfile..."
+    if brew bundle --file="$BREWFILE_PATH"; then
+        echo "✅ Homebrew packages installed successfully!"
+        brew bundle --file="$BREWFILE_PATH" cleanup
+        brew doctor
+    else
+        echo "⚠️Some Homebrew installations may have failed. Please check the output above."
+        # We don't exit with error here to allow the script to continue with other setups
+    fi
 }
 
 install_cli_font()
