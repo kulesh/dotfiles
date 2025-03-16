@@ -34,6 +34,7 @@ function Plugin.config()
       {name = 'nvim_lsp'},
       {name = 'buffer', keyword_length = 3},
       {name = 'luasnip', keyword_length = 2},
+			{name = 'codecompanion'},
     },
     window = {
       completion = cmp.config.window.bordered(),
