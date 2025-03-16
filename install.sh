@@ -105,6 +105,12 @@ install_dotfiles()
 {
 	echo "🔗 Setting up dotfiles with stow..."
   
+	local dev_dir="$HOME_DIR/dev"
+  if [[ ! -d "$dev_dir" ]]; then
+    echo "Creating dev directory for projects..."
+    mkdir -p "$dev_dir"
+  fi
+
   # Check if stow is installed
   if ! command -v stow &> /dev/null; then
     echo "Error: stow is not installed"
