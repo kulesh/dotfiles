@@ -28,12 +28,19 @@ brew "ollama"
 brew "aider"
 
 # Apple Store apps
-mas "Microsoft OneNote", id: 784801555
-mas "OneDrive", id: 823766827
-mas "Kindle", id: 302584613
-mas "WhatsApp", id: 310633997
-mas "Trello", id: 1278508951
 mas "Flighty", id: 1358823008
+mas "GarageBand", id: 682658836
+mas "iMovie", id: 408981434
+mas "Keynote", id: 409183694
+mas "Kindle", id: 302584613
+mas "Microsoft Excel", id: 462058435
+mas "Microsoft OneNote", id: 784801555
+mas "Numbers", id: 409203825
+mas "OneDrive", id: 823766827
+mas "Pages", id: 409201541
+mas "Trello", id: 1278508951
+mas "WhatsApp", id: 310633997
+mas "Xcode", id: 497799835
 
 # Optional: Add any casks you frequently use
 # cask "visual-studio-code"
