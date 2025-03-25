@@ -26,6 +26,8 @@ brew "bat"
 brew "htop"
 brew "ollama"
 brew "aider"
+brew "repomix"
+brew "pandoc"
 
 # Apple Store apps
 mas "Flighty", id: 1358823008
@@ -49,6 +51,7 @@ cask "cursor"
 cask "ghostty"
 cask "zed"
 cask "mactex" # ya ya, I still use LaTex for documents!
+cask "obsidian"
 # Nerd Fonts for coding and terminal
 cask "font-fira-code-nerd-font"    # Great for coding
 cask "font-jetbrains-mono-nerd-font" # Alternative coding font
