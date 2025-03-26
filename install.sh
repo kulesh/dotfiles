@@ -3,7 +3,6 @@ set -e
 
 source include/shared_vars.sh
 
-BACKUP_DIR='' # where we will backup this instance of install
 INSTALL_SCRIPT_AT="${0:a:h}"
 
 install_homebrew()
@@ -56,56 +55,12 @@ install_homebrew()
     fi
 }
 
-install_cli_font()
-{
-    # Using Inconsolata http://www.levien.com/type/myfonts/inconsolata.html
-    font_source=http://www.levien.com/type/myfonts/Inconsolata.otf
-    font_target=$HOME_DIR/Library/Fonts/Inconsolata.otf
-
-    if [ ! -f $font_target ]
-    then
-        curl -L $font_source -o $font_target
-    fi
-}
-
-create_backup_dir()
-{
-    timestamp=`date "+%Y-%h-%d-%H-%M-%S"`
-    backup_dir="$BACKUP_ROOT/$timestamp"
-    mkdir -p $backup_dir
-    if [ -d $backup_dir ]
-    then
-        BACKUP_DIR=$backup_dir
-    else
-        echo "     [x] Could not create backup directory $backup_dir"
-        return 1
-    fi
-}
-
-backup_file()
-{
-    backup_dir=$1/
-    source_file=$2
-    mv $source_file $backup_dir
-}
-
-# check dependencies and create backup directories
-initialize()
-{
-    echo "     [+] Installing Homebrew and friends"
-    install_homebrew
-    echo "     [+] Installing CLI font"
-    install_cli_font
-
-    create_backup_dir
-}
-
 # install the dot files in $HOME_DIR
 install_dotfiles()
 {
 	echo "🔗 Setting up dotfiles with stow..."
   
-	local dev_dir="$HOME_DIR/dev"
+	local dev_dir="$PROJECT_DIR"
   if [[ ! -d "$dev_dir" ]]; then
     echo "Creating dev directory for projects..."
     mkdir -p "$dev_dir"
@@ -239,16 +194,15 @@ generate_ssh_keys() {
 }
 
 # Unleash the dots!
-initialize
+echo "Installing Homebrew..."
+install_homebrew
+
 if [ $? -eq 0 ]
 then
  		install_dotfiles
-		generate_ssh_keys
     echo "     [+] dotfile installation complete"
-    echo "     [+] Your old dot files are backed up in $BACKUP_DIR"
-    echo "     [+] You can revert the changes with revert.sh"
+		generate_ssh_keys
+    echo "     [+] All Done."
 else
-    echo "     [x] There was an error initializing... will revert changes now"
-    source revert.sh
-    echo "     [x] Done."
+    echo "     [x] There was an error installing Homebrew!"
 fi
