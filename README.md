@@ -14,6 +14,7 @@ The system does three things:
 To install the dotfiles:
 ```sh
 xcode-select --install # to install developer tools
+sudo xcodebuild -license
 git clone https://github.com/kulesh/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 /bin/zsh install.sh
