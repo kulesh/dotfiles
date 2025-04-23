@@ -10,7 +10,7 @@
 # plugins can read the versions files used by other version managers (if enabled by the plugin)
 # for example, .nvmrc in the case of node's nvm
 idiomatic_version_file = true                     # enabled by default (unlike asdf)
-idiomatic_version_file_disable_tools = ['python'] # disable for specific tools
+# idiomatic_version_file_enable_tools = []
 
 # configure `mise install` to always keep the downloaded archive
 always_keep_download = false        # deleted after install by default
