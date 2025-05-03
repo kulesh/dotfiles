@@ -26,6 +26,8 @@ setopt prompt_subst
 PROMPT='%F{white}%n@%m %c${vcs_info_msg_0_}%F{white} %(?/%F{white}/%F{red})%% %{$reset_color%}'
 
 # history
+setopt EXTENDED_HISTORY
+setopt inc_append_history_time
 setopt histignorealldups sharehistory
 HISTSIZE=1024
 SAVEHIST=1024
@@ -59,6 +61,7 @@ export FZF_COMPLETION_TRIGGER='~~'
 export FZF_CTRL_T_OPTS="--preview '(highlight -O ansi -l {} 2> /dev/null || cat {} || tree -C {}) 2> /dev/null | head -200'"
 export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 
+
 eval "$(mise activate zsh)"
 eval "$(starship init zsh)"
 eval "$(zoxide init zsh)"
@@ -81,3 +84,5 @@ alias_if_exists ls eza
 alias_if_exists time hyperfine
 alias_if_exists vim nvim
 alias_if_exists retag='ctags -f ".tags" -R --totals --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
+
+export PATH="/opt/homebrew/bin:$PATH"
