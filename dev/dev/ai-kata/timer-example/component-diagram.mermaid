@@ -1,0 +1,38 @@
+%% Component Diagram for iOS Mobile App
+graph TB
+    subgraph "iOS Mobile Application"
+        VoiceProc["Voice Processing<br>Component"]
+        TimerEngine["Timer Engine<br>Component"]
+        RoutineMgmt["Routine Management<br>Component"]
+        SessionAnalytics["Session Analytics<br>Component"]
+        ContextIntel["Contextual Intelligence<br>Component"]
+        UIVis["UI Visualization<br>Component"]
+    end
+    
+    VoiceProc <--> TimerEngine
+    VoiceProc <--> RoutineMgmt
+    TimerEngine <--> RoutineMgmt
+    TimerEngine <--> SessionAnalytics
+    RoutineMgmt <--> ContextIntel
+    RoutineMgmt <--> SessionAnalytics
+    SessionAnalytics <--> UIVis
+    ContextIntel <--> UIVis
+    TimerEngine <--> UIVis
+    
+    %% External dependencies
+    VoiceProc -.-> CloudLLM["Cloud LLM API"]
+    ContextIntel -.-> LocService["Location Services"]
+    RoutineMgmt -.-> CoreData["Core Data"]
+    SessionAnalytics -.-> iCloud["iCloud Sync"]
+    
+    style VoiceProc fill:#f9d,stroke:#333,stroke-width:2px
+    style TimerEngine fill:#9df,stroke:#333,stroke-width:2px
+    style RoutineMgmt fill:#df9,stroke:#333,stroke-width:2px
+    style SessionAnalytics fill:#fd9,stroke:#333,stroke-width:2px
+    style ContextIntel fill:#d9f,stroke:#333,stroke-width:2px
+    style UIVis fill:#9fd,stroke:#333,stroke-width:2px
+    
+    style CloudLLM fill:#ddd,stroke:#333,stroke-width:1px
+    style LocService fill:#ddd,stroke:#333,stroke-width:1px
+    style CoreData fill:#ddd,stroke:#333,stroke-width:1px
+    style iCloud fill:#ddd,stroke:#333,stroke-width:1px

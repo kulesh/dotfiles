@@ -1,0 +1,82 @@
+%% Domain Model for AI-Native Timer
+classDiagram
+    class User {
+        +UUID id
+        +PurchaseStatus status
+        +Preferences preferences
+        +Date createdDate
+    }
+    
+    class Routine {
+        +UUID id
+        +String name
+        +String description
+        +String category
+        +List~Phase~ phases
+        +Date createdDate
+        +Date modifiedDate
+    }
+    
+    class Phase {
+        +UUID id
+        +String name
+        +TimeInterval baseDuration
+        +List~AdjustmentRule~ adjustmentRules
+        +int position
+        +int repeatCount
+    }
+    
+    class Timer {
+        +UUID id
+        +UUID routineId
+        +TimerState status
+        +Date startTime
+        +int currentPhaseIndex
+        +TimeInterval elapsedTime
+        +TimeInterval remainingTime
+        +start()
+        +pause()
+        +resume()
+        +stop()
+    }
+    
+    class Session {
+        +UUID id
+        +UUID routineId
+        +Date startTime
+        +Date completionTime
+        +CompletionStatus status
+        +List~PhaseExecution~ phaseLog
+        +List~ContextualFactor~ contextualFactors
+    }
+    
+    class Schedule {
+        +UUID id
+        +UUID routineId
+        +RecurrencePattern recurrence
+        +Date startTime
+        +boolean enabled
+        +NotificationSettings notifications
+    }
+    
+    class ContextualFactor {
+        +FactorType type
+        +Any value
+    }
+    
+    class AdjustmentFactor {
+        +TimeInterval baseValue
+        +TimeInterval adjustedValue
+        +double factorApplied
+        +double confidence
+        +String explanation
+        +AdjustmentSource source
+    }
+    
+    User "1" -- "many" Routine : creates
+    Routine "1" -- "many" Phase : contains
+    Routine "1" -- "many" Timer : used by
+    Timer "1" -- "1" Session : generates
+    Routine "1" -- "many" Schedule : can have
+    Timer "many" -- "many" ContextualFactor : affected by
+    Phase "1" -- "many" AdjustmentFactor : modified by

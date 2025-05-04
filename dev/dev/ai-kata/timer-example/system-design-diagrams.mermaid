@@ -1,0 +1,21 @@
+%% C4 Context Diagram for AI-Native Timer System
+graph TB
+    subgraph "AI-Native Timer System"
+        AI["AI-Native Timer"]
+    end
+    
+    User["Users"]
+    LLM["LLM Services"]
+    Location["Location Services"]
+    Apple["Apple Services<br>(iCloud, Store)"]
+    
+    User <-->|"Voice & Touch<br>Interface"| AI
+    AI <-->|"Natural Language<br>Processing"| LLM
+    AI <-->|"Contextual<br>Data"| Location
+    AI <-->|"Sync & Purchases"| Apple
+    
+    style AI fill:#f9f,stroke:#333,stroke-width:2px
+    style User fill:#bbf,stroke:#333,stroke-width:1px
+    style LLM fill:#bfb,stroke:#333,stroke-width:1px
+    style Location fill:#fbb,stroke:#333,stroke-width:1px
+    style Apple fill:#bff,stroke:#333,stroke-width:1px

@@ -1,0 +1,33 @@
+%% C4 Container Diagram for AI-Native Timer System
+graph TB
+    User["User<br>(iOS Device)"]
+    
+    subgraph "AI-Native Timer System"
+        iOSApp["iOS Mobile App<br>(Swift/SwiftUI)"]
+        NLP["Natural Language<br>Processor<br>(Transformer LLM)"]
+        Storage["Local Data Storage<br>(Core Data/SQLite)"]
+        KnowledgeBase["Knowledge Base<br>Service<br>(Versioned JSON/SQLite)"]
+    end
+    
+    subgraph "External Services"
+        CloudLLM["Cloud LLM API<br>(Anthropic Claude)"]
+        iCloud["iCloud<br>(CloudKit)"]
+        LocService["Location Services<br>(iOS/CoreLocation)"]
+    end
+    
+    User <--> iOSApp
+    iOSApp <--> NLP
+    iOSApp <--> Storage
+    iOSApp <--> KnowledgeBase
+    NLP <--> CloudLLM
+    Storage <--> iCloud
+    iOSApp <--> LocService
+    
+    style User fill:#bbf,stroke:#333,stroke-width:1px
+    style iOSApp fill:#f9f,stroke:#333,stroke-width:2px
+    style NLP fill:#bfb,stroke:#333,stroke-width:1px
+    style Storage fill:#fbb,stroke:#333,stroke-width:1px
+    style KnowledgeBase fill:#bff,stroke:#333,stroke-width:1px
+    style CloudLLM fill:#fcf,stroke:#333,stroke-width:1px
+    style iCloud fill:#cff,stroke:#333,stroke-width:1px
+    style LocService fill:#ffc,stroke:#333,stroke-width:1px
