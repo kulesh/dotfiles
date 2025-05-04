@@ -3,6 +3,12 @@ This is the workflow I use to turn rough ideas into shippable tasks by pairing w
 
 Over the past couple of years, this workflow has evolved from generating small scripts in ChatGPT, to uploading files and copy-pasting diffs, to trying to pair with an AI Assistant for everything. Though parts of the workflow has been used for shipping production code most of the time I use this workflow for making and iterating on small projects.
 
+Current Tools:
+* Cursor
+* Claude Code
+* NeoVim / Code Companion
+* Sonnet 3.7 / Gemini Pro / GPT O3
+
 ## Lessons Learned
 Pairing with an AI Assistant is like (co-)piloting an aircraft cross-country. As the captain, you must set the destination, plot waypoints, communicate clearly, and monitor flight progress closely. You must be prepared to nudge the co-pilot or take control of the aircraft ("my aircraft"). Here are lessons learned from about a year of practice.
 * **Vibe sessions are great for shaping an idea:** Using Cursor to vibe code something is an effective form of brainstorming. I play with the *actuation of an idea* and shape it with precise feedback.
