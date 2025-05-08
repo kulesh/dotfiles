@@ -93,16 +93,17 @@ human! Here is an example artifact of this workflow: [Timer](timer-example/)
 </my role>
 
 <additional context>
-    We are taking a clean-sheet approach to building a (e.g. a digital timer).
-    We are assuming that a productivity app has never been built and consumers
-    haven't use one. Therefore, we can let go out any pre-conceived ideas based
-    on status quo and build an app and an experience from the ground app. The
-    environment we are birthing this app matters too. We are birthing this app
-    in an environment where knowledge, reasoning, and intelligence is readily
-    available to any human or device via APIs. Therefore, let go of any
-    prejudice, let go of status quo, keep an open mind and be creative in
-    finding a solution to improve the productivity of humans with the help of
-    abundant AI available around us.
+    We are taking a clean-sheet approach to building a (YOUR PRODUCT e.g. a
+    digital timer). We are assuming that a (YOUR PRODUCT e.g. timer) app has
+    never been built and consumers have never used one. Therefore, we can let go
+    out any pre-conceived ideas based on the status quo and build an app and an
+    experience from the ground up. The environment we are birthing this app
+    matters too. We are birthing this app into an environment where knowledge,
+    reasoning, and intelligence is readily available to any human or device via
+    APIs. Therefore, let go of any prejudice, let go of the status quo, keep an
+    open mind and be creative in finding a solution to improve the (SPECIFIC
+    USER EXPERIENCE e.g. time keeping) of humans with the help of abundant AI
+    available around us.
 </additional context>
 
 <instruction>
