@@ -267,7 +267,8 @@ Notes:
 ### 2. Product Spec
 
 **Goal:** Given an idea-brief, come up with a product spec that can be shared
-with an engineering team for review and implementation.
+with an engineering team for review and implementation. **This is the hardest of
+all the stages for all the models I have tested.**
 
 **Steps:**
 1. Idea brief to Spec: This step is usually a one-way conversation. I copy-paste
@@ -276,10 +277,10 @@ with an engineering team for review and implementation.
    reading through that quickly gives me a sense of gaps the product spec may
    have. If I cannot put a good mental model of the product with what’s in the
    shared lexicon then we need to iterate more.
-3. Feedback: I markup the product spec Markdown file with ``[KS]:`` in situ.
-   Easy to manage provenance in git. (I used to use ``[Feedback]`` until I
-   realized sometimes the models found “feedback” elsewhere and went after the
-   wrong thing.)
+3. Feedback: I markup the product spec Markdown file with ~~``[KS]:``~~ in situ
+   using the Assistant's name to call attention to the feedback. Easy to manage
+   provenance in git. (I used to use ``[Feedback]`` until I realized sometimes
+   the models found “feedback” elsewhere and went after the wrong thing.)
 4. The MVP: Models usually have an MVP as a milestone and I tend to focus and
    iterate on that first. This is because I find the models come up with decent
    MVPs but the rest of the milestones can be more abstract or not quite in the
@@ -457,6 +458,7 @@ and align on ADRs.
 * Rationale for key decisions
 * Dependencies and integration points
 * Infra or platform constraints
+* **Just focus on getting a solid MVP out of the model**
 
 **Prompt**
 
@@ -663,10 +665,10 @@ development work into weekly releasable product milestones.
 
        Breakdown each weekly release and identify individual building blocks
        (e.g. features or components) that make up the release. Each building
-       block should be testable in isolation. Write a series of prompts to build the identified blocks.
-       When writing these prompts you must ensure their AI Coding Assistants
-       will adhere to the technical blueprint and the ADRs outlined in the
-       system design document.
+       block should be testable in isolation. Write a series of prompts to build
+       the identified blocks. When writing these prompts you must ensure their
+       AI Coding Assistants will adhere to the technical blueprint and the ADRs
+       outlined in the system design document.
 
        Once you complete the prompts please review the prompts to ensure:
             1. Each prompt is complete and correctly instructs the AI Coding
@@ -716,3 +718,4 @@ part of Todo,
 
 ## In the Works
  1. Code this workflow up. Make it easy to revise plans, documents in the middle
+ 2. Work on better prompts for PRD (narrow the scope to just MVP)
