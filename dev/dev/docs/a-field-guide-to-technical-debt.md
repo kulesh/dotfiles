@@ -43,8 +43,7 @@ Programming is how an individual solves a problem based on how they understand i
 ### Organizational Debt
 
 - **What:** Software engineering is a team sport that involves the whole organization. The organization’s way of working and the value it places on product quality are major contributors to technical debt. Clear, consistent way of working and a strong focus on quality help slow the accrual of technical debt.
-
-  Treat the organization as a programmable entity, and build an internal product to codify its ways of working. Build a product to build products. This product deserves the same intent and craftsmanship as customer-facing products.
+  - Treat the organization as a programmable entity, and build an internal product to codify its ways of working. Build a product to build products. This product deserves the same intent and craftsmanship as customer-facing products.
 - **When:** During the organization’s growth phase.
 - **Avoid:** Don’t outsource this to a third party or purchase an off-the-shelf solution. BUild the product that builds products.
 - **Sponsor:** Founder(s) / CEO
