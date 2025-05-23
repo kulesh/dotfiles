@@ -193,6 +193,15 @@ generate_ssh_keys() {
   return 0
 }
 
+customize_macos() {
+	local screenshot_dir="~/Pictures/Screenshots"
+	if [[ ! -d "$screenshot_dir" ]]; then
+		echo "Creating Screenshot directory for projects..."
+		mkdir -p "$screenshot_dir"
+	fi
+	defaults write com.apple.screencapture location "$screenshot_dir"
+}
+
 # Unleash the dots!
 echo "Installing Homebrew..."
 install_homebrew
@@ -202,6 +211,7 @@ then
  		install_dotfiles
     echo "     [+] dotfile installation complete"
 		generate_ssh_keys
+		customize_macos
     echo "     [+] All Done."
 else
     echo "     [x] There was an error installing Homebrew!"
