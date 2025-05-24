@@ -40,6 +40,13 @@ Programming is how an individual solves a problem based on how they understand i
 - **When:** During annual planning.
 - **Sponsor:** Executive
 
+### Experimentation Debt
+
+- **What:** Very few products are built purely on high conviction and intuition. Most are the result of countless experiments, stacked on top of one another. Orphan experiments—where no winner is declared or ownership is lost—and poor post-experiment cleanup create extraneous control flows, leaky abstractions, and unreliable metrics. This is experimentation debt. A healthy experimentation practice establishes clear criteria for what merits experimentation, sets firm deadlines for declaring a winner or loser (despite "stat sig"), and enforces strong discipline around cleanup once the experiment concludes.
+
+- **When:** Review active experiments monthly; audit for orphan experiments at least quarterly
+- **Sponsor:** Domain Owner
+
 ### Organizational Debt
 
 - **What:** Software engineering is a team sport that involves the whole organization. The organization’s way of working and the value it places on product quality are major contributors to technical debt. Clear, consistent way of working and a strong focus on quality help slow the accrual of technical debt.
