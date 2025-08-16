@@ -1,4 +1,6 @@
 export PATH="/opt/homebrew/bin:$PATH"
+export EDITOR="vim"
+
 #umask for homrbrew multiuser
 umask 0002
 export CLICOLOR=YES

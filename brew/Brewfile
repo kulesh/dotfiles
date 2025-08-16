@@ -29,6 +29,7 @@ brew "ollama"
 brew "aider"
 brew "repomix"
 brew "pandoc"
+brew "gh"
 
 # Apple Store apps
 mas "Flighty", id: 1358823008
