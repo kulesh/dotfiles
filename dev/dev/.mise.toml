@@ -1,8 +1,6 @@
 [tools]
-hugo = "latest"
-node = "latest"
 "npm:@anthropic-ai/claude-code" = "latest"
-ruby = "latest"
+"npm:@openai/codex" = "latest"
 
 [env]
 _.file = ".keys.json"
