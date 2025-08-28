@@ -1,2 +1,5 @@
 *-internal
 *keys*
+
+ssh/.ssh/*
+!ssh/.ssh/config
