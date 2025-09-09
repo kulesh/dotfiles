@@ -1,6 +1,9 @@
+## PLEASE DO NOT PUT SENSITIVE VALUES IN THIS FILE ##
+redactions = ["SECRET_*", "*_TOKEN", "PASSWORD"]
+
 [tools]
 "npm:@anthropic-ai/claude-code" = "latest"
 "npm:@openai/codex" = "latest"
 
 [env]
-_.file = ".keys.json"
+_.file = { path = ".keys.json", redact = true }
