@@ -84,6 +84,8 @@ mkproject() {
     
     # Create basic .mise.toml in the project directory
     echo "" > "$project_path/.mise.toml"
+		mise trust "$project_path/.mise.toml"
+
     
     # Run the project setup task in the project directory
     if mise run --cd "$project_path" "mkproject:$project_type"; then
