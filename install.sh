@@ -98,6 +98,15 @@ install_dotfiles()
   return 0
 }
 
+# Make mise tasks executable (TODO: leaky abstraction...)
+fix_mise_permissions() {
+    local tasks_dir="$HOME_DIR/.config/mise/tasks"
+    if [[ -d "$tasks_dir" ]]; then
+        find "$tasks_dir" -type f -exec chmod +x {} \;
+        echo "✅ Made all mise tasks executable"
+    fi
+}
+
 # ssh keys for GitHub
 generate_ssh_keys() {
   echo "🔑 Setting up SSH keys for GitHub..."
@@ -209,6 +218,7 @@ install_homebrew
 if [ $? -eq 0 ]
 then
  		install_dotfiles
+		fix_mise_permissions
     echo "     [+] dotfile installation complete"
 		generate_ssh_keys
 		customize_macos

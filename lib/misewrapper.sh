@@ -40,52 +40,62 @@ function cdproject() {
   cd "$mise_dir"
 }
 
-# Create a new mise project
-function mkproject() {
-  if [[ $# -lt 1 ]]; then
-    echo "Project name is required: mkproject <project_name>"
-    return 1
-  fi
-
-  local projname="$1"
-
-  # Create the project directory if it doesn't exist
-  local projdir="${MISE_PROJECTS_DIR}/${projname}"
-  if [[ ! -d "$projdir" ]]; then
-    echo "Creating project directory $projdir"
-    mkdir -p "$projdir"
-  fi
-
-  # Change to the project directory
-  cd "$projdir"
-
-  # Create a .mise.toml file to mark this as a mise project
-  if [[ ! -e ".mise.toml" ]]; then
-    echo "Creating .mise.toml in $projdir"
-    touch .mise.toml
-    
-    # Trust the newly created config file
-    echo "Trusting the mise configuration file"
-    mise trust
-  fi
-
-  echo "Project $projname created and mise initialized"
+# Top-level function to list available project types
+list_project_types() {
+    echo "Available project types:"
+    if mise tasks ls 2>/dev/null | grep "mkproject:" | sed 's/mkproject:/  - /'; then
+        return 0
+    else
+        echo "  (none found)"
+        return 1
+    fi
 }
 
-# List all mise projects
-function lsprojects() {
-  if [[ ! -d "$MISE_PROJECTS_DIR" ]]; then
-    echo "No projects directory found at $MISE_PROJECTS_DIR"
-    return 1
-  fi
-
-  echo "Available projects:"
-  for projdir in "$MISE_PROJECTS_DIR"/*(N/); do
-    local projname=${projdir:t}
-    if [[ -e "$projdir/.mise.toml" || -e "$projdir/.tool-versions" ]]; then
-      echo "  $projname"
+# Create a new project
+mkproject() {
+    local project_name="$1"
+    local project_type="${2:-base}"
+    
+    if [[ -z "$project_name" ]]; then
+        echo "Usage: mkproject <project_name> [project_type]"
+        list_project_types
+        return 1
     fi
-  done
+    
+    local project_path="${MISE_PROJECTS_DIR}/${project_name}"
+    
+    # Check if project already exists
+    if [[ -d "$project_path" ]]; then
+        echo "❌ Error: Project '$project_name' already exists at $project_path"
+        echo "   Use 'workon $project_name' to switch to existing project"
+        echo "   Or choose a different project name"
+        return 1
+    fi
+    
+    # Check if the project type exists
+    if ! mise tasks ls 2>/dev/null | grep -q "^mkproject:$project_type"; then
+        echo "❌ Error: Project type '$project_type' not found"
+        list_project_types
+        return 1
+    fi
+    
+    echo "Creating $project_type project: $project_name"
+    mkdir -p "$project_path"
+    
+    # Create basic .mise.toml in the project directory
+    echo "" > "$project_path/.mise.toml"
+    
+    # Run the project setup task in the project directory
+    if mise run --cd "$project_path" "mkproject:$project_type"; then
+        echo "✅ Project '$project_name' created successfully"
+        echo "📁 Location: $project_path"
+        cd "$project_path"
+    else
+        echo "❌ Error: Failed to create $project_type project"
+        echo "   ⚠️  Incomplete project left at: $project_path"
+        echo "   You may want to manually remove it or investigate the issue"
+        return 1
+    fi
 }
 
 # Change to a specific project
