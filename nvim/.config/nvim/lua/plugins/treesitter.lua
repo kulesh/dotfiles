@@ -31,6 +31,9 @@ Plugin.opts = {
   ensure_installed = {
     'vim',
     'vimdoc',
+    'python',
+    'ruby',
+    'javascript',
   },
 }
 
