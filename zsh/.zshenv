@@ -1,4 +1,5 @@
 #default location of things
+export XDG_CONFIG_HOME=$HOME/.config
 export STARSHIP_CONFIG=~/.config/starship/starship.toml
 export DOTFILES=$HOME/.dotfiles
 export PROJECTS=$HOME/dev
