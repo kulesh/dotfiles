@@ -1,8 +1,7 @@
-# make arrow keys behave with Zellij
 macos-option-as-alt=true
 keybind = alt+left=unbind
 keybind = alt+right=unbind
-
-theme=dark:tokyonight storm,light:tokyonight day
+# theme=dark:tokyonight storm,light:tokyonight day
+theme=tokyonight storm
 shell-integration=zsh
 keybind = shift+enter=text:\n
