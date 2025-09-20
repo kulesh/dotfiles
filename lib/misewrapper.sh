@@ -40,16 +40,51 @@ function cdproject() {
   cd "$mise_dir"
 }
 
-# Top-level function to list available project types
+# Enhanced function to list available project types using mise's native descriptions
 list_project_types() {
     echo "Available project types:"
-    if mise tasks ls 2>/dev/null | grep "mkproject:" | sed 's/mkproject:/  - /'; then
-        return 0
-    else
+    echo ""
+    
+    # Use mise tasks to get tasks with descriptions
+    local tasks_output=$(mise tasks ls 2>/dev/null)
+    
+    if [[ -z "$tasks_output" ]]; then
         echo "  (none found)"
         return 1
     fi
+    
+    # Filter for mkproject tasks and format them
+    local mkproject_tasks=$(echo "$tasks_output" | grep "mkproject:")
+    
+    if [[ -z "$mkproject_tasks" ]]; then
+        echo "  (none found)"
+        return 1
+    fi
+    
+    # Parse the output and reformat
+    echo "$mkproject_tasks" | while IFS= read -r line; do
+        # Parse the mise tasks output format: "Name Description Source"
+        # Extract task name (remove mkproject: prefix) and description
+        local task_name=$(echo "$line" | awk '{print $1}' | sed 's/mkproject://')
+        local description=$(echo "$line" | awk '{$1=""; $NF=""; print $0}' | sed 's/^ *//; s/ *$//')
+        
+        # If no description, show generic text
+        if [[ -z "$description" || "$description" == "$line" ]]; then
+            description="Project template"
+        fi
+        
+        # Format with consistent alignment (assuming max 15 chars for template name)
+        printf "  %-15s %s\n" "$task_name" "$description"
+    done
+    
+    echo ""
+    echo "Usage: mkproject <project_name> [template_type]"
+    echo "       Default template: base"
+    echo ""
+    echo "To add descriptions to your templates, add this line to your task files:"
+    echo "  #MISE description=\"Your description here\""
 }
+
 
 # Create a new project
 mkproject() {
