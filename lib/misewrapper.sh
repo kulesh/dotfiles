@@ -100,6 +100,138 @@ mkproject() {
     fi
 }
 
+# Clone a GitHub project using mkproject base template
+cloneproject() {
+    local first_arg="$1"
+    local second_arg="$2"
+    
+    if [[ -z "$first_arg" ]]; then
+        echo "Usage: cloneproject <github_url_or_gh_user/repo>"
+        echo "Examples:"
+        echo "  cloneproject gh kulesh/example"
+        echo "  cloneproject https://github.com/kulesh/example.git"
+        echo "  cloneproject git@github.com:kulesh/example.git"
+        return 1
+    fi
+    
+    local github_url
+    local repo_name
+    
+    # Parse input and extract GitHub URL and repo name
+    if [[ "$first_arg" == "gh" && -n "$second_arg" ]]; then
+        # Handle "gh user/repo" format (two arguments)
+        if [[ "$second_arg" =~ ^([^/]+)/([^/]+)$ ]]; then
+            local user="${match[1]}"
+            local repo="${match[2]}"
+            github_url="git@github.com:${user}/${repo}.git"
+            repo_name="$repo"
+        else
+            echo "❌ Error: Invalid repo format. Expected 'user/repo'"
+            echo "Example: cloneproject gh kulesh/example"
+            return 1
+        fi
+    elif [[ "$first_arg" =~ ^https://github\.com/([^/]+)/([^/]+)(\.git)?/?$ ]]; then
+        # Handle full GitHub URL - convert to SSH
+        local user="${match[1]}"
+        local repo="${match[2]}"
+        github_url="git@github.com:${user}/${repo}.git"
+        repo_name="$repo"
+    elif [[ "$first_arg" =~ ^git@github\.com:([^/]+)/([^/]+)(\.git)?$ ]]; then
+        # Handle SSH GitHub URL directly
+        github_url="$first_arg"
+        local repo="${match[2]}"
+        # Remove .git suffix if present
+        repo_name="${repo%.git}"
+    else
+        echo "❌ Error: Invalid format. Use 'gh user/repo' or full GitHub URL"
+        echo "Examples:"
+        echo "  cloneproject gh kulesh/example"
+        echo "  cloneproject https://github.com/kulesh/example.git"
+        echo "  cloneproject git@github.com:kulesh/example.git"
+        return 1
+    fi
+    
+    local project_path="${MISE_PROJECTS_DIR}/${repo_name}"
+    
+    # Check if project already exists
+    if [[ -d "$project_path" ]]; then
+        echo "❌ Error: Project '$repo_name' already exists at $project_path"
+        echo "   Use 'workon $repo_name' to switch to existing project"
+        echo "   Or choose a different approach to update the existing project"
+        return 1
+    fi
+    
+    echo "Creating base project and cloning from GitHub..."
+    echo "📦 Repository: $github_url"
+    echo "📁 Local name: $repo_name"
+    
+    # Create base project using mkproject
+    if ! mkproject "$repo_name" base; then
+        echo "❌ Error: Failed to create base project"
+        return 1
+    fi
+    
+    # We should now be in the project directory from mkproject
+    local current_dir="$PWD"
+    if [[ "$current_dir" != "$project_path" ]]; then
+        echo "❌ Error: Unexpected directory after mkproject"
+        return 1
+    fi
+    
+    # Set up git remote
+    echo "🔗 Setting up GitHub remote..."
+    if ! git remote add origin "$github_url"; then
+        echo "❌ Error: Failed to add GitHub remote"
+        echo "   ⚠️  Project created but not linked to GitHub"
+        return 1
+    fi
+    
+    # Try to pull from main branch first, then master
+    echo "⬇️  Pulling repository content..."
+    local pulled=false
+    
+    # Try main branch with unrelated histories merge
+    if git pull origin main --allow-unrelated-histories --no-edit 2>/dev/null; then
+        pulled=true
+        echo "✅ Successfully pulled from 'main' branch"
+    # If that fails due to conflicts, force reset to remote
+    elif git fetch origin main 2>/dev/null && git reset --hard origin/main 2>/dev/null; then
+        pulled=true
+        echo "✅ Successfully pulled from 'main' branch (with reset)"
+    # Try master branch with unrelated histories merge
+    elif git pull origin master --allow-unrelated-histories --no-edit 2>/dev/null; then
+        pulled=true
+        echo "✅ Successfully pulled from 'master' branch"
+    # If that fails due to conflicts, force reset to remote
+    elif git fetch origin master 2>/dev/null && git reset --hard origin/master 2>/dev/null; then
+        pulled=true
+        echo "✅ Successfully pulled from 'master' branch (with reset)"
+    else
+        echo "❌ Error: Failed to pull from repository"
+        echo "   Possible causes:"
+        echo "   - Repository doesn't exist or is private"
+        echo "   - Network connection issues"
+        echo "   - Repository is empty"
+        echo "   - Authentication required"
+        echo ""
+        echo "   ⚠️  Base project created with GitHub remote configured"
+        echo "   You can manually pull with: git pull origin <branch_name>"
+        return 1
+    fi
+    
+    # Trust mise config if it was pulled from the repo
+    if [[ -e ".mise.toml" ]]; then
+        echo "🔧 Trusting mise configuration from repository..."
+        mise trust .mise.toml
+    fi
+    
+    echo "✅ Project '$repo_name' cloned successfully"
+    echo "📁 Location: $project_path"
+    echo "🔗 Remote: $github_url"
+    echo ""
+    echo "Use 'workon $repo_name' to return to this project anytime"
+}
+
 # Change to a specific project
 function workon() {
   if [[ $# -lt 1 ]]; then
