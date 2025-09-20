@@ -21,23 +21,26 @@ cd ~/.dotfiles
 ```
 This will install all the dependencies spelled out in the Brewfile and create symlinks to relevant dotfiles.
 
-There are some QoL functions available for creating projects:
+Enhanced project management via mise wrapper:
 ```sh
-~/ $ mkproject example
+# Create projects with templates
+~/ $ mkproject example python
 ~/dev/example/ $ ls -al
 .rw-rw-r-- 0 steve 29 June 09:41 .mise.toml
-~/dev/example/ $ mise use python
-~/dev/example/ $ which python
-/Users/steve/.local/share/mise/installs/python/3.13.2/bin/python
+
+# Clone GitHub projects
+~/ $ cloneproject gh kulesh/example
+~/dev/example/ $ git remote -v
+origin  git@github.com:kulesh/example.git (fetch)
+
+# Switch between projects (with tab completion)
+~/ $ workon example
+~/dev/example/ $ showproject
+Project: example
+Location: /Users/steve/dev/example
 ```
 
-To work on an already created project:
-```sh
-~/ $ workon example
-~/dev/exmaple/ $ ls -al
-.rw-rw-r-- 26 steve 29 June 09:41 .mise.toml
-```
-``workon`` has tab completion.
+Available templates: `base`, `python`, `fastapi`, `ruby`, `rails`. Use `lsprojects` to see all projects.
 
 ## Toolchain
 This is an ever evolving list of tools (see Brewfile for more):
