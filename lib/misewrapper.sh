@@ -256,7 +256,287 @@ function workon() {
   echo "Now working on $projname"
 }
 
-# Show the current mise project
+# List all projects with metadata
+lsprojects() {
+    local filter_type=""
+    local show_tools=false
+    
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --type=*)
+                filter_type="${1#*=}"
+                if [[ "$filter_type" != "cloned" && "$filter_type" != "created" ]]; then
+                    echo "❌ Error: Invalid type filter. Use 'cloned' or 'created'"
+                    return 1
+                fi
+                ;;
+            --tools)
+                show_tools=true
+                ;;
+            *)
+                echo "Usage: lsprojects [--type=cloned|created] [--tools]"
+                return 1
+                ;;
+        esac
+        shift
+    done
+    
+    if [[ ! -d "$MISE_PROJECTS_DIR" ]]; then
+        echo "Projects directory not found: $MISE_PROJECTS_DIR"
+        return 1
+    fi
+    
+    echo "Projects in $MISE_PROJECTS_DIR"
+    echo ""
+    
+    local project_count=0
+    local cloned_count=0
+    local created_count=0
+    
+    # Process each directory in projects folder
+    for projdir in "$MISE_PROJECTS_DIR"/*(N/); do
+        [[ ! -d "$projdir" ]] && continue
+        
+        local projname="${projdir:t}"
+        
+        # Check if it's a valid mise project
+        if [[ ! -e "$projdir/.mise.toml" && ! -e "$projdir/.tool-versions" ]]; then
+            continue
+        fi
+        
+        # Determine project type (cloned vs created)
+        local project_type=""
+        local remote_info=""
+        
+        if [[ -d "$projdir/.git" ]]; then
+            # Check for GitHub remote
+            local remotes=$(cd "$projdir" && git remote -v 2>/dev/null | grep "origin.*github.com" | head -1)
+            if [[ -n "$remotes" ]]; then
+                project_type="cloned"
+                # Extract repo info from remote
+                if [[ "$remotes" =~ github\.com[:/]([^/]+)/([^/.]+) ]]; then
+                    remote_info="${match[1]}/${match[2]}"
+                fi
+                ((cloned_count++))
+            else
+                project_type="created"
+                ((created_count++))
+            fi
+        else
+            project_type="created"
+            ((created_count++))
+        fi
+        
+        # Apply filter if specified
+        if [[ -n "$filter_type" && "$filter_type" != "$project_type" ]]; then
+            continue
+        fi
+        
+        ((project_count++))
+        
+        # Get last modified time
+        local last_modified=""
+        if command -v stat >/dev/null; then
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                # macOS
+                last_modified=$(stat -f "%Sm" -t "%b %d" "$projdir" 2>/dev/null)
+            else
+                # Linux
+                last_modified=$(stat -c "%y" "$projdir" 2>/dev/null | cut -d' ' -f1)
+            fi
+        fi
+        
+        # Display project info in ls -l style
+        if [[ "$project_type" == "cloned" ]]; then
+            printf "%-20s %s" "$projname" "$remote_info"
+        else
+            printf "%-20s %s" "$projname" "local"
+        fi
+        
+        if [[ -n "$last_modified" ]]; then
+            printf " %s" "$last_modified"
+        fi
+        
+        echo ""
+        
+        # Show mise tools if requested
+        if [[ "$show_tools" == true ]]; then
+            local tools_output=$(cd "$projdir" && mise ls --current 2>/dev/null | grep -v "No tools" | head -3)
+            if [[ -n "$tools_output" ]]; then
+                echo "$tools_output" | sed 's/^/    /'
+            fi
+            echo ""
+        fi
+    done
+    
+    # Summary
+    echo ""
+    if [[ "$project_count" -eq 0 ]]; then
+        if [[ -n "$filter_type" ]]; then
+            echo "No $filter_type projects found"
+        else
+            echo "No mise projects found"
+        fi
+    else
+        echo "📊 Summary:"
+        if [[ -z "$filter_type" ]]; then
+            echo "   Total: $project_count projects"
+            echo "   Cloned: $cloned_count"
+            echo "   Created: $created_count"
+        else
+            echo "   $project_type projects: $project_count"
+        fi
+    fi
+}
+
+# Update a cloned project by pulling latest changes
+updateproject() {
+    local project_name="$1"
+    local project_dir=""
+    local current_dir="$PWD"
+    
+    # Determine which project to update
+    if [[ -n "$project_name" ]]; then
+        # Project name specified
+        project_dir="${MISE_PROJECTS_DIR}/${project_name}"
+        
+        if [[ ! -d "$project_dir" ]]; then
+            echo "❌ Error: Project '$project_name' not found in $MISE_PROJECTS_DIR"
+            return 1
+        fi
+        
+        if [[ ! -e "$project_dir/.mise.toml" && ! -e "$project_dir/.tool-versions" ]]; then
+            echo "❌ Error: '$project_name' is not a mise project"
+            return 1
+        fi
+        
+        cd "$project_dir"
+    else
+        # No project specified, use current directory
+        local mise_dir=$(get_mise_root)
+        
+        if [[ -z "$mise_dir" ]]; then
+            echo "❌ Error: Not in a mise project and no project name specified"
+            echo "Usage: updateproject [project_name]"
+            return 1
+        fi
+        
+        project_dir="$mise_dir"
+        project_name="${mise_dir:t}"
+        cd "$project_dir"
+    fi
+    
+    # Check if it's a git repository
+    if [[ ! -d ".git" ]]; then
+        echo "❌ Error: '$project_name' is not a git repository"
+        echo "   This command only works with cloned projects"
+        cd "$current_dir"
+        return 1
+    fi
+    
+    # Check if it has a remote
+    local remote_url=$(git remote get-url origin 2>/dev/null)
+    if [[ -z "$remote_url" ]]; then
+        echo "❌ Error: '$project_name' has no remote origin"
+        echo "   This appears to be a local git repository"
+        cd "$current_dir"
+        return 1
+    fi
+    
+    echo "Updating project: $project_name"
+    echo "Remote: $remote_url"
+    echo ""
+    
+    # Get current branch
+    local current_branch=$(git branch --show-current 2>/dev/null)
+    if [[ -z "$current_branch" ]]; then
+        echo "❌ Error: Unable to determine current branch"
+        cd "$current_dir"
+        return 1
+    fi
+    
+    # Check for uncommitted changes
+    if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+        echo "⚠️  Warning: You have uncommitted changes"
+        echo ""
+        git status --porcelain
+        echo ""
+        echo "Commit or stash your changes before updating"
+        cd "$current_dir"
+        return 1
+    fi
+    
+    # Fetch latest changes
+    echo "🔍 Checking for updates..."
+    if ! git fetch origin "$current_branch" 2>/dev/null; then
+        echo "❌ Error: Failed to fetch from remote"
+        echo "   Check your network connection and remote access"
+        cd "$current_dir"
+        return 1
+    fi
+    
+    # Check if there are updates available
+    local local_commit=$(git rev-parse HEAD)
+    local remote_commit=$(git rev-parse "origin/$current_branch" 2>/dev/null)
+    
+    if [[ "$local_commit" == "$remote_commit" ]]; then
+        echo "✅ Already up to date"
+        cd "$current_dir"
+        return 0
+    fi
+    
+    # Show what will be updated
+    echo "📋 Changes to be pulled:"
+    echo ""
+    git log --oneline --graph "$current_branch..origin/$current_branch" | head -10
+    echo ""
+    
+    local commit_count=$(git rev-list --count "$current_branch..origin/$current_branch")
+    echo "📊 $commit_count new commit(s) available"
+    echo ""
+    
+    # Ask for confirmation (in interactive mode)
+    if [[ -t 0 ]]; then
+        echo -n "Pull these changes? [Y/n] "
+        read -r response
+        case "$response" in
+            [nN]|[nN][oO])
+                echo "Update cancelled"
+                cd "$current_dir"
+                return 0
+                ;;
+        esac
+    fi
+    
+    # Pull the changes
+    echo "⬇️  Pulling changes..."
+    if git pull origin "$current_branch"; then
+        echo ""
+        echo "✅ Successfully updated '$project_name'"
+        
+        # Show summary of what was pulled
+        echo "📋 Summary:"
+        git log --oneline -n 3 "$local_commit.." | sed 's/^/   /'
+        
+        # Trust mise config if it changed
+        if git diff --name-only "$local_commit.." | grep -q "\.mise\.toml"; then
+            echo ""
+            echo "🔧 Mise configuration changed, trusting new config..."
+            mise trust .mise.toml
+        fi
+        
+    else
+        echo "❌ Error: Failed to pull changes"
+        echo "   You may need to resolve conflicts manually"
+        cd "$current_dir"
+        return 1
+    fi
+    
+    cd "$current_dir"
+}
+
+# Show detailed information about the current mise project
 function showproject() {
   local mise_dir=$(get_mise_root)
   
@@ -265,12 +545,160 @@ function showproject() {
     return 1
   fi
 
-  echo "Current mise project: ${mise_dir:t}"
-  echo "Project root: $mise_dir"
+  local project_name="${mise_dir:t}"
   
-  # Show active tools
-  echo "Active tools:"
-  mise ls | grep -v "No actively used tools found"
+  # Get last modified time
+  local last_modified=""
+  if command -v stat >/dev/null; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      # macOS
+      last_modified=$(stat -f "%Sm" -t "%b %d %Y" "$mise_dir" 2>/dev/null)
+    else
+      # Linux
+      last_modified=$(stat -c "%y" "$mise_dir" 2>/dev/null | cut -d' ' -f1)
+    fi
+  fi
+  
+  echo "Project: $project_name"
+  echo "Location: $mise_dir"
+  if [[ -n "$last_modified" ]]; then
+    echo "Modified: $last_modified"
+  fi
+  echo ""
+  
+  # Show mise tools
+  echo "Mise tools:"
+  local tools_output=$(mise ls --current 2>/dev/null)
+  if [[ -n "$tools_output" && "$tools_output" != *"No tools"* ]]; then
+    echo "$tools_output" | sed 's/^/  /'
+  else
+    echo "  (none configured)"
+  fi
+  echo ""
+  
+  # Git information (if it's a git repo)
+  if [[ -d ".git" ]]; then
+    echo "Git repository:"
+    
+    # Current branch and commit
+    local current_branch=$(git branch --show-current 2>/dev/null)
+    local current_commit=$(git rev-parse --short HEAD 2>/dev/null)
+    
+    if [[ -n "$current_branch" ]]; then
+      echo "  Branch: $current_branch"
+    fi
+    
+    if [[ -n "$current_commit" ]]; then
+      echo "  Commit: $current_commit"
+    fi
+    
+    # Remote information
+    local remote_url=$(git remote get-url origin 2>/dev/null)
+    if [[ -n "$remote_url" ]]; then
+      echo "  Remote: $remote_url"
+      
+      # Check if we're ahead/behind remote
+      if git show-ref --verify --quiet "refs/remotes/origin/$current_branch"; then
+        local ahead=$(git rev-list --count "origin/$current_branch..HEAD" 2>/dev/null)
+        local behind=$(git rev-list --count "HEAD..origin/$current_branch" 2>/dev/null)
+        
+        if [[ "$ahead" -gt 0 ]] || [[ "$behind" -gt 0 ]]; then
+          local status_msg=""
+          if [[ "$ahead" -gt 0 ]]; then
+            status_msg="$ahead ahead"
+          fi
+          if [[ "$behind" -gt 0 ]]; then
+            if [[ -n "$status_msg" ]]; then
+              status_msg="$status_msg, $behind behind"
+            else
+              status_msg="$behind behind"
+            fi
+          fi
+          echo "  Status: $status_msg"
+        else
+          echo "  Status: up to date"
+        fi
+      fi
+    else
+      echo "  Remote: (none configured)"
+    fi
+    
+    # Working directory status
+    local git_status=$(git status --porcelain 2>/dev/null)
+    if [[ -n "$git_status" ]]; then
+      echo "  Working directory:"
+      
+      # Count different types of changes
+      local modified=$(echo "$git_status" | grep "^ M" | wc -l | tr -d ' ')
+      local added=$(echo "$git_status" | grep "^A" | wc -l | tr -d ' ')
+      local deleted=$(echo "$git_status" | grep "^ D" | wc -l | tr -d ' ')
+      local untracked=$(echo "$git_status" | grep "^??" | wc -l | tr -d ' ')
+      local staged=$(echo "$git_status" | grep "^[MADR]" | wc -l | tr -d ' ')
+      
+      local changes=()
+      if [[ "$staged" -gt 0 ]]; then
+        changes+=("$staged staged")
+      fi
+      if [[ "$modified" -gt 0 ]]; then
+        changes+=("$modified modified")
+      fi
+      if [[ "$added" -gt 0 && "$staged" -eq 0 ]]; then
+        changes+=("$added added")
+      fi
+      if [[ "$deleted" -gt 0 ]]; then
+        changes+=("$deleted deleted")
+      fi
+      if [[ "$untracked" -gt 0 ]]; then
+        changes+=("$untracked untracked")
+      fi
+      
+      if [[ ${#changes[@]} -gt 0 ]]; then
+        local change_summary=$(IFS=', '; echo "${changes[*]}")
+        echo "    $change_summary"
+      fi
+      
+      # Show first few changed files
+      echo "$git_status" | head -5 | while read line; do
+        local status_code="${line:0:2}"
+        local filename="${line:3}"
+        local status_desc=""
+        
+        case "$status_code" in
+          " M") status_desc="modified" ;;
+          "A ") status_desc="added" ;;
+          " D") status_desc="deleted" ;;
+          "??") status_desc="untracked" ;;
+          "M ") status_desc="staged" ;;
+          *) status_desc="changed" ;;
+        esac
+        
+        echo "    $status_desc: $filename"
+      done
+      
+      # Show if there are more files
+      local total_files=$(echo "$git_status" | wc -l | tr -d ' ')
+      if [[ "$total_files" -gt 5 ]]; then
+        echo "    ... and $((total_files - 5)) more"
+      fi
+    else
+      echo "  Working directory: clean"
+    fi
+    
+  else
+    echo "Git: not a repository"
+  fi
+  
+  echo ""
+  
+  # Recent activity (last few git commits if available)
+  if [[ -d ".git" ]]; then
+    echo "Recent commits:"
+    if git log --oneline -n 3 2>/dev/null | head -3; then
+      git log --oneline -n 3 2>/dev/null | sed 's/^/  /'
+    else
+      echo "  (no commits yet)"
+    fi
+  fi
 }
 
 # Setup zsh completion
@@ -296,6 +724,247 @@ if [[ -n "$ZSH_VERSION" ]]; then
     compdef _mise_project_completion workon
   fi
 fi
+
+# Setup zsh completion for updateproject (only cloned projects)
+function _updateproject_completion() {
+  local -a cloned_projects
+  
+  if [[ -d "$MISE_PROJECTS_DIR" ]]; then
+    for projdir in "$MISE_PROJECTS_DIR"/*(N/); do
+      local projname=${projdir:t}
+      
+      # Check if it's a valid mise project
+      if [[ -e "$projdir/.mise.toml" || -e "$projdir/.tool-versions" ]]; then
+        # Check if it's a git repo with remote
+        if [[ -d "$projdir/.git" ]]; then
+          local remote_url=$(cd "$projdir" && git remote get-url origin 2>/dev/null)
+          if [[ -n "$remote_url" ]]; then
+            cloned_projects+=("$projname")
+          fi
+        fi
+      fi
+    done
+  fi
+  
+  _describe 'cloned projects' cloned_projects
+}
+
+# Register completion for updateproject
+if [[ -n "$ZSH_VERSION" ]]; then
+  # Only if zsh completion is initialized
+  if whence compdef &>/dev/null; then
+    compdef _updateproject_completion updateproject
+  fi
+fi
+
+# Remove a project with optional archiving
+rmproject() {
+    local project_name="$1"
+    local archive_mode=true  # Default to archive mode
+    
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --delete|--force)
+                archive_mode=false
+                shift
+                ;;
+            --archive)
+                archive_mode=true
+                shift
+                ;;
+            -*)
+                echo "❌ Error: Unknown option '$1'"
+                echo "Usage: rmproject <project_name> [--delete]"
+                echo "  Default: Archive project to .archive/ directory"
+                echo "  --delete  Permanently delete instead of archiving"
+                return 1
+                ;;
+            *)
+                if [[ -z "$project_name" ]]; then
+                    project_name="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
+    
+    if [[ -z "$project_name" ]]; then
+        echo "Usage: rmproject <project_name> [--delete]"
+        echo "  Default: Archive project to .archive/ directory"
+        echo "  --delete  Permanently delete instead of archiving"
+        return 1
+    fi
+    
+    local project_path="${MISE_PROJECTS_DIR}/${project_name}"
+    
+    # Check if project exists
+    if [[ ! -d "$project_path" ]]; then
+        echo "❌ Error: Project '$project_name' not found in $MISE_PROJECTS_DIR"
+        return 1
+    fi
+    
+    # Check if it's a valid mise project
+    if [[ ! -e "$project_path/.mise.toml" && ! -e "$project_path/.tool-versions" ]]; then
+        echo "❌ Error: '$project_name' is not a mise project"
+        return 1
+    fi
+    
+    # Show project info
+    echo "Project to remove: $project_name"
+    echo "Location: $project_path"
+    
+    # Check if it's a git repo with uncommitted changes
+    local has_uncommitted=false
+    if [[ -d "$project_path/.git" ]]; then
+        cd "$project_path"
+        local git_status=$(git status --porcelain 2>/dev/null)
+        if [[ -n "$git_status" ]]; then
+            has_uncommitted=true
+            echo "⚠️  Warning: Project has uncommitted changes:"
+            echo "$git_status" | head -5 | sed 's/^/   /'
+            local total_files=$(echo "$git_status" | wc -l | tr -d ' ')
+            if [[ "$total_files" -gt 5 ]]; then
+                echo "   ... and $((total_files - 5)) more"
+            fi
+        fi
+        
+        # Check if it's a cloned repo
+        local remote_url=$(git remote get-url origin 2>/dev/null)
+        if [[ -n "$remote_url" ]]; then
+            echo "Git remote: $remote_url"
+            
+            # Check if ahead of remote
+            local current_branch=$(git branch --show-current 2>/dev/null)
+            if [[ -n "$current_branch" ]] && git show-ref --verify --quiet "refs/remotes/origin/$current_branch"; then
+                local ahead=$(git rev-list --count "origin/$current_branch..HEAD" 2>/dev/null)
+                if [[ "$ahead" -gt 0 ]]; then
+                    echo "⚠️  Warning: $ahead unpushed commit(s)"
+                fi
+            fi
+        fi
+        cd - >/dev/null
+    fi
+    
+    echo ""
+    
+    if [[ "$archive_mode" == true ]]; then
+        # Archive mode (default)
+        local archive_dir="${MISE_PROJECTS_DIR}/.archive"
+        local archive_path="${archive_dir}/${project_name}"
+        local timestamp=$(date +"%Y%m%d_%H%M%S")
+        
+        # Create archive directory if it doesn't exist
+        mkdir -p "$archive_dir"
+        
+        # If archive already exists, add timestamp
+        if [[ -d "$archive_path" ]]; then
+            archive_path="${archive_dir}/${project_name}_${timestamp}"
+        fi
+        
+        echo "This will archive the project to: $archive_path"
+        
+        if [[ "$has_uncommitted" == true ]]; then
+            echo "✅ Uncommitted changes will be preserved in archive"
+        fi
+        
+    else
+        # Delete mode (explicit --delete flag)
+        echo "This will permanently delete the project directory"
+        echo "⚠️  This action cannot be undone!"
+        
+        if [[ "$has_uncommitted" == true ]]; then
+            echo "⚠️  All uncommitted changes will be lost!"
+        fi
+    fi
+    
+    echo ""
+    
+    # Ask for confirmation (in interactive mode)
+    if [[ -t 0 ]]; then
+        if [[ "$archive_mode" == true ]]; then
+            echo -n "Archive this project? [Y/n] "
+        else
+            echo -n "Permanently delete this project? [y/N] "
+        fi
+        
+        read -r response
+        if [[ "$archive_mode" == true ]]; then
+            # Archive is default, so accept Y/y/enter as yes, everything else as no
+            case "$response" in
+                [nN]|[nN][oO])
+                    echo "Operation cancelled"
+                    return 0
+                    ;;
+            esac
+        else
+            # Delete requires explicit confirmation
+            case "$response" in
+                [yY]|[yY][eE][sS])
+                    # Proceed with deletion
+                    ;;
+                *)
+                    echo "Operation cancelled"
+                    return 0
+                    ;;
+            esac
+        fi
+    fi
+    
+    # Perform the operation
+    if [[ "$archive_mode" == true ]]; then
+        echo "📦 Archiving project..."
+        if mv "$project_path" "$archive_path"; then
+            echo "✅ Project '$project_name' archived to:"
+            echo "   $archive_path"
+            echo ""
+            echo "To restore: mv '$archive_path' '$project_path'"
+        else
+            echo "❌ Error: Failed to archive project"
+            return 1
+        fi
+    else
+        echo "🗑️  Deleting project..."
+        if rm -rf "$project_path"; then
+            echo "✅ Project '$project_name' deleted"
+        else
+            echo "❌ Error: Failed to delete project"
+            return 1
+        fi
+    fi
+    
+    # If we're currently in the deleted/archived project, cd to home
+    local current_dir="$PWD"
+    if [[ "$current_dir" == "$project_path"* ]]; then
+        echo "Moving out of deleted project directory..."
+        cd "$MISE_PROJECTS_DIR"
+    fi
+}
+
+# Setup zsh completion for rmproject (back to simple working pattern)
+function _rmproject_completion() {
+  local -a projects
+  
+  if [[ -d "$MISE_PROJECTS_DIR" ]]; then
+    for projdir in "$MISE_PROJECTS_DIR"/*(N/); do
+      local projname=${projdir:t}
+      if [[ -e "$projdir/.mise.toml" || -e "$projdir/.tool-versions" ]]; then
+        projects+=("$projname")
+      fi
+    done
+  fi
+  
+  _describe 'mise projects' projects
+}
+
+# Register completion for rmproject
+if [[ -n "$ZSH_VERSION" ]]; then
+  # Only if zsh completion is initialized
+  if whence compdef &>/dev/null; then
+    compdef _rmproject_completion rmproject
+  fi
+fi
+
 
 # Create projects directory if it doesn't exist
 [[ -d "$MISE_PROJECTS_DIR" ]] || mkdir -p "$MISE_PROJECTS_DIR"
