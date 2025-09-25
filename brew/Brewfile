@@ -55,6 +55,8 @@ cask "zed"
 cask "mactex" # ya ya, I still use LaTex for documents!
 cask "obsidian"
 cask "rectangle"
+cask "nikitabobko/tap/aerospace"
+
 # Nerd Fonts for coding and terminal
 cask "font-fira-code-nerd-font"    # Great for coding
 cask "font-jetbrains-mono-nerd-font" # Alternative coding font
