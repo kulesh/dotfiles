@@ -56,6 +56,39 @@ install_homebrew()
     fi
 }
 
+# Inject DOTFILES_DIR into .zshenv for runtime use
+inject_dotfiles_dir() {
+    local zshenv_file="$INSTALL_SCRIPT_AT/zsh/.zshenv"
+    local dotfiles_dir_line="export DOTFILES_DIR=\"$INSTALL_SCRIPT_AT\""
+
+    if [[ -f "$zshenv_file" ]]; then
+        # Check if DOTFILES_DIR is already set
+        if grep -q "^export DOTFILES_DIR=" "$zshenv_file"; then
+            # Update existing line
+            sed -i '' "s|^export DOTFILES_DIR=.*|$dotfiles_dir_line|" "$zshenv_file"
+            echo "✅ Updated DOTFILES_DIR in .zshenv"
+        elif grep -q "# DOTFILES_DIR_PLACEHOLDER" "$zshenv_file"; then
+            # Replace placeholder
+            sed -i '' "s|# DOTFILES_DIR_PLACEHOLDER|$dotfiles_dir_line|" "$zshenv_file"
+            echo "✅ Injected DOTFILES_DIR into .zshenv"
+        else
+            # Add at the top after shebang if present
+            if head -n1 "$zshenv_file" | grep -q "^#!"; then
+                sed -i '' "2i\\
+$dotfiles_dir_line
+" "$zshenv_file"
+            else
+                sed -i '' "1i\\
+$dotfiles_dir_line
+" "$zshenv_file"
+            fi
+            echo "✅ Added DOTFILES_DIR to .zshenv"
+        fi
+    else
+        echo "⚠️ .zshenv not found at $zshenv_file"
+    fi
+}
+
 # install the dot files in $HOME_DIR
 install_dotfiles()
 {
@@ -74,6 +107,9 @@ install_dotfiles()
     brew install stow
   fi
   
+  # Inject DOTFILES_DIR before stowing
+  inject_dotfiles_dir
+
   # Change to the dotfiles directory (required for stow to work correctly)
   cd "$INSTALL_SCRIPT_AT"
   
