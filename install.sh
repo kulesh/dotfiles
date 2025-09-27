@@ -47,11 +47,12 @@ install_homebrew()
     echo "Installing packages from Brewfile..."
     if brew bundle --file="$BREWFILE_PATH"; then
         echo "✅ Homebrew packages installed successfully!"
-        brew bundle --file="$BREWFILE_PATH" cleanup
+        brew bundle --file="$BREWFILE_PATH" cleanup --force
         brew doctor
+				return 0
     else
         echo "⚠️Some Homebrew installations may have failed. Please check the output above."
-        # We don't exit with error here to allow the script to continue with other setups
+				return 1
     fi
 }
 
@@ -214,8 +215,9 @@ customize_macos() {
 # Unleash the dots!
 echo "Installing Homebrew..."
 install_homebrew
-
-if [ $? -eq 0 ]
+exit_code=$?
+echo "Homebrew installation exit code: $exit_code"
+if [ $exit_code -eq 0 ]
 then
  		install_dotfiles
 		fix_mise_permissions
