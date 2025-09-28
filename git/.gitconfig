@@ -28,6 +28,7 @@
         helper = osxkeychain
 [init]
 	templatedir = ~/.git_template
+	defaultBranch = main
 
 [filter "lfs"]
 	clean = git-lfs clean -- %f
