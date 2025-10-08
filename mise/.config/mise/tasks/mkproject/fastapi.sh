@@ -5,6 +5,13 @@
 
 echo "Setting up FastAPI project..."
 
+# Copy FastAPI-specific static files (will override base files if same name)
+TEMPLATE_DIR="${0:a:h}/fastapi"
+if [[ -d "$TEMPLATE_DIR" ]]; then
+    echo "Copying FastAPI template files..."
+    cp -r "$TEMPLATE_DIR"/. "$PWD/"
+fi
+
 PROJECT_NAME=$(basename "$PWD")
 # Convert to valid Python module name (replace hyphens with underscores)
 MODULE_NAME="${PROJECT_NAME//-/_}"
@@ -271,14 +278,8 @@ def test_create_item():
     assert "id" in data
 EOF
 
-# Create environment file template
-cat > ".env.example" << EOF
-# FastAPI Configuration
-PROJECT_NAME=$PROJECT_NAME
-DEBUG=true
-HOST=127.0.0.1
-PORT=8000
-EOF
+# Update .env.example with actual project name
+sed -i.bak "s/your-project-name/$PROJECT_NAME/" .env.example && rm .env.example.bak
 
 # Install dependencies and setup
 mise exec -- uv add fastapi "uvicorn[standard]" pydantic pydantic-settings

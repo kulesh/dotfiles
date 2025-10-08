@@ -5,6 +5,13 @@
 
 echo "Setting up Rails project..."
 
+# Copy Rails-specific static files (will override base files if same name)
+TEMPLATE_DIR="${0:a:h}/rails"
+if [[ -d "$TEMPLATE_DIR" ]]; then
+    echo "Copying Rails template files..."
+    cp -r "$TEMPLATE_DIR"/. "$PWD/"
+fi
+
 # Use mise exec to ensure correct Ruby environment
 mise exec -- gem install rails --no-document
 mise exec -- rails new . --skip-git

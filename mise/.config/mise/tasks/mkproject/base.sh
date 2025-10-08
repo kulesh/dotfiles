@@ -4,6 +4,13 @@
 
 echo "Initializing project in: $PWD"
 
+# Copy static files from template directory
+TEMPLATE_DIR="${0:a:h}/base"
+if [[ -d "$TEMPLATE_DIR" ]]; then
+    echo "Copying base template files..."
+    cp -r "$TEMPLATE_DIR"/. "$PWD/"
+fi
+
 git init
 touch README.md .gitignore
 
