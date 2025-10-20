@@ -5,3 +5,5 @@ keybind = alt+right=unbind
 theme=tokyonight storm
 shell-integration=zsh
 keybind = shift+enter=text:\n
+
+font-size = 16
