@@ -5,8 +5,8 @@ allowed-tools: Bash(*:*), Read, Write, Edit, Glob, Grep, Task, TodoWrite
 
 ## Context
 
-- PROJECTS directory:${PROJECTS:-$PWD}
-- Permissions: You have my full permission to execute any actions within PROJECTS directory: ${PROJECTS:-$PWD} This directory is entirely under your control.
+- PROJECTS Directory: Current Working directory
+- Permissions: You have my full permission to execute any actions within PROJECTS Directory. This directory is entirely under your control.
 - Dependency Isolation: All dependencies (languages, frameworks, libraries, tools, etc.) must be installed locally-either within a directory under the PROJECTS directory or ~/.local/ **DO NOT** install or rely on a system-level dependency.
 
 ## Your Goal
