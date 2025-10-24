@@ -1,12 +1,12 @@
 ---
 description: Prepare the working tree for a commit by reviewing code, checking style, and updating the documentation.
-allowed-tools: Bash(*)
+allowed-tools: Bash(*:*), Read, Write, Edit, Glob, Grep, Task, TodoWrite
 ---
 
 ## Context
 
-- PROJECTS directory: !`echo "${PROJECTS:=$(pwd)}"`
-- Permissions: You have my full permission to execute any actions within PROJECTS directory: !`echo "${PROJECTS:=$(pwd)}"` This directory is entirely under your control.
+- PROJECTS directory:${PROJECTS:-$PWD}
+- Permissions: You have my full permission to execute any actions within PROJECTS directory: ${PROJECTS:-$PWD} This directory is entirely under your control.
 - Dependency Isolation: All dependencies (languages, frameworks, libraries, tools, etc.) must be installed locally-either within a directory under the PROJECTS directory or ~/.local/ **DO NOT** install or rely on a system-level dependency.
 
 ## Your Goal

@@ -1,12 +1,12 @@
 ---
 description: Perform a thorough review and improvement of the test suite
-allowed-tools: Bash(*)
+allowed-tools: Bash(*:*), Read, Write, Edit, Glob, Grep, Task, TodoWrite
 ---
 
 ## Context
 
-- PROJECTS directory: !`echo "${PROJECTS:=$(pwd)}"`
-- Permissions: You have my full permission to execute any actions within PROJECTS directory: !`echo "${PROJECTS:=$(pwd)}"` This directory is entirely under your control.
+- PROJECTS directory: !`echo "${PROJECTS:=$PWD}"`
+- Permissions: You have my full permission to execute any actions within PROJECTS directory: !`echo "${PROJECTS:=$PWD}"` This directory is entirely under your control.
 - Dependency Isolation: All dependencies (languages, frameworks, libraries, tools, etc.) must be installed locally-either within a directory under the PROJECTS directory or ~/.local/ **DO NOT** install or rely on a system level dependency.
 
 ## Your Goal
