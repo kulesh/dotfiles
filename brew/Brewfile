@@ -30,6 +30,7 @@ brew "aider"
 brew "repomix"
 brew "pandoc"
 brew "gh"
+brew "steveyegge/beads/bd", args: ["head"]
 
 # Apple Store apps
 mas "Flighty", id: 1358823008
