@@ -2,9 +2,14 @@
 
 This file provides guidance to Claude Code when working with code in this Rails project.
 
+## First Things First
+
+BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
+
 ## Project Overview
 
 This is a Ruby on Rails application managed with:
+
 - **mise-en-place** for Ruby version and development tools
 - **Bundler** for Ruby gem dependencies
 - **Rails** web application framework
@@ -12,6 +17,7 @@ This is a Ruby on Rails application managed with:
 ## Key Commands
 
 ### Development Server
+
 ```bash
 # Start the Rails server
 rails server
@@ -28,6 +34,7 @@ rails c
 ```
 
 ### Database
+
 ```bash
 # Create database
 rails db:create
@@ -46,6 +53,7 @@ rails db:reset
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 rails test
@@ -58,6 +66,7 @@ rails test
 ```
 
 ### Code Generation
+
 ```bash
 # Generate model
 rails generate model User name:string email:string
@@ -73,6 +82,7 @@ rails generate
 ```
 
 ### Dependencies
+
 ```bash
 # Install gems
 bundle install
@@ -110,29 +120,34 @@ test/              # Test files (or spec/ for RSpec)
 ## Development Guidelines
 
 ### Rails Conventions
+
 - Follow Rails naming conventions (Model: singular, Controller: plural)
 - Use RESTful routes when possible
 - Keep controllers thin, models fat
 - Use concerns for shared behavior
 
 ### Database
+
 - Always create migrations for schema changes
 - Never edit old migrations that have been committed
 - Write reversible migrations when possible
 - Use `change` method instead of `up`/`down` when possible
 
 ### Testing
+
 - Write tests for models, controllers, and critical business logic
 - Use fixtures or factories for test data
 - Test both happy paths and edge cases
 
 ### Code Quality
+
 - Follow Ruby style guide and Rails best practices
 - Use descriptive variable and method names
 - Keep methods short and focused
 - Add comments for complex business logic
 
 ### Dependencies
+
 - Keep Gemfile organized by purpose
 - Specify gem versions to ensure consistency
 - Run `bundle update` carefully and test thoroughly
@@ -140,12 +155,14 @@ test/              # Test files (or spec/ for RSpec)
 ## Common Patterns
 
 ### Creating a new resource
+
 ```bash
 rails generate scaffold Article title:string body:text published:boolean
 rails db:migrate
 ```
 
 ### Adding associations
+
 ```ruby
 # app/models/user.rb
 class User < ApplicationRecord
@@ -159,6 +176,7 @@ end
 ```
 
 ### Routes
+
 ```ruby
 # config/routes.rb
 Rails.application.routes.draw do

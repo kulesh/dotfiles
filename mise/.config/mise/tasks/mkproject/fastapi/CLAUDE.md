@@ -2,9 +2,14 @@
 
 This file provides guidance to Claude Code when working with code in this FastAPI project.
 
+## First Things First
+
+BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
+
 ## Project Overview
 
 This is a FastAPI application managed with:
+
 - **mise-en-place** for Python version and development tools
 - **uv** for fast Python package management
 - **FastAPI** modern async web framework
@@ -14,6 +19,7 @@ This is a FastAPI application managed with:
 ## Key Commands
 
 ### Development Server
+
 ```bash
 # Start development server with auto-reload
 uv run uvicorn <module_name>.main:app --reload
@@ -26,6 +32,7 @@ uv run <project_name>
 ```
 
 ### API Documentation
+
 ```bash
 # Start server, then visit:
 # - Swagger UI: http://localhost:8000/docs
@@ -34,6 +41,7 @@ uv run <project_name>
 ```
 
 ### Testing
+
 ```bash
 # Run all tests with coverage
 uv run pytest
@@ -49,6 +57,7 @@ uv run pytest --cov=src/<module_name> --cov-report=html
 ```
 
 ### Code Quality
+
 ```bash
 # Format code with black
 uv run black src/ tests/
@@ -64,6 +73,7 @@ uv run black src/ tests/ && uv run ruff check src/ tests/ && uv run mypy src/
 ```
 
 ### Dependencies
+
 ```bash
 # Add a package
 uv add <package_name>
@@ -108,36 +118,42 @@ pyproject.toml            # Project metadata and dependencies
 ## Development Guidelines
 
 ### FastAPI Patterns
+
 - Use async/await for I/O operations (database, external APIs)
 - Define Pydantic schemas for request/response validation
 - Use dependency injection for shared resources
 - Leverage automatic API documentation
 
 ### API Design
+
 - Follow RESTful conventions where applicable
 - Use appropriate HTTP status codes
 - Version your API (e.g., `/api/v1/`)
 - Return consistent error responses
 
 ### Configuration
+
 - Use Pydantic Settings for configuration management
 - Store secrets in environment variables (never in code)
 - Use `.env` file for local development (add to .gitignore)
 - Provide `.env.example` with all required variables
 
 ### Testing
+
 - Test all endpoints with TestClient
 - Test both success and error cases
 - Mock external dependencies
 - Aim for high test coverage on business logic
 
 ### Code Quality
+
 - Follow PEP 8 style guide (enforced by black)
 - Use type hints for all functions
 - Keep route handlers thin - move logic to services
 - Document complex business logic
 
 ### Performance
+
 - Use async database drivers (asyncpg, motor, etc.)
 - Implement caching for expensive operations
 - Use background tasks for non-blocking operations
@@ -146,6 +162,7 @@ pyproject.toml            # Project metadata and dependencies
 ## Common Patterns
 
 ### Adding a new endpoint
+
 ```python
 # In api/routes.py
 from fastapi import APIRouter, HTTPException
@@ -160,6 +177,7 @@ async def create_item(item: ItemCreate):
 ```
 
 ### Using dependencies
+
 ```python
 from fastapi import Depends
 from ..core.config import settings
@@ -174,6 +192,7 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 ```
 
 ### Error handling
+
 ```python
 from fastapi import HTTPException
 
@@ -186,6 +205,7 @@ async def get_item(item_id: int):
 ```
 
 ### Background tasks
+
 ```python
 from fastapi import BackgroundTasks
 
@@ -202,16 +222,19 @@ async def send_notification(email: str, background_tasks: BackgroundTasks):
 ## Database Integration
 
 ### Using SQLAlchemy (async)
+
 ```bash
 uv add sqlalchemy[asyncio] asyncpg
 ```
 
 ### Using SQLModel (recommended for FastAPI)
+
 ```bash
 uv add sqlmodel
 ```
 
 ### Using MongoDB (async)
+
 ```bash
 uv add motor
 ```

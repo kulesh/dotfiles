@@ -13,6 +13,7 @@ fi
 
 git init
 touch README.md .gitignore
+bd init
 
 # Use the directory name as project name
 echo "# $(basename "$PWD")" > README.md

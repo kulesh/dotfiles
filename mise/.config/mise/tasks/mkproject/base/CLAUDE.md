@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code when working with code in this project.
 
+## First Things First
+
+BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
+
 ## Project Overview
 
 This is a basic project managed with mise-en-place for development environment and dependencies.
@@ -9,6 +13,7 @@ This is a basic project managed with mise-en-place for development environment a
 ## Key Commands
 
 ### Development Environment
+
 ```bash
 # Show mise configuration and installed tools
 mise ls
@@ -22,6 +27,7 @@ mise run <task_name>
 ```
 
 ### Git Workflow
+
 ```bash
 # Check status
 git status
@@ -40,6 +46,7 @@ git push origin <branch-name>
 ## Project Structure
 
 This project follows standard conventions:
+
 - `README.md` - Project documentation
 - `.gitignore` - Files to exclude from git
 - `.mise.toml` - Development environment configuration
@@ -47,11 +54,13 @@ This project follows standard conventions:
 ## Development Guidelines
 
 ### Code Quality
+
 - Write clear, descriptive commit messages
 - Keep commits focused and atomic
 - Document significant changes in README.md
 
 ### Dependencies
+
 - Use mise to manage project-specific tools and runtimes
 - Document any system dependencies in README.md
 

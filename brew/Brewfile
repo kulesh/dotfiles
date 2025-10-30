@@ -3,6 +3,7 @@
 
 # Taps
 # tap "homebrew/bundle" # Tap is deprecated, leaving it as an example
+tap "steveyegge/beads"
 
 # Brews
 brew "mas"
