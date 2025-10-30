@@ -1,0 +1,55 @@
+{
+  "includeCoAuthoredBy": false,
+  "additionalDirectories": "~/dev/",
+
+  "env": {
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "DISABLE_TELEMETRY": "1",
+    "USE_BUILTIN_RIPGREP": "1",
+    "PROJECTS": "~/dev/"
+  },
+
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": ["docker"],
+    "network": {
+      "allowUnixSockets": ["/var/run/docker.sock"],
+      "allowLocalBinding": true
+    }
+  },
+
+  "permissions": {
+    "deny": [
+      "Bash(:(){ :|:&;:; })",
+      "Bash(shutdown)",
+      "Bash(reboot)",
+      "Bash(halt)",
+      "Bash(init)",
+      "Bash(poweroff)",
+      "Bash(mkfs)",
+      "Bash(fdisk)",
+      "Bash(parted)",
+      "Bash(chown)",
+      "Bash(chmod 7*)",
+      "Bash(sudo)",
+      "Bash(doas)",
+      "Bash(su)",
+      "Bash(curl http)",
+      "Bash(wget http)",
+      "Bash(ssh)",
+      "Bash(scp)",
+      "Bash(rsync)"
+    ],
+    "ask": [
+      "Bash(rm)",
+      "Bash(dd)",
+      "Bash(chmod)",
+      "Bash(chown)",
+      "Bash(kill)",
+      "Bash(truncate)",
+      "Bash(find -delete)",
+      "Bash(git reset --hard)"
+    ]
+  }
+}
