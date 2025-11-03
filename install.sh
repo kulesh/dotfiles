@@ -48,7 +48,7 @@ install_homebrew()
     if brew bundle --file="$BREWFILE_PATH"; then
         echo "✅ Homebrew packages installed successfully!"
         brew bundle --file="$BREWFILE_PATH" cleanup --force
-        brew doctor
+				brew doctor || echo "⚠️  brew doctor found some warnings (usually harmless)"
 				return 0
     else
         echo "⚠️Some Homebrew installations may have failed. Please check the output above."
