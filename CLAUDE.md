@@ -2,9 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## First Things First
+
+BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
+
 ## Repository Overview
 
 This is a macOS-specific dotfiles management system that uses:
+
 - **Homebrew** for system-wide dependencies via Brew Bundles
 - **mise-en-place** for development environments and project-level dependencies
 - **GNU Stow** for managing dotfiles symlinks
@@ -14,12 +19,14 @@ The system is designed to be evolving, grokable, and contained to the project di
 ## Key Commands
 
 ### Installation
+
 ```bash
 # Initial setup (run from ~/.dotfiles)
 /bin/zsh install.sh
 ```
 
 ### Project Management (via mise wrapper)
+
 ```bash
 # Create a new project
 mkproject <project_name> [template_type]
@@ -48,6 +55,7 @@ list_project_types
 ```
 
 ### Navigation
+
 ```bash
 # Change to current mise project root
 cdproject
@@ -56,6 +64,7 @@ cdproject
 ## Architecture
 
 ### Directory Structure
+
 ```
 ~/.dotfiles/
 ├── install.sh              # Main installation script
@@ -71,7 +80,9 @@ cdproject
 ```
 
 ### Project Templates
+
 Available in `mise/.config/mise/tasks/mkproject/`:
+
 - `base.sh` - Basic project with git init, README, .gitignore
 - `python.sh` - Python project with pyproject.toml structure
 - `fastapi.sh` - FastAPI project template
@@ -81,11 +92,13 @@ Available in `mise/.config/mise/tasks/mkproject/`:
 ### Key Configuration Files
 
 #### Shared Variables (`include/shared_vars.sh`)
+
 - `HOME_DIR=$HOME` - Home directory location
 - `PROJECT_DIR="$HOME_DIR/dev"` - Where projects are created
 - `STOWED_PACKAGES` - Array of directories to stow
 
 #### Mise Configuration (`mise/.config/mise/config.toml`)
+
 - `not_found_auto_install = true` - Auto-install missing tools
 - `experimental = true` - Enable experimental features
 - Project templates accessed via `mise tasks ls` and `mise run mkproject:<type>`
@@ -104,6 +117,7 @@ The mise wrapper (`lib/misewrapper.sh`) provides enhanced project management:
 ### Stow Package Structure
 
 Each tool directory contains dotfiles that get symlinked to `$HOME`:
+
 ```
 tool_name/
 └── .config/tool_name/  # → ~/.config/tool_name/
@@ -123,6 +137,7 @@ Stowed packages: zsh, git, ghostty, ssh, mise, nvim, brew, starship, dev
 ## Dependencies
 
 Core tools installed via Brewfile:
+
 - mise - Version management and task runner
 - stow - Symlink management
 - fd, ripgrep, fzf - File searching and navigation
@@ -131,3 +146,4 @@ Core tools installed via Brewfile:
 - starship, zoxide - Shell enhancements
 
 Development tools auto-installed per project via mise when needed.
+
