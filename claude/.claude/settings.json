@@ -50,6 +50,7 @@
       "Bash(truncate)",
       "Bash(find -delete)",
       "Bash(git reset --hard)"
-    ]
+    ],
+    "allow": ["Bash(tree)", "Bash(bd)"]
   }
 }

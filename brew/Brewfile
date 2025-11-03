@@ -30,6 +30,9 @@ brew "aider"
 brew "repomix"
 brew "pandoc"
 brew "gh"
+brew "docker"
+brew "docker-compose"
+brew "colima"
 brew "steveyegge/beads/bd", args: ["head"]
 
 # Apple Store apps
