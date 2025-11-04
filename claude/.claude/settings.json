@@ -1,6 +1,8 @@
 {
   "includeCoAuthoredBy": false,
+  "defaultMode": "plan",
   "additionalDirectories": "~/dev/",
+  "cleanupPeriodDays": 4098,
 
   "env": {
     "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
@@ -12,7 +14,7 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
-    "excludedCommands": ["docker"],
+    "excludedCommands": ["git", "docker"],
     "network": {
       "allowUnixSockets": ["/var/run/docker.sock"],
       "allowLocalBinding": true
@@ -49,8 +51,22 @@
       "Bash(kill)",
       "Bash(truncate)",
       "Bash(find -delete)",
-      "Bash(git reset --hard)"
+      "Bash(git reset --hard)",
+      "WebFetch(domain:*)",
+      "WebSearch(domain:*)"
     ],
-    "allow": ["Bash(tree)", "Bash(bd)"]
-  }
+    "allow": [
+      "Bash(mise:*)",
+      "Bash(tree:*)",
+      "Bash(bd:*)",
+      "Read(~/.zshrc)",
+      "Read(**)",
+      "Edit(**)",
+      "MultiEdit(**)",
+      "Write(**)",
+      "Glob(**)",
+      "Grep(**)"
+    ]
+  },
+  "companyAnnouncements": ["Welcome to Claude Code!"]
 }
