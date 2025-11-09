@@ -4,6 +4,7 @@
 # Taps
 # tap "homebrew/bundle" # Tap is deprecated, leaving it as an example
 tap "steveyegge/beads"
+tap "kulesh/tap"
 
 # Brews
 brew "mas"
@@ -34,6 +35,7 @@ brew "docker"
 brew "docker-compose"
 brew "colima"
 brew "steveyegge/beads/bd", args: ["head"]
+brew "kulesh/tap/tc"
 
 # Apple Store apps
 mas "Flighty", id: 1358823008

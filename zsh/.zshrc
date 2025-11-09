@@ -66,7 +66,6 @@ export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 
 eval "$(mise activate zsh)"
 eval "$(starship init zsh)"
-eval "$(zoxide init zsh)"
 eval "$(/usr/libexec/path_helper)"
 
 # project management commands
@@ -78,14 +77,19 @@ alias_if_exists() {
   command -v "$2" &> /dev/null && alias "$1"="$2"
 }
 
-alias_if_exists cat bat
-alias_if_exists top htop
-alias_if_exists grep rg
-alias_if_exists cd z
-alias_if_exists ls eza
-alias_if_exists time hyperfine
-alias_if_exists vim nvim
-alias_if_exists retag='ctags -f ".tags" -R --totals --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
+# Alias only in interactive shell to avoid tripping Claude Code
+if [[ -o interactive ]]; then
+    eval "$(zoxide init zsh --cmd cd)"
+		# eval "$(zoxide init zsh --cmd cd)"
+		alias_if_exists cat bat
+		alias_if_exists top htop
+		alias_if_exists grep rg
+		alias_if_exists ls eza
+		alias_if_exists time hyperfine
+		alias_if_exists vim nvim
+		alias_if_exists retag='ctags -f ".tags" -R --totals --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
+		alias brewup='brew update && brew bundle upgrade'
+fi
 
 export PATH="/opt/homebrew/bin:$PATH"
 
