@@ -23,7 +23,6 @@
 
   "permissions": {
     "deny": [
-      "Bash(:(){ :|:&;:; })",
       "Bash(shutdown)",
       "Bash(reboot)",
       "Bash(halt)",
@@ -33,7 +32,7 @@
       "Bash(fdisk)",
       "Bash(parted)",
       "Bash(chown)",
-      "Bash(chmod 7*)",
+      "Bash(chmod 7:*)",
       "Bash(sudo)",
       "Bash(doas)",
       "Bash(su)",
@@ -52,13 +51,13 @@
       "Bash(truncate)",
       "Bash(find -delete)",
       "Bash(git reset --hard)",
-      "WebFetch(domain:*)",
-      "WebSearch(domain:*)"
+      "WebFetch(domain:*)"
     ],
     "allow": [
       "Bash(mise:*)",
       "Bash(tree:*)",
       "Bash(bd:*)",
+      "Bash(find:*)",
       "Read(~/.zshrc)",
       "Read(**)",
       "Edit(**)",
