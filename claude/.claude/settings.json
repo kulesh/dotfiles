@@ -1,7 +1,7 @@
 {
   "includeCoAuthoredBy": false,
   "defaultMode": "plan",
-  "additionalDirectories": "~/dev/",
+  "additionalDirectories": ["~/dev/", "~/.local/", "/tmp/"],
   "cleanupPeriodDays": 4098,
 
   "env": {
