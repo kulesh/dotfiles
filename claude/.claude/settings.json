@@ -1,7 +1,7 @@
 {
   "includeCoAuthoredBy": false,
   "defaultMode": "plan",
-  "additionalDirectories": ["~/dev/", "~/.local/", "/tmp/"],
+  "additionalDirectories": ["~/dev/*", "~/.local/*", "~/.cache/*", "/tmp/*"],
   "cleanupPeriodDays": 4098,
 
   "env": {
@@ -29,6 +29,7 @@
       "Bash(init)",
       "Bash(poweroff)",
       "Bash(mkfs)",
+      "Bash(dd)",
       "Bash(fdisk)",
       "Bash(parted)",
       "Bash(chown)",
@@ -44,7 +45,6 @@
     ],
     "ask": [
       "Bash(rm)",
-      "Bash(dd)",
       "Bash(chmod)",
       "Bash(chown)",
       "Bash(kill)",
@@ -62,6 +62,10 @@
       "Read(**)",
       "Edit(**)",
       "MultiEdit(**)",
+      "Edit(~/.cache/**)",
+      "MultiEdit(~/.cache/**)",
+      "Edit(~/.local/**)",
+      "MultiEdit(~/.local/**)",
       "Write(**)",
       "Glob(**)",
       "Grep(**)"
