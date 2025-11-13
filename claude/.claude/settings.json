@@ -66,6 +66,8 @@
       "MultiEdit(~/.cache/**)",
       "Edit(~/.local/**)",
       "MultiEdit(~/.local/**)",
+      "Edit(/tmp/**)",
+      "MultiEdit(/tmp/**)",
       "Write(**)",
       "Glob(**)",
       "Grep(**)"
