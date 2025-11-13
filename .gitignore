@@ -4,3 +4,5 @@ lazy-lock.json
 
 ssh/.ssh/*
 !ssh/.ssh/config
+
+.DS_Store

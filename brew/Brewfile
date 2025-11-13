@@ -37,6 +37,7 @@ brew "colima"
 brew "steveyegge/beads/bd", args: ["head"]
 brew "kulesh/tap/tc"
 
+# Bugaboo: https://github.com/mas-cli/mas/issues/1029
 # Apple Store apps
 mas "Flighty", id: 1358823008
 mas "GarageBand", id: 682658836
