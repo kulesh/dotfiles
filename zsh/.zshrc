@@ -93,9 +93,3 @@ fi
 
 export PATH="/opt/homebrew/bin:$PATH"
 
-# Launch Zellij automatically unless already inside it or in SSH/multiplexer
-# if command -v zellij &> /dev/null; then
-#  if [[ -z "$ZELLIJ" && -z "$SSH_CONNECTION" && -z "$TMUX" ]]; then
-#    exec zellij
-#  fi
-# fi
