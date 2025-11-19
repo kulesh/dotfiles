@@ -1,27 +1,32 @@
 {
-  "includeCoAuthoredBy": false,
-  "defaultMode": "plan",
-  "additionalDirectories": ["~/dev/*", "~/.local/*", "~/.cache/*", "/tmp/*"],
   "cleanupPeriodDays": 4098,
-
   "env": {
     "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
     "DISABLE_TELEMETRY": "1",
     "USE_BUILTIN_RIPGREP": "1",
     "PROJECTS": "~/dev/"
   },
-
-  "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true,
-    "excludedCommands": ["git", "docker"],
-    "network": {
-      "allowUnixSockets": ["/var/run/docker.sock"],
-      "allowLocalBinding": true
-    }
-  },
-
+  "includeCoAuthoredBy": false,
   "permissions": {
+    "allow": [
+      "Bash(mise:*)",
+      "Bash(tree:*)",
+      "Bash(bd:*)",
+      "Bash(find:*)",
+      "Read(~/.zshrc)",
+      "Read(**)",
+      "Edit(**)",
+      "MultiEdit(**)",
+      "Edit(~/.cache/**)",
+      "MultiEdit(~/.cache/**)",
+      "Edit(~/.local/**)",
+      "MultiEdit(~/.local/**)",
+      "Edit(/tmp/**)",
+      "MultiEdit(/tmp/**)",
+      "Write(**)",
+      "Glob(**)",
+      "Grep(**)"
+    ],
     "deny": [
       "Bash(shutdown)",
       "Bash(reboot)",
@@ -52,26 +57,34 @@
       "Bash(find -delete)",
       "Bash(git reset --hard)",
       "WebFetch(domain:*)"
-    ],
-    "allow": [
-      "Bash(mise:*)",
-      "Bash(tree:*)",
-      "Bash(bd:*)",
-      "Bash(find:*)",
-      "Read(~/.zshrc)",
-      "Read(**)",
-      "Edit(**)",
-      "MultiEdit(**)",
-      "Edit(~/.cache/**)",
-      "MultiEdit(~/.cache/**)",
-      "Edit(~/.local/**)",
-      "MultiEdit(~/.local/**)",
-      "Edit(/tmp/**)",
-      "MultiEdit(/tmp/**)",
-      "Write(**)",
-      "Glob(**)",
-      "Grep(**)"
     ]
   },
-  "companyAnnouncements": ["Welcome to Claude Code!"]
+  "enabledPlugins": {
+    "frontend-design@claude-code-plugins": true
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowUnixSockets": [
+        "/var/run/docker.sock"
+      ],
+      "allowLocalBinding": true
+    },
+    "excludedCommands": [
+      "git",
+      "docker"
+    ]
+  },
+  "alwaysThinkingEnabled": true,
+  "companyAnnouncements": [
+    "Welcome to Claude Code!"
+  ],
+  "defaultMode": "plan",
+  "additionalDirectories": [
+    "~/dev/*",
+    "~/.local/*",
+    "~/.cache/*",
+    "/tmp/*"
+  ]
 }

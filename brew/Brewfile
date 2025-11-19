@@ -30,10 +30,12 @@ brew "ollama"
 brew "aider"
 brew "repomix"
 brew "pandoc"
+brew "glow"
 brew "gh"
 brew "docker"
 brew "docker-compose"
 brew "colima"
+brew "yt-dlp"
 brew "steveyegge/beads/bd", args: ["head"]
 brew "kulesh/tap/tc"
 
