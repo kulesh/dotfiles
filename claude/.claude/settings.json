@@ -3,8 +3,8 @@
   "env": {
     "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
     "DISABLE_TELEMETRY": "1",
-    "USE_BUILTIN_RIPGREP": "1",
-    "PROJECTS": "~/dev/"
+    "PROJECTS": "~/dev/",
+    "USE_BUILTIN_RIPGREP": "1"
   },
   "includeCoAuthoredBy": false,
   "permissions": {
@@ -13,6 +13,7 @@
       "Bash(tree:*)",
       "Bash(bd:*)",
       "Bash(find:*)",
+      "Bash(git:*)",
       "Read(~/.zshrc)",
       "Read(**)",
       "Edit(**)",
@@ -59,6 +60,30 @@
       "WebFetch(domain:*)"
     ]
   },
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "frontend-design@claude-code-plugins": true
   },
@@ -66,25 +91,13 @@
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "network": {
-      "allowUnixSockets": [
-        "/var/run/docker.sock"
-      ],
+      "allowUnixSockets": ["/var/run/docker.sock"],
       "allowLocalBinding": true
     },
-    "excludedCommands": [
-      "git",
-      "docker"
-    ]
+    "excludedCommands": ["git", "docker"]
   },
-  "alwaysThinkingEnabled": true,
-  "companyAnnouncements": [
-    "Welcome to Claude Code!"
-  ],
-  "defaultMode": "plan",
-  "additionalDirectories": [
-    "~/dev/*",
-    "~/.local/*",
-    "~/.cache/*",
-    "/tmp/*"
-  ]
+  "alwaysThinkingEnabled": false,
+  "companyAnnouncements": ["Welcome to Claude Code!"],
+  "additionalDirectories": ["~/dev/*", "~/.local/*", "~/.cache/*", "/tmp/*"],
+  "defaultMode": "plan"
 }
