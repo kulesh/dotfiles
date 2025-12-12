@@ -73,6 +73,27 @@ function _sandbox_log() {
     echo "${timestamp} [${event_type}] ${message}" >> "${log_file}"
 }
 
+# Add mise hooks for auto-enter/exit sandbox on cd
+function _sandbox_add_hooks() {
+    local projdir="$1"
+    local mise_file="$projdir/.mise.toml"
+
+    # Append hooks to .mise.toml
+    cat >> "$mise_file" << 'EOF'
+
+[hooks]
+enter = '''
+if [ -z "$IN_SANDBOX" ] && [ -f ".sandbox" ]; then
+    source ~/.dotfiles/lib/misewrapper.sh
+    _workon_sandboxed "$(basename $PWD)" "$PWD"
+fi
+'''
+leave = '[ -n "$IN_SANDBOX" ] && exit || true'
+EOF
+
+    echo "Sandbox hooks added to $mise_file"
+}
+
 # Enter sandboxed environment using macOS sandbox-exec
 function _workon_sandboxed() {
     local projname="$1"
@@ -94,9 +115,9 @@ function _workon_sandboxed() {
     echo "  Exit with:     exit or Ctrl-D"
     echo ""
 
-    # Launch sandboxed shell
+    # Launch sandboxed shell with IN_SANDBOX env var
     cd "$projdir"
-    sandbox-exec -p "$profile" /bin/zsh -i
+    sandbox-exec -p "$profile" /bin/zsh -c "export IN_SANDBOX=1 SANDBOX_PROJECT='$projname'; exec /bin/zsh -i"
     local exit_code=$?
 
     _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
@@ -525,6 +546,18 @@ function workon() {
     if [[ ! -e "$projdir/.mise.toml" && ! -e "$projdir/.tool-versions" ]]; then
         echo "Not a mise project: $projdir"
         return 1
+    fi
+
+    # First-time sandbox setup: create marker and add hooks
+    if [[ "$use_sandbox" == true && ! -f "$projdir/.sandbox" ]]; then
+        touch "$projdir/.sandbox"
+        _sandbox_add_hooks "$projdir"
+        echo "Sandbox enabled for $projname"
+    fi
+
+    # Auto-enable sandbox if .sandbox marker exists
+    if [[ -f "$projdir/.sandbox" ]]; then
+        use_sandbox=true
     fi
 
     if [[ "$use_sandbox" == true ]]; then
