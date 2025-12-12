@@ -482,10 +482,13 @@ cloneproject() {
 }
 
 # Change to a specific project
-# Usage: workon <project_name> [--sandbox|-s]
+# Usage: workon <project_name> [-s|--sandbox]
 function workon() {
     if [[ $# -lt 1 ]]; then
-        echo "Usage: workon <project_name> [--sandbox|-s]"
+        echo "Usage: workon <project_name> [-s]"
+        echo ""
+        echo "Options:"
+        echo "  -s, --sandbox  Run in sandboxed environment (restricted filesystem access)"
         return 1
     fi
 
