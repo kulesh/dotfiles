@@ -116,10 +116,10 @@ function _workon_sandboxed() {
     # Save original directory to restore after sandbox exits
     local original_dir="$PWD"
 
-    # Launch sandboxed shell with IN_SANDBOX env var (for starship indicator)
+    # Launch sandboxed shell with sandbox env vars (for starship indicator and chpwd hook)
     # Pass TERM to ensure proper terminal handling (backspace, etc.)
     cd "$projdir"
-    sandbox-exec -p "$profile" env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" /bin/zsh -i
+    sandbox-exec -p "$profile" env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" /bin/zsh -i
     local exit_code=$?
 
     # Restore original directory
@@ -1302,10 +1302,10 @@ fi
 # =============================================================================
 # Sandbox auto-exit hook (runs when this file is sourced inside sandbox)
 # =============================================================================
-if [[ -n "$IN_SANDBOX" && -n "$SANDBOX_PROJECT" ]]; then
+if [[ -n "$IN_SANDBOX" && -n "$SANDBOX_PROJECT_DIR" ]]; then
     _sandbox_chpwd() {
         # Exit sandbox if we've left the project directory
-        if [[ "$PWD" != "$HOME/dev/$SANDBOX_PROJECT"* ]]; then
+        if [[ "$PWD" != "$SANDBOX_PROJECT_DIR"* ]]; then
             echo "Left sandbox project, exiting..."
             exit 0
         fi
