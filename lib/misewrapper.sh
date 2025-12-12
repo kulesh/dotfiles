@@ -37,6 +37,76 @@ function safe_cd() {
   return 0
 }
 
+# =============================================================================
+# Sandbox configuration (macOS sandbox-exec)
+# =============================================================================
+typeset -g SANDBOX_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/sandbox"
+typeset -g SANDBOX_PROFILES_DIR="${SANDBOX_CONFIG_DIR}/profiles"
+typeset -g SANDBOX_LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/sandbox/logs"
+
+# Generate a project-specific sandbox profile by expanding variables in template
+function _sandbox_generate_profile() {
+    local project_dir="$1"
+    local profile_template="${SANDBOX_PROFILES_DIR}/default.sb"
+
+    if [[ ! -f "$profile_template" ]]; then
+        echo "Error: Sandbox profile template not found: $profile_template" >&2
+        return 1
+    fi
+
+    # Expand variables in the profile
+    sed -e "s|\${HOME}|${HOME}|g" \
+        -e "s|\${PROJECT_DIR}|${project_dir}|g" \
+        "$profile_template"
+}
+
+# Log sandbox events to audit file
+function _sandbox_log() {
+    local project_name="$1"
+    local event_type="$2"
+    local message="$3"
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    mkdir -p "${SANDBOX_LOG_DIR}"
+    local log_file="${SANDBOX_LOG_DIR}/${project_name}.log"
+
+    echo "${timestamp} [${event_type}] ${message}" >> "${log_file}"
+}
+
+# Enter sandboxed environment using macOS sandbox-exec
+function _workon_sandboxed() {
+    local projname="$1"
+    local projdir="$2"
+
+    # Generate profile with expanded variables
+    local profile=$(_sandbox_generate_profile "$projdir")
+    if [[ $? -ne 0 ]]; then
+        echo "Failed to generate sandbox profile"
+        return 1
+    fi
+
+    _sandbox_log "$projname" "ENTER" "pid=$$ profile=default dir=$projdir"
+
+    echo "Entering sandboxed environment for: $projname"
+    echo "  Project (r/w): $projdir"
+    echo "  Tools (r/o):   ~/.local/share/mise, /opt/homebrew"
+    echo "  Network:       outbound allowed"
+    echo "  Exit with:     exit or Ctrl-D"
+    echo ""
+
+    # Launch sandboxed shell
+    cd "$projdir"
+    sandbox-exec -p "$profile" /bin/zsh -i
+    local exit_code=$?
+
+    _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
+
+    echo ""
+    echo "Exited sandbox for $projname (code: $exit_code)"
+
+    return $exit_code
+}
+
 # Extract git remote information
 function get_git_remote_info() {
   local repo_dir="$1"
@@ -412,28 +482,55 @@ cloneproject() {
 }
 
 # Change to a specific project
+# Usage: workon <project_name> [--sandbox|-s]
 function workon() {
-  if [[ $# -lt 1 ]]; then
-    echo "Project name is required: workon <project_name>"
-    return 1
-  fi
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: workon <project_name> [--sandbox|-s]"
+        return 1
+    fi
 
-  local projname="$1"
-  local projdir="${MISE_PROJECTS_DIR}/${projname}"
-  
-  if [[ ! -d "$projdir" ]]; then
-    echo "Project $projname not found in $MISE_PROJECTS_DIR"
-    return 1
-  fi
+    local projname=""
+    local use_sandbox=false
 
-  if [[ ! -e "$projdir/.mise.toml" && ! -e "$projdir/.tool-versions" ]]; then
-    echo "Not a mise project: $projdir"
-    return 1
-  fi
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --sandbox|-s)
+                use_sandbox=true
+                shift
+                ;;
+            -*)
+                echo "Unknown option: $1"
+                return 1
+                ;;
+            *)
+                if [[ -z "$projname" ]]; then
+                    projname="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
 
-  if safe_cd "$projdir"; then
-    echo "Now working on $projname"
-  fi
+    local projdir="${MISE_PROJECTS_DIR}/${projname}"
+
+    if [[ ! -d "$projdir" ]]; then
+        echo "Project $projname not found in $MISE_PROJECTS_DIR"
+        return 1
+    fi
+
+    if [[ ! -e "$projdir/.mise.toml" && ! -e "$projdir/.tool-versions" ]]; then
+        echo "Not a mise project: $projdir"
+        return 1
+    fi
+
+    if [[ "$use_sandbox" == true ]]; then
+        _workon_sandboxed "$projname" "$projdir"
+    else
+        if safe_cd "$projdir"; then
+            echo "Now working on $projname"
+        fi
+    fi
 }
 
 # List all projects with metadata
@@ -1079,10 +1176,23 @@ rmproject() {
     fi
 }
 
-# Setup zsh completion
+# Setup zsh completion for workon (projects + sandbox flags)
 function _mise_project_completion() {
-  local -a projects
-  
+  local -a projects opts
+
+  # Define sandbox options
+  opts=(
+    '--sandbox:Enter sandboxed environment'
+    '-s:Enter sandboxed environment (short)'
+  )
+
+  # If current word starts with -, complete options
+  if [[ ${words[CURRENT]} == -* ]]; then
+    _describe 'options' opts
+    return
+  fi
+
+  # Otherwise complete project names
   if [[ -d "$MISE_PROJECTS_DIR" ]]; then
     for projdir in "$MISE_PROJECTS_DIR"/*(N/); do
       local projname=${projdir:t}
@@ -1091,7 +1201,7 @@ function _mise_project_completion() {
       fi
     done
   fi
-  
+
   _describe 'mise projects' projects
 }
 
