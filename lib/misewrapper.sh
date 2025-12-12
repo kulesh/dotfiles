@@ -67,10 +67,11 @@ function _sandbox_log() {
     local message="$3"
     local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-    mkdir -p "${SANDBOX_LOG_DIR}"
+    # Silently fail if we can't create log dir (e.g., inside sandbox)
+    mkdir -p "${SANDBOX_LOG_DIR}" 2>/dev/null || return 0
     local log_file="${SANDBOX_LOG_DIR}/${project_name}.log"
 
-    echo "${timestamp} [${event_type}] ${message}" >> "${log_file}"
+    echo "${timestamp} [${event_type}] ${message}" >> "${log_file}" 2>/dev/null
 }
 
 # Add mise hooks for auto-enter/exit sandbox on cd
@@ -113,8 +114,9 @@ function _workon_sandboxed() {
     echo ""
 
     # Launch sandboxed shell with IN_SANDBOX env var
+    # Use env to pass vars directly (more reliable than export + exec)
     cd "$projdir"
-    sandbox-exec -p "$profile" /bin/zsh -c "export IN_SANDBOX=1 SANDBOX_PROJECT='$projname'; exec /bin/zsh -i"
+    sandbox-exec -p "$profile" env IN_SANDBOX=1 SANDBOX_PROJECT="$projname" /bin/zsh -i
     local exit_code=$?
 
     _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
