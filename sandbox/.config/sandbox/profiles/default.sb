@@ -18,12 +18,19 @@
     (subpath "/private/etc")
     (subpath "/dev"))
 
+;; === DEVICE WRITE ACCESS (null, tty, fd) ===
+(allow file-write*
+    (literal "/dev/null")
+    (literal "/dev/tty")
+    (regex #"^/dev/fd/")
+    (regex #"^/dev/ttys"))
+
 ;; === HOMEBREW (read-only) ===
 (allow file-read* (subpath "/opt/homebrew"))
 
 ;; === MISE (read/write for shims, cache, state) ===
 (allow file-read* file-write* (subpath "${HOME}/.local/share/mise"))
-(allow file-read* file-write* (subpath "${HOME}/.local/state/mise"))
+(allow file-read* file-write* (subpath "${HOME}/.local/state"))
 (allow file-read* (subpath "${HOME}/.local/bin"))
 
 ;; === CODING AGENTS (read/write for config and state) ===
@@ -36,6 +43,16 @@
 (allow file-read* (subpath "${HOME}/.zshrc"))
 (allow file-read* (subpath "${HOME}/.zshenv"))
 (allow file-read* (subpath "${HOME}/.dotfiles"))
+
+;; === LANGUAGE TOOLCHAINS (read-only) ===
+(allow file-read* (subpath "${HOME}/.cargo"))
+(allow file-read* (subpath "${HOME}/.rustup"))
+(allow file-read* (subpath "${HOME}/.npm"))
+(allow file-read* (subpath "${HOME}/.node"))
+(allow file-read* (subpath "${HOME}/.gem"))
+(allow file-read* (subpath "${HOME}/.bundle"))
+(allow file-read* (subpath "${HOME}/.pyenv"))
+(allow file-read* (subpath "${HOME}/.rbenv"))
 
 ;; === PROJECT DIRECTORY (read/write) ===
 (allow file-read* file-write* (subpath "${PROJECT_DIR}"))
@@ -54,3 +71,7 @@
 (allow mach-lookup)
 (allow ipc-posix-shm)
 (allow sysctl-read)
+
+;; === TTY / PTY CONTROL ===
+(allow file-ioctl)
+(allow process-info-pidinfo)
