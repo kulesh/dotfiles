@@ -81,12 +81,12 @@ function _sandbox_add_hooks() {
     local projname=$(basename "$projdir")
 
     # Append hooks to .mise.toml
-    # Note: mise runs hooks with sh, so we exec zsh for zsh-specific scripts
+    # Note: Use temp file marker since env vars don't pass through sandbox-exec reliably
     cat >> "$mise_file" << EOF
 
 [hooks]
-enter = 'if [ -z "\$IN_SANDBOX" ] && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
-leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
+enter = 'if [ ! -f "/tmp/.sandbox-active" ] && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+leave = '[ -f "/tmp/.sandbox-active" ] && exit 0 || true'
 EOF
 
     echo "Sandbox hooks added to $mise_file"
@@ -113,11 +113,16 @@ function _workon_sandboxed() {
     echo "  Exit with:     exit or Ctrl-D"
     echo ""
 
-    # Launch sandboxed shell with IN_SANDBOX env var
-    # Use env to pass vars directly (more reliable than export + exec)
+    # Create marker file to prevent mise hook from re-entering sandbox
+    touch /tmp/.sandbox-active
+
+    # Launch sandboxed shell with IN_SANDBOX env var (for starship indicator)
     cd "$projdir"
     sandbox-exec -p "$profile" env IN_SANDBOX=1 SANDBOX_PROJECT="$projname" /bin/zsh -i
     local exit_code=$?
+
+    # Clean up marker file
+    rm -f /tmp/.sandbox-active
 
     _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
 
