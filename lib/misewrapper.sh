@@ -81,12 +81,12 @@ function _sandbox_add_hooks() {
     local projname=$(basename "$projdir")
 
     # Append hooks to .mise.toml
-    # Note: Use temp file marker since env vars don't pass through sandbox-exec reliably
+    # Note: IN_SANDBOX env var is set by sandbox-exec and inherited by child processes
     cat >> "$mise_file" << EOF
 
 [hooks]
-enter = 'if [ ! -f "/tmp/.sandbox-active" ] && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
-leave = '[ -f "/tmp/.sandbox-active" ] && exit 0 || true'
+enter = 'if [ -z "\$IN_SANDBOX" ] && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
 EOF
 
     echo "Sandbox hooks added to $mise_file"
@@ -113,9 +113,6 @@ function _workon_sandboxed() {
     echo "  Exit with:     exit or Ctrl-D"
     echo ""
 
-    # Create marker file to prevent mise hook from re-entering sandbox
-    touch /tmp/.sandbox-active
-
     # Save original directory to restore after sandbox exits
     local original_dir="$PWD"
 
@@ -127,9 +124,6 @@ function _workon_sandboxed() {
 
     # Restore original directory
     cd "$original_dir"
-
-    # Clean up marker file
-    rm -f /tmp/.sandbox-active
 
     _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
 
