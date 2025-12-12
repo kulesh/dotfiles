@@ -7,8 +7,11 @@
 (allow signal)
 
 ;; === SYSTEM READ ACCESS ===
+;; Note: /Users and ${HOME} literals needed for path traversal (mkdir -p)
 (allow file-read*
     (literal "/")
+    (literal "/Users")
+    (literal "${HOME}")
     (subpath "/System")
     (subpath "/usr")
     (subpath "/bin")
@@ -35,11 +38,12 @@
 (allow file-read* file-write* (subpath "${HOME}/.codex"))
 (allow file-read* file-write* (subpath "${HOME}/.opencode"))
 
-;; === HOME CONFIG (read-only) ===
+;; === HOME CONFIG (read-only, except zsh_history) ===
 (allow file-read* (subpath "${HOME}/.config"))
 (allow file-read* (subpath "${HOME}/.zshrc"))
 (allow file-read* (subpath "${HOME}/.zshenv"))
 (allow file-read* (subpath "${HOME}/.dotfiles"))
+(allow file-read* file-write* (regex #"^${HOME}/\.zsh_history.*"))
 
 ;; === LANGUAGE TOOLCHAINS (read-only) ===
 (allow file-read* (subpath "${HOME}/.cargo"))
@@ -55,6 +59,8 @@
 (allow file-read* (subpath "${HOME}/Library/Application Support"))
 
 ;; === PROJECT DIRECTORY (read/write) ===
+;; Note: ${HOME}/dev literal needed for path traversal to project subdirectories
+(allow file-read* (literal "${HOME}/dev"))
 (allow file-read* file-write* (subpath "${PROJECT_DIR}"))
 
 ;; === TEMP (read/write) ===
