@@ -91,13 +91,25 @@
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "network": {
-      "allowUnixSockets": ["/var/run/docker.sock"],
+      "allowUnixSockets": [
+        "/var/run/docker.sock"
+      ],
       "allowLocalBinding": true
     },
-    "excludedCommands": ["git", "docker"]
+    "excludedCommands": [
+      "git",
+      "docker"
+    ]
   },
   "alwaysThinkingEnabled": false,
-  "companyAnnouncements": ["Welcome to Claude Code!"],
-  "additionalDirectories": ["~/dev/*", "~/.local/*", "~/.cache/*", "/tmp/*"],
+  "companyAnnouncements": [
+    "Welcome to Claude Code!"
+  ],
+  "additionalDirectories": [
+    "~/dev/*",
+    "~/.local/*",
+    "~/.cache/*",
+    "/tmp/*"
+  ],
   "defaultMode": "plan"
 }

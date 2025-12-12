@@ -7,6 +7,7 @@ tap "steveyegge/beads"
 tap "kulesh/tap"
 
 # Brews
+brew "coreutils"
 brew "mas"
 brew "stow"
 brew "fd"
@@ -38,6 +39,7 @@ brew "colima"
 brew "yt-dlp"
 brew "steveyegge/beads/bd", args: ["head"]
 brew "kulesh/tap/tc"
+brew "kulesh/tap/aiobscura"
 
 # Bugaboo: https://github.com/mas-cli/mas/issues/1029
 # Apple Store apps
