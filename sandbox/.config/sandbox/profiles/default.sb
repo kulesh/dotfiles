@@ -21,9 +21,15 @@
 ;; === HOMEBREW (read-only) ===
 (allow file-read* (subpath "/opt/homebrew"))
 
-;; === MISE TOOLS (read-only) ===
-(allow file-read* (subpath "${HOME}/.local/share/mise"))
+;; === MISE (read/write for shims, cache, state) ===
+(allow file-read* file-write* (subpath "${HOME}/.local/share/mise"))
+(allow file-read* file-write* (subpath "${HOME}/.local/state/mise"))
 (allow file-read* (subpath "${HOME}/.local/bin"))
+
+;; === CODING AGENTS (read/write for config and state) ===
+(allow file-read* file-write* (subpath "${HOME}/.claude"))
+(allow file-read* file-write* (subpath "${HOME}/.codex"))
+(allow file-read* file-write* (subpath "${HOME}/.opencode"))
 
 ;; === HOME CONFIG (read-only) ===
 (allow file-read* (subpath "${HOME}/.config"))
