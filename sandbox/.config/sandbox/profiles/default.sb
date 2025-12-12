@@ -17,6 +17,7 @@
     (subpath "/bin")
     (subpath "/sbin")
     (subpath "/Library")
+    (subpath "/Applications")
     (subpath "/private/var")
     (subpath "/private/etc")
     (subpath "/dev"))
@@ -28,8 +29,9 @@
 ;; === HOMEBREW (read-only) ===
 (allow file-read* (subpath "/opt/homebrew"))
 
-;; === MISE (read/write for shims, cache, state) ===
+;; === MISE and ZOXIDE (read/write for shims, cache, state, db) ===
 (allow file-read* file-write* (subpath "${HOME}/.local/share/mise"))
+(allow file-read* file-write* (subpath "${HOME}/.local/share/zoxide"))
 (allow file-read* file-write* (subpath "${HOME}/.local/state"))
 (allow file-read* (subpath "${HOME}/.local/bin"))
 

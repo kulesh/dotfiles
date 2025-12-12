@@ -116,10 +116,17 @@ function _workon_sandboxed() {
     # Create marker file to prevent mise hook from re-entering sandbox
     touch /tmp/.sandbox-active
 
+    # Save original directory to restore after sandbox exits
+    local original_dir="$PWD"
+
     # Launch sandboxed shell with IN_SANDBOX env var (for starship indicator)
+    # Pass TERM to ensure proper terminal handling (backspace, etc.)
     cd "$projdir"
-    sandbox-exec -p "$profile" env IN_SANDBOX=1 SANDBOX_PROJECT="$projname" /bin/zsh -i
+    sandbox-exec -p "$profile" env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" /bin/zsh -i
     local exit_code=$?
+
+    # Restore original directory
+    cd "$original_dir"
 
     # Clean up marker file
     rm -f /tmp/.sandbox-active
@@ -1297,3 +1304,17 @@ fi
 
 # Create projects directory if it doesn't exist
 [[ -d "$MISE_PROJECTS_DIR" ]] || mkdir -p "$MISE_PROJECTS_DIR"
+
+# =============================================================================
+# Sandbox auto-exit hook (runs when this file is sourced inside sandbox)
+# =============================================================================
+if [[ -n "$IN_SANDBOX" && -n "$SANDBOX_PROJECT" ]]; then
+    _sandbox_chpwd() {
+        # Exit sandbox if we've left the project directory
+        if [[ "$PWD" != "$HOME/dev/$SANDBOX_PROJECT"* ]]; then
+            echo "Left sandbox project, exiting..."
+            exit 0
+        fi
+    }
+    chpwd_functions+=(_sandbox_chpwd)
+fi
