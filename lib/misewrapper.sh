@@ -79,9 +79,9 @@ function _workon_sandboxed() {
     local projdir="$2"
 
     # Generate profile with expanded variables
-    local profile=$(_sandbox_generate_profile "$projdir")
-    if [[ $? -ne 0 ]]; then
-        echo "Failed to generate sandbox profile"
+    # Note: separate declaration from assignment so $? isn't reset by 'local'
+    local profile
+    if ! profile=$(_sandbox_generate_profile "$projdir"); then
         return 1
     fi
 
