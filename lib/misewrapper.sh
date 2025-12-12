@@ -77,18 +77,15 @@ function _sandbox_log() {
 function _sandbox_add_hooks() {
     local projdir="$1"
     local mise_file="$projdir/.mise.toml"
+    local projname=$(basename "$projdir")
 
     # Append hooks to .mise.toml
-    cat >> "$mise_file" << 'EOF'
+    # Note: mise runs hooks with sh, so we exec zsh for zsh-specific scripts
+    cat >> "$mise_file" << EOF
 
 [hooks]
-enter = '''
-if [ -z "$IN_SANDBOX" ] && [ -f ".sandbox" ]; then
-    source ~/.dotfiles/lib/misewrapper.sh
-    _workon_sandboxed "$(basename $PWD)" "$PWD"
-fi
-'''
-leave = '[ -n "$IN_SANDBOX" ] && exit || true'
+enter = 'if [ -z "\$IN_SANDBOX" ] && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
 EOF
 
     echo "Sandbox hooks added to $mise_file"
