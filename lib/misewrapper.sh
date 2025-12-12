@@ -97,6 +97,13 @@ function _workon_sandboxed() {
     local projname="$1"
     local projdir="$2"
 
+    # Prevent nested sandboxes
+    if [[ -n "$IN_SANDBOX" ]]; then
+        echo "Already in sandbox for: $SANDBOX_PROJECT"
+        echo "Exit current sandbox first (exit or Ctrl-D)"
+        return 1
+    fi
+
     # Generate profile with expanded variables
     # Note: separate declaration from assignment so $? isn't reset by 'local'
     local profile
