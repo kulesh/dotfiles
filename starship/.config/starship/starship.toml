@@ -153,6 +153,6 @@ format = '[ ♥ $time ]($style)'
 [custom.sandbox]
 command = "echo '🔒'"
 when = '[ "$IN_SANDBOX" = "1" ]'
-style = "bg:#FF6B6B fg:#FFFFFF bold"
-format = "[](fg:#9A348E bg:#FF6B6B)[ $output ]($style)[](fg:#FF6B6B bg:#DA627D)"
+style = "bg:#9A348E fg:#FFFFFF bold"
+format = "[$output ]($style)"
 disabled = false
