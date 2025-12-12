@@ -20,10 +20,7 @@
 
 ;; === DEVICE WRITE ACCESS (null, tty, fd) ===
 (allow file-write*
-    (literal "/dev/null")
-    (literal "/dev/tty")
-    (regex #"^/dev/fd/")
-    (regex #"^/dev/ttys"))
+    (subpath "/dev"))
 
 ;; === HOMEBREW (read-only) ===
 (allow file-read* (subpath "/opt/homebrew"))
@@ -53,6 +50,9 @@
 (allow file-read* (subpath "${HOME}/.bundle"))
 (allow file-read* (subpath "${HOME}/.pyenv"))
 (allow file-read* (subpath "${HOME}/.rbenv"))
+
+;; === MACOS APP SUPPORT (read-only for tools like zoxide) ===
+(allow file-read* (subpath "${HOME}/Library/Application Support"))
 
 ;; === PROJECT DIRECTORY (read/write) ===
 (allow file-read* file-write* (subpath "${PROJECT_DIR}"))
