@@ -125,7 +125,7 @@ function _workon_sandboxed() {
     echo ""
     echo -e "${cyan}▸ sandbox${reset} ${dim}│${reset} $projname"
     echo -e "  ${dim}project${reset}  $projdir"
-    echo -e "  ${dim}tools${reset}    ~/.local/share/mise, /opt/homebrew"
+    echo -e "  ${dim}tools${reset}    mise, homebrew, docker"
     echo -e "  ${dim}network${reset}  outbound allowed"
     echo ""
 
@@ -149,8 +149,12 @@ function _workon_sandboxed() {
 
     _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
 
+    # Pretty exit message
+    local dim='\033[2m'
+    local reset='\033[0m'
     echo ""
-    echo "Exited sandbox for $projname (code: $exit_code)"
+    echo -e "${dim}▸ sandbox exited${reset} │ $projname"
+    echo ""
 
     return $exit_code
 }
@@ -1328,7 +1332,7 @@ if [[ -n "$IN_SANDBOX" && -n "$SANDBOX_PROJECT_DIR" ]]; then
     _sandbox_chpwd() {
         # Exit sandbox if we've left the project directory
         if [[ "$PWD" != "$SANDBOX_PROJECT_DIR"* ]]; then
-            echo "Left sandbox project, exiting..."
+            echo -e "\033[2m▸ leaving sandbox\033[0m"
             exit 0
         fi
     }

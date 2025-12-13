@@ -39,6 +39,7 @@
 (allow file-read* file-write* (subpath "${HOME}/.claude"))
 (allow file-read* file-write* (subpath "${HOME}/.codex"))
 (allow file-read* file-write* (subpath "${HOME}/.opencode"))
+(allow file-read* file-write* (subpath "${HOME}/.config/gh"))
 
 ;; === HOME CONFIG (read-only, except zsh_history) ===
 (allow file-read* (subpath "${HOME}/.config"))
@@ -82,4 +83,24 @@
 
 ;; === TTY / PTY CONTROL ===
 (allow file-ioctl)
+
+;; === PROCESS INSPECTION (for ps, top, htop, debugging) ===
 (allow process-info-pidinfo)
+(allow process-info-listpids)
+(allow process-info-pidfdinfo)
+(allow process-info-rusage)
+(allow process-info-codesignature)
+
+;; === DOCKER ===
+(allow file-read* file-write* (literal "/var/run/docker.sock"))
+
+;; === SSH AGENT (for git SSH operations) ===
+;; Allows agent socket access without exposing private keys
+(allow file-read* file-write*
+    (regex #"^/private/tmp/com\.apple\.launchd\..*/Listeners$"))
+
+;; === SSH CONFIG (read-only) ===
+;; Allow reading SSH config and known_hosts, but NOT private keys
+(allow file-read* (literal "${HOME}/.ssh"))
+(allow file-read* (literal "${HOME}/.ssh/config"))
+(allow file-read* (literal "${HOME}/.ssh/known_hosts"))
