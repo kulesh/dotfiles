@@ -81,11 +81,11 @@ function _sandbox_add_hooks() {
     fi
 
     # Append hooks to .mise.toml
-    # Note: Check for marker file (mise hooks don't inherit env vars)
+    # Hook checks: 1) not already in sandbox, 2) no entry markers, 3) .sandbox file exists
     cat >> "$mise_file" << EOF
 
 [hooks]
-enter = 'if [ ! -f /tmp/.sandbox-entering ] && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+enter = 'if [ -z "\$IN_SANDBOX" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
 leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
 EOF
 
@@ -128,22 +128,29 @@ function _workon_sandboxed() {
     # Save original directory to restore after sandbox exits
     local original_dir="$PWD"
 
-    # Create marker to block mise hook re-entry (mise hooks don't inherit env vars)
-    touch "/tmp/.sandbox-entering"
+    # Create short-lived marker to block mise hook during initial cd (XDG-compliant)
+    # Marker is PID-specific and removed immediately after cd, before sandbox-exec
+    local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}"
+    local marker_dir="$cache_dir/sandbox"
+    mkdir -p "$marker_dir"
+    local marker="$marker_dir/.entering-$$"
+    touch "$marker"
+
+    # cd triggers mise hook, but marker blocks re-entry
+    cd "$projdir"
+
+    # Remove marker immediately - past the dangerous cd
+    rm -f "$marker"
 
     # Launch sandboxed shell with sandbox env vars (for starship indicator and chpwd hook)
     # Pass TERM to ensure proper terminal handling (backspace, etc.)
     # Use -f with -D parameters so profile can use (param "...") for dynamic values
-    cd "$projdir"
     sandbox-exec -f "$profile_path" \
         -D "HOME=$HOME" \
         -D "PROJECT_DIR=$projdir" \
         -D "SSH_REAL=$ssh_real" \
         env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" /bin/zsh -i
     local exit_code=$?
-
-    # Clean up marker
-    rm -f "/tmp/.sandbox-entering"
 
     # Restore original directory
     cd "$original_dir"
@@ -634,6 +641,7 @@ lsprojects() {
     local project_count=0
     local cloned_count=0
     local created_count=0
+    local sandboxed_count=0
     
     # Process each directory in projects folder
     for projdir in "$MISE_PROJECTS_DIR"/*(N/); do
@@ -670,9 +678,16 @@ lsprojects() {
         
         # Get last modified time
         local last_modified=$(get_last_modified "$projdir" "short")
-        
+
+        # Check sandbox status
+        local sandbox_indicator=""
+        if [[ -f "$projdir/.sandbox" ]]; then
+            sandbox_indicator="🔒"
+            ((sandboxed_count++))
+        fi
+
         # Display project info in ls -l style
-        printf "%-20s %s" "$projname" "$remote_info"
+        printf "%-20s %-2s %s" "$projname" "$sandbox_indicator" "$remote_info"
         
         if [[ -n "$last_modified" ]]; then
             printf " %s" "$last_modified"
@@ -704,6 +719,7 @@ lsprojects() {
             echo "   Total: $project_count projects"
             echo "   Cloned: $cloned_count"
             echo "   Created: $created_count"
+            echo "   Sandboxed: $sandboxed_count"
         else
             echo "   $project_type projects: $project_count"
         fi
@@ -1004,6 +1020,11 @@ function showproject() {
     
     echo "Project: $project_name"
     echo "Location: $mise_dir"
+    if [[ -f "$mise_dir/.sandbox" ]]; then
+        echo "Sandbox: enabled 🔒"
+    else
+        echo "Sandbox: disabled"
+    fi
     if [[ -n "$last_modified" ]]; then
         echo "Modified: $last_modified"
     fi
