@@ -898,137 +898,153 @@ updateproject() {
 # Display git repository information
 function show_git_info() {
     local project_name="$1"
-    
+
+    # Colors
+    local cyan='\033[36m'
+    local green='\033[32m'
+    local magenta='\033[35m'
+    local yellow='\033[33m'
+    local red='\033[31m'
+    local dim='\033[2m'
+    local bold='\033[1m'
+    local reset='\033[0m'
+
     if [[ ! -d ".git" ]]; then
-        echo "Git: not a repository"
+        echo -e "${dim}Git: not a repository${reset}"
         return 0
     fi
-    
-    echo "Git repository:"
-    
+
+    echo -e "${bold} Git${reset}"
+
     # Current branch and commit
     local current_branch=$(git branch --show-current 2>/dev/null)
     local current_commit=$(git rev-parse --short HEAD 2>/dev/null)
-    
+
     if [[ -n "$current_branch" ]]; then
-        echo "  Branch: $current_branch"
+        echo -e "  ${magenta}⎇ $current_branch${reset} ${dim}($current_commit)${reset}"
     fi
-    
-    if [[ -n "$current_commit" ]]; then
-        echo "  Commit: $current_commit"
-    fi
-    
+
     # Remote information
     local remote_url=$(git remote get-url origin 2>/dev/null)
     if [[ -n "$remote_url" ]]; then
-        echo "  Remote: $remote_url"
-        
+        echo -e "  ${green}↗ $remote_url${reset}"
+
         # Check if we're ahead/behind remote
         if git show-ref --verify --quiet "refs/remotes/origin/$current_branch"; then
             local ahead=$(git rev-list --count "origin/$current_branch..HEAD" 2>/dev/null)
             local behind=$(git rev-list --count "HEAD..origin/$current_branch" 2>/dev/null)
-            
+
             if [[ "$ahead" -gt 0 ]] || [[ "$behind" -gt 0 ]]; then
-                local status_msg=""
+                local status_parts=()
                 if [[ "$ahead" -gt 0 ]]; then
-                    status_msg="$ahead ahead"
+                    status_parts+=("${green}↑$ahead${reset}")
                 fi
                 if [[ "$behind" -gt 0 ]]; then
-                    if [[ -n "$status_msg" ]]; then
-                        status_msg="$status_msg, $behind behind"
-                    else
-                        status_msg="$behind behind"
-                    fi
+                    status_parts+=("${red}↓$behind${reset}")
                 fi
-                echo "  Status: $status_msg"
+                echo -e "  $(IFS=' '; echo "${status_parts[*]}")"
             else
-                echo "  Status: up to date"
+                echo -e "  ${dim}✓ up to date${reset}"
             fi
         fi
     else
-        echo "  Remote: (none configured)"
+        echo -e "  ${dim}↗ (no remote)${reset}"
     fi
-    
+
     # Working directory status
     local git_status=$(git status --porcelain 2>/dev/null)
     if [[ -n "$git_status" ]]; then
-        echo "  Working directory:"
-        
+        echo ""
+        echo -e "${bold}  Changes${reset}"
+
         # Count different types of changes
         local modified=$(echo "$git_status" | grep "^ M" | wc -l | tr -d ' ')
         local added=$(echo "$git_status" | grep "^A" | wc -l | tr -d ' ')
         local deleted=$(echo "$git_status" | grep "^ D" | wc -l | tr -d ' ')
         local untracked=$(echo "$git_status" | grep "^??" | wc -l | tr -d ' ')
         local staged=$(echo "$git_status" | grep "^[MADR]" | wc -l | tr -d ' ')
-        
+
         local changes=()
         if [[ "$staged" -gt 0 ]]; then
-            changes+=("$staged staged")
+            changes+=("${green}$staged staged${reset}")
         fi
         if [[ "$modified" -gt 0 ]]; then
-            changes+=("$modified modified")
+            changes+=("${yellow}$modified modified${reset}")
         fi
         if [[ "$added" -gt 0 && "$staged" -eq 0 ]]; then
-            changes+=("$added added")
+            changes+=("${green}$added added${reset}")
         fi
         if [[ "$deleted" -gt 0 ]]; then
-            changes+=("$deleted deleted")
+            changes+=("${red}$deleted deleted${reset}")
         fi
         if [[ "$untracked" -gt 0 ]]; then
-            changes+=("$untracked untracked")
+            changes+=("${cyan}$untracked untracked${reset}")
         fi
-        
+
         if [[ ${#changes[@]} -gt 0 ]]; then
-            local change_summary=$(IFS=', '; echo "${changes[*]}")
-            echo "    $change_summary"
+            echo -e "  $(IFS=', '; echo "${changes[*]}")"
         fi
-        
+
         # Show first few changed files
         echo "$git_status" | head -5 | while read line; do
             local status_code="${line:0:2}"
             local filename="${line:3}"
-            local status_desc=""
-            
+            local color=""
+            local icon=""
+
             case "$status_code" in
-                " M") status_desc="modified" ;;
-                "A ") status_desc="added" ;;
-                " D") status_desc="deleted" ;;
-                "??") status_desc="untracked" ;;
-                "M ") status_desc="staged" ;;
-                *) status_desc="changed" ;;
+                " M") color="$yellow"; icon="~" ;;
+                "A "|"M ") color="$green"; icon="+" ;;
+                " D") color="$red"; icon="-" ;;
+                "??") color="$cyan"; icon="?" ;;
+                *) color="$dim"; icon="•" ;;
             esac
-            
-            echo "    $status_desc: $filename"
+
+            echo -e "    ${color}${icon} ${filename}${reset}"
         done
-        
+
         # Show if there are more files
         local total_files=$(echo "$git_status" | wc -l | tr -d ' ')
         if [[ "$total_files" -gt 5 ]]; then
-            echo "    ... and $((total_files - 5)) more"
+            echo -e "    ${dim}... and $((total_files - 5)) more${reset}"
         fi
     else
-        echo "  Working directory: clean"
+        echo -e "  ${dim}✓ working directory clean${reset}"
     fi
 }
 
 # Show recent git activity
 function show_git_activity() {
+    # Colors
+    local dim='\033[2m'
+    local bold='\033[1m'
+    local reset='\033[0m'
+
     if [[ ! -d ".git" ]]; then
         return 0
     fi
-    
-    echo "Recent commits:"
+
+    echo -e "${bold}📜 Recent${reset}"
     if git log --oneline -n 3 2>/dev/null | head -3 >/dev/null; then
-        git log --oneline -n 3 2>/dev/null | sed 's/^/  /'
+        git log --format="  %C(dim)%h%C(reset) %s" -n 3 2>/dev/null
     else
-        echo "  (no commits yet)"
+        echo -e "  ${dim}(no commits yet)${reset}"
     fi
 }
 
 # Show detailed information about the current mise project
 function showproject() {
+    # Colors
+    local cyan='\033[36m'
+    local green='\033[32m'
+    local magenta='\033[35m'
+    local yellow='\033[33m'
+    local dim='\033[2m'
+    local bold='\033[1m'
+    local reset='\033[0m'
+
     local mise_dir=$(get_mise_root)
-    
+
     if [[ -z "$mise_dir" ]]; then
         echo "Not in a mise project"
         return 1
@@ -1036,33 +1052,35 @@ function showproject() {
 
     local project_name="${mise_dir:t}"
     local last_modified=$(get_last_modified "$mise_dir" "full")
-    
-    echo "Project: $project_name"
-    echo "Location: $mise_dir"
+
+    # Header
+    echo -e "${bold}${cyan}$project_name${reset}"
+    echo -e "${dim}$mise_dir${reset}"
+    echo ""
+
+    # Status line
     if [[ -f "$mise_dir/.sandbox" ]]; then
-        echo "Sandbox: enabled 🔒"
-    else
-        echo "Sandbox: disabled"
+        echo -e "  ${green}🔒 Sandboxed${reset}"
     fi
     if [[ -n "$last_modified" ]]; then
-        echo "Modified: $last_modified"
+        echo -e "  ${dim}Modified: $last_modified${reset}"
     fi
     echo ""
-    
+
     # Show mise tools
-    echo "Mise tools:"
+    echo -e "${bold}⚙ Tools${reset}"
     local tools_output=$(mise ls --current 2>/dev/null)
     if [[ -n "$tools_output" && "$tools_output" != *"No tools"* ]]; then
         echo "$tools_output" | sed 's/^/  /'
     else
-        echo "  (none configured)"
+        echo -e "  ${dim}(none configured)${reset}"
     fi
     echo ""
-    
+
     # Git information
     show_git_info "$project_name"
     echo ""
-    
+
     # Recent activity
     show_git_activity
 }
