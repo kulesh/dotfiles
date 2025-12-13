@@ -81,11 +81,11 @@ function _sandbox_add_hooks() {
     fi
 
     # Append hooks to .mise.toml
-    # Hook checks: 1) not already in sandbox, 2) no entry markers, 3) .sandbox file exists
+    # Hook checks: 1) not already in sandbox, 2) no entry markers, 3) .sandbox file exists, 4) actually at project dir
     cat >> "$mise_file" << EOF
 
 [hooks]
-enter = 'if [ -z "\$IN_SANDBOX" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+enter = 'if [ -z "\$IN_SANDBOX" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
 leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
 EOF
 
