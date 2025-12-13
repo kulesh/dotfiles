@@ -608,7 +608,16 @@ function workon() {
 lsprojects() {
     local filter_type=""
     local show_tools=false
-    
+
+    # Colors
+    local cyan='\033[36m'
+    local green='\033[32m'
+    local yellow='\033[33m'
+    local magenta='\033[35m'
+    local dim='\033[2m'
+    local bold='\033[1m'
+    local reset='\033[0m'
+
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -629,53 +638,56 @@ lsprojects() {
         esac
         shift
     done
-    
+
     if [[ ! -d "$MISE_PROJECTS_DIR" ]]; then
         echo "Projects directory not found: $MISE_PROJECTS_DIR"
         return 1
     fi
-    
-    echo "Projects in $MISE_PROJECTS_DIR"
+
+    echo -e "${bold}📁 Projects${reset} ${dim}in ${MISE_PROJECTS_DIR}${reset}"
     echo ""
-    
+
     local project_count=0
     local cloned_count=0
     local created_count=0
     local sandboxed_count=0
-    
+
     # Process each directory in projects folder
     for projdir in "$MISE_PROJECTS_DIR"/*(N/); do
         [[ ! -d "$projdir" ]] && continue
-        
+
         local projname="${projdir:t}"
-        
+
         # Check if it's a valid mise project
         if [[ ! -e "$projdir/.mise.toml" && ! -e "$projdir/.tool-versions" ]]; then
             continue
         fi
-        
+
         # Determine project type (cloned vs created)
         local project_type=""
         local remote_info=""
-        
+        local type_icon=""
+
         local github_info=$(get_github_repo_info "$projdir")
         if [[ -n "$github_info" ]]; then
             project_type="cloned"
             remote_info="$github_info"
+            type_icon="↙"
             ((cloned_count++))
         else
             project_type="created"
             remote_info="local"
+            type_icon="✦"
             ((created_count++))
         fi
-        
+
         # Apply filter if specified
         if [[ -n "$filter_type" && "$filter_type" != "$project_type" ]]; then
             continue
         fi
-        
+
         ((project_count++))
-        
+
         # Get last modified time
         local last_modified=$(get_last_modified "$projdir" "short")
 
@@ -686,15 +698,22 @@ lsprojects() {
             ((sandboxed_count++))
         fi
 
-        # Display project info in ls -l style
-        printf "%-20s %-2s %s" "$projname" "$sandbox_indicator" "$remote_info"
-        
-        if [[ -n "$last_modified" ]]; then
-            printf " %s" "$last_modified"
+        # Display project info with colors
+        printf "${cyan}%-24s${reset}" "$projname"
+        printf "%-3s" "$sandbox_indicator"
+
+        if [[ "$project_type" == "cloned" ]]; then
+            printf "${green}${type_icon} ${remote_info}${reset}"
+        else
+            printf "${yellow}${type_icon} ${remote_info}${reset}"
         fi
-        
+
+        if [[ -n "$last_modified" ]]; then
+            printf " ${dim}%s${reset}" "$last_modified"
+        fi
+
         echo ""
-        
+
         # Show mise tools if requested (use -C to avoid triggering mise hooks)
         if [[ "$show_tools" == true ]]; then
             local tools_output=$(mise -C "$projdir" ls --current 2>/dev/null | grep -v "No tools" | head -3)
@@ -704,7 +723,7 @@ lsprojects() {
             echo ""
         fi
     done
-    
+
     # Summary
     echo ""
     if [[ "$project_count" -eq 0 ]]; then
@@ -714,12 +733,12 @@ lsprojects() {
             echo "No mise projects found"
         fi
     else
-        echo "📊 Summary:"
+        echo -e "${bold}📊 Summary${reset}"
         if [[ -z "$filter_type" ]]; then
-            echo "   Total: $project_count projects"
-            echo "   Cloned: $cloned_count"
-            echo "   Created: $created_count"
-            echo "   Sandboxed: $sandboxed_count"
+            echo -e "   ${dim}Total${reset}     ${bold}$project_count${reset} projects"
+            echo -e "   ${green}↙ Cloned${reset}   $cloned_count"
+            echo -e "   ${yellow}✦ Created${reset}  $created_count"
+            echo -e "   ${magenta}🔒 Sandbox${reset}  $sandboxed_count"
         else
             echo "   $project_type projects: $project_count"
         fi

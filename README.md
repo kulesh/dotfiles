@@ -3,69 +3,113 @@
 A simple macOS specific dotfiles management system for making my developer experience consistent across the many Macs I use. Design tenets (in tension) are:
 1. Evolving -- breaking changes can happen
 2. Grokable -- I understand how everything works
-3. Contained -- changes are local to ``$PROJECT_DIR``
+3. Contained -- changes are local to `$PROJECT_DIR`
 
 The system does three things:
 - Uses [Homebrew](https://brew.sh/) for managing system-wide dependencies using [Brew Bundles](https://docs.brew.sh/Brew-Bundle-and-Brewfile)
 - Uses [mise-en-place](https://mise.jdx.dev/) for managing development environments and project level dependencies
 - Uses [GNU Stow](https://www.gnu.org/software/stow/) for managing dotfiles
 
-## Getting Started
-To install the dotfiles:
+## Installation
+
 ```sh
-xcode-select --install # to install developer tools
+xcode-select --install
 sudo xcodebuild -license
 git clone https://github.com/kulesh/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 /bin/zsh install.sh
 ```
-This will install all the dependencies spelled out in the Brewfile and create symlinks to relevant dotfiles.
 
-## Project Management
+This installs dependencies from the Brewfile and creates symlinks to dotfiles.
 
-The system includes a comprehensive project management wrapper around mise that provides scaffolding, templates, and workflow commands.
-
-### Quick Start
+## Quick Start
 
 ```sh
-# Create a new FastAPI project with template
-~/ $ mkproject my-api fastapi
-~/dev/my-api/ $ ls -al
-# Includes: CLAUDE.md, .env.example, complete FastAPI structure
+# Clone a GitHub project
+cloneproject gh kulesh/example
 
-# Clone GitHub projects
-~/ $ cloneproject gh kulesh/example
-~/dev/example/ $ git remote -v
-origin  git@github.com:kulesh/example.git (fetch)
+# Or create a new project from template
+mkproject my-api fastapi
 
-# Switch between projects (with tab completion)
-~/ $ workon my-api
-~/dev/my-api/ $ showproject
-Project: my-api
-Location: /Users/steve/dev/my-api
+# Switch between projects (tab completion works)
+workon my-api
+
+# See all your projects
+lsprojects
+
+# View current project details
+showproject
 ```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `mkproject <name> [template]` | Create new project (default: base template) |
+| `cloneproject gh <user>/<repo>` | Clone and setup GitHub project |
+| `workon <project>` | Switch to project (with tab completion) |
+| `workon <project> -s` | Switch to project in sandbox mode |
+| `lsprojects` | List all projects with metadata |
+| `lsprojects --tools` | List projects with mise tools |
+| `showproject` | Show current project details |
+| `cdproject` | Jump to current project root |
+| `updateproject [name]` | Pull latest changes (cloned projects) |
+| `rmproject <name>` | Archive project (safe removal) |
+| `rmproject <name> --delete` | Permanently delete project |
+| `list_project_types` | Show available templates |
+
+## Sandboxing
+
+Projects can run in a macOS sandbox that restricts filesystem access—useful for running AI coding agents safely.
+
+### Enable Sandbox
+
+```sh
+workon myproject -s    # First time enables sandbox for project
+workon myproject       # Subsequent runs auto-enter sandbox
+```
+
+### What's Restricted
+
+| Access | Allowed | Blocked |
+|--------|---------|---------|
+| **Read** | Everything except secrets | `~/.ssh/*` (private keys), `~/.aws`, keychains |
+| **Write** | Project dir, `~/.cache`, `~/.config`, `~/.local`, `/tmp` | System dirs, shell configs, `~/.ssh`, `~/.gitconfig` |
+| **Network** | All outbound | — |
+
+### Sandbox Status
+
+```sh
+lsprojects      # Shows 🔒 next to sandboxed projects
+showproject     # Shows "Sandbox: enabled/disabled"
+```
+
+### Multiple Terminals
+
+Each `workon` spawns an independent sandboxed shell—run as many as you need for the same project (e.g., one for Claude, one for the backend, one for frontend).
+
+## Templates
 
 ### Available Templates
 
-Each template includes framework-specific structure, dependencies, and a `CLAUDE.md` file with guidance for AI assistants:
+| Template | Description |
+|----------|-------------|
+| **base** | Git, README, .gitignore, CLAUDE.md |
+| **python** | pyproject.toml structure |
+| **fastapi** | Async API with testing setup |
+| **ruby** | Bundler setup |
+| **rails** | Full MVC structure |
 
-- **base** - Basic project with git, README, .gitignore, and general CLAUDE.md
-- **python** - Python project with pyproject.toml structure
-- **fastapi** - FastAPI project with async patterns, testing, and API structure
-- **ruby** - Ruby project with bundler setup
-- **rails** - Rails project with MVC structure and conventions
-
-Use `list_project_types` to see all available templates with descriptions.
+Each template includes a `CLAUDE.md` with framework-specific guidance for AI assistants.
 
 ### Template Architecture
 
-Templates use a static file + script approach:
 ```
 mise/.config/mise/tasks/mkproject/
 ├── base/
 │   └── CLAUDE.md          # Guidance for all projects
 ├── fastapi/
-│   ├── CLAUDE.md          # FastAPI-specific guidance (overrides base)
+│   ├── CLAUDE.md          # FastAPI-specific guidance
 │   └── .env.example       # Configuration template
 └── fastapi.sh             # Generates project structure
 ```
@@ -75,36 +119,7 @@ When you run `mkproject my-api fastapi`:
 2. The template script generates framework-specific code
 3. Dependencies are installed via mise and package managers
 
-### Key Commands
-
-```sh
-# Project creation
-mkproject <name> [template]      # Create new project (default: base)
-cloneproject gh <user>/<repo>    # Clone and setup GitHub project
-cloneproject <github_url>        # Clone from full URL
-
-# Navigation
-workon <project>                 # Switch to project (tab completion)
-cdproject                        # Jump to current project root
-
-# Information
-lsprojects                       # List all projects with metadata
-lsprojects --type=cloned         # Filter by type (cloned/created)
-lsprojects --tools               # Show mise tools per project
-showproject                      # Show current project details
-
-# Maintenance
-updateproject [name]             # Pull latest changes (cloned projects)
-rmproject <name>                 # Archive project (safe removal)
-rmproject <name> --delete        # Permanently delete project
-
-# Templates
-list_project_types               # Show available templates
-```
-
 ### Adding Custom Templates
-
-To create a new template:
 
 1. Create the template directory:
    ```sh
@@ -113,7 +128,6 @@ To create a new template:
 
 2. Add static files (optional):
    ```sh
-   # Add files that should be copied to every project
    touch mise/.config/mise/tasks/mkproject/mytemplate/CLAUDE.md
    touch mise/.config/mise/tasks/mkproject/mytemplate/.gitignore
    ```
@@ -128,21 +142,18 @@ To create a new template:
 
    echo "Setting up custom project..."
 
-   # Copy static files first
    TEMPLATE_DIR="${0:a:h}/mytemplate"
    if [[ -d "$TEMPLATE_DIR" ]]; then
        cp -r "$TEMPLATE_DIR"/. "$PWD/"
    fi
-
-   # Generate project-specific code here
    ```
 
-4. Test your template:
-   ```sh
-   mkproject test-project mytemplate
-   ```
+4. Test: `mkproject test-project mytemplate`
 
 ## Toolchain
-This is an ever evolving list of tools (see Brewfile for more):
-* [Neovim](http://neovim.io/) with [CodeCompanion](https://github.com/olimorris/codecompanion.nvim) - editor and AI
-* [Ghostty](http://ghostty.org/) - Terminal
+
+See Brewfile for the full list. Highlights:
+- [Neovim](http://neovim.io/) with [CodeCompanion](https://github.com/olimorris/codecompanion.nvim) - editor and AI
+- [Ghostty](http://ghostty.org/) - terminal
+- [mise](https://mise.jdx.dev/) - version management and task runner
+- [starship](https://starship.rs/) - shell prompt
