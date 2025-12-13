@@ -685,17 +685,13 @@ lsprojects() {
         
         echo ""
         
-        # Show mise tools if requested
+        # Show mise tools if requested (use -C to avoid triggering mise hooks)
         if [[ "$show_tools" == true ]]; then
-            local current_dir="$PWD"
-            if safe_cd "$projdir"; then
-                local tools_output=$(mise ls --current 2>/dev/null | grep -v "No tools" | head -3)
-                if [[ -n "$tools_output" ]]; then
-                    echo "$tools_output" | sed 's/^/    /'
-                fi
-                echo ""
-                safe_cd "$current_dir"
+            local tools_output=$(mise -C "$projdir" ls --current 2>/dev/null | grep -v "No tools" | head -3)
+            if [[ -n "$tools_output" ]]; then
+                echo "$tools_output" | sed 's/^/    /'
             fi
+            echo ""
         fi
     done
     
