@@ -9,46 +9,75 @@
 ;;
 ;; NOTE: Setuid binaries (ps, top, sudo, su, etc.) blocked by macOS kernel.
 ;; Use alternatives: pgrep (for ps), htop (for top)
+;;
+;; Parameters passed via sandbox-exec -D:
+;;   HOME        - user home directory
+;;   PROJECT_DIR - current project directory
+;;   SSH_REAL    - real path to ~/.ssh (resolving symlinks)
 
 ;; =============================================================================
-;; FILE READS - Order matters: allow broad, deny secrets, allow exceptions
+;; PARAMETERS
 ;; =============================================================================
 
-;; 1. Allow reading everything
+(define HOME (param "HOME"))
+(define PROJECT_DIR (param "PROJECT_DIR"))
+(define SSH_REAL (param "SSH_REAL"))
+
+;; =============================================================================
+;; FILE READS
+;; =============================================================================
+
+;; Allow reading everything by default
 (allow file-read* (subpath "/"))
 
-;; 2. DENY secrets
-;; NOTE: .ssh is NOT blocked - agents use SSH agent for auth, not direct key access.
-;;       Blocking .ssh breaks git SSH (can't read known_hosts). Accept this tradeoff.
-(deny file-read* (subpath "${HOME}/.aws"))
-(deny file-read* (literal "${HOME}/.netrc"))
-(deny file-read* (subpath "${HOME}/.gnupg/private-keys-v1.d"))
-(deny file-read* (subpath "${HOME}/Library/Keychains"))
-(deny file-read* (subpath "${HOME}/Library/Application Support/Google/Chrome"))
-(deny file-read* (subpath "${HOME}/Library/Application Support/Firefox"))
-(deny file-read* (subpath "${HOME}/Library/Safari"))
+;; Deny regular files under SSH_REAL (allows directory traversal)
+(deny file-read*
+    (require-all
+        (subpath SSH_REAL)
+        (vnode-type REGULAR-FILE)))
+
+;; Allow back specific SSH files needed for git
+(allow file-read* (literal (string-append SSH_REAL "/known_hosts")))
+(allow file-read* (literal (string-append SSH_REAL "/config")))
+
+;; Allow public keys (*.pub)
+(allow file-read*
+    (require-all
+        (subpath SSH_REAL)
+        (vnode-type REGULAR-FILE)
+        (regex #".*\.pub$")))
+
+;; Deny other secrets
+(deny file-read* (subpath (string-append HOME "/.aws")))
+(deny file-read* (literal (string-append HOME "/.netrc")))
+(deny file-read* (subpath (string-append HOME "/.gnupg/private-keys-v1.d")))
+(deny file-read* (subpath (string-append HOME "/Library/Keychains")))
+(deny file-read* (subpath (string-append HOME "/Library/Application Support/Google/Chrome")))
+(deny file-read* (subpath (string-append HOME "/Library/Application Support/Firefox")))
+(deny file-read* (subpath (string-append HOME "/Library/Safari")))
 
 ;; =============================================================================
 ;; FILE WRITES - Deny home, allow specific locations
 ;; =============================================================================
 
 ;; Block ALL writes to home directory
-(deny file-write* (subpath "${HOME}"))
+(deny file-write* (subpath HOME))
 
 ;; Allow writes ONLY to these locations:
-(allow file-write* (subpath "${PROJECT_DIR}"))              ; project directory
-(allow file-write* (subpath "${HOME}/.cache"))              ; cache (incl. mise downloads)
-(allow file-write* (subpath "${HOME}/.local/state"))        ; tool state
-(allow file-write* (subpath "${HOME}/.local/share/mise"))   ; mise installs + shims
-(allow file-write* (subpath "${HOME}/.local/share/zoxide")) ; zoxide db
-(allow file-write* (subpath "${HOME}/.claude"))             ; claude state
-(allow file-write* (subpath "${HOME}/.codex"))              ; codex state
-(allow file-write* (subpath "${HOME}/.opencode"))           ; opencode state
-(allow file-write* (subpath "${HOME}/.config/gh"))          ; github cli
-(allow file-write* (regex #"^${HOME}/\.zsh_history.*"))     ; shell history
-(allow file-write* (subpath "/tmp"))                        ; temp
-(allow file-write* (subpath "/private/tmp"))                ; temp
-(allow file-write* (subpath "/dev"))                        ; devices (tty, null, etc.)
+(allow file-write* (subpath PROJECT_DIR))                                    ; project directory
+(allow file-write* (subpath (string-append HOME "/.cache")))                 ; cache
+(allow file-write* (subpath (string-append HOME "/.local/state")))           ; tool state
+(allow file-write* (subpath (string-append HOME "/.local/share/mise")))      ; mise
+(allow file-write* (subpath (string-append HOME "/.local/share/zoxide")))    ; zoxide
+(allow file-write* (subpath (string-append HOME "/.claude")))                ; claude
+(allow file-write* (subpath (string-append HOME "/.codex")))                 ; codex
+(allow file-write* (subpath (string-append HOME "/.opencode")))              ; opencode
+(allow file-write* (subpath (string-append HOME "/.config/gh")))             ; github cli
+;; zsh_history handled via subpath since regex with string-append doesn't work
+(allow file-write* (subpath (string-append HOME "/.zsh_history")))           ; shell history
+(allow file-write* (subpath "/tmp"))                                         ; temp
+(allow file-write* (subpath "/private/tmp"))                                 ; temp
+(allow file-write* (subpath "/dev"))                                         ; devices
 
 ;; Block system directory writes
 (deny file-write* (subpath "/System"))

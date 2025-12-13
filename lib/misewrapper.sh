@@ -44,20 +44,14 @@ typeset -g SANDBOX_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/sandbox"
 typeset -g SANDBOX_PROFILES_DIR="${SANDBOX_CONFIG_DIR}/profiles"
 typeset -g SANDBOX_LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/sandbox/logs"
 
-# Generate a project-specific sandbox profile by expanding variables in template
-function _sandbox_generate_profile() {
-    local project_dir="$1"
-    local profile_template="${SANDBOX_PROFILES_DIR}/default.sb"
+# Get the real path to ~/.ssh (resolving symlinks)
+function _sandbox_get_ssh_real() {
+    python3 -c "import os; print(os.path.realpath(os.path.expanduser('~/.ssh')))"
+}
 
-    if [[ ! -f "$profile_template" ]]; then
-        echo "Error: Sandbox profile template not found: $profile_template" >&2
-        return 1
-    fi
-
-    # Expand variables in the profile
-    sed -e "s|\${HOME}|${HOME}|g" \
-        -e "s|\${PROJECT_DIR}|${project_dir}|g" \
-        "$profile_template"
+# Return path to sandbox profile template
+function _sandbox_get_profile() {
+    echo "${SANDBOX_PROFILES_DIR}/default.sb"
 }
 
 # Log sandbox events to audit file
@@ -108,12 +102,15 @@ function _workon_sandboxed() {
         return 0
     fi
 
-    # Generate profile with expanded variables
-    # Note: separate declaration from assignment so $? isn't reset by 'local'
-    local profile
-    if ! profile=$(_sandbox_generate_profile "$projdir"); then
+    # Get profile path and resolve SSH real path
+    local profile_path
+    profile_path=$(_sandbox_get_profile)
+    if [[ ! -f "$profile_path" ]]; then
+        echo "Error: Sandbox profile not found: $profile_path" >&2
         return 1
     fi
+    local ssh_real
+    ssh_real=$(_sandbox_get_ssh_real)
 
     _sandbox_log "$projname" "ENTER" "pid=$$ profile=default dir=$projdir"
 
@@ -136,8 +133,13 @@ function _workon_sandboxed() {
 
     # Launch sandboxed shell with sandbox env vars (for starship indicator and chpwd hook)
     # Pass TERM to ensure proper terminal handling (backspace, etc.)
+    # Use -f with -D parameters so profile can use (param "...") for dynamic values
     cd "$projdir"
-    sandbox-exec -p "$profile" env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" /bin/zsh -i
+    sandbox-exec -f "$profile_path" \
+        -D "HOME=$HOME" \
+        -D "PROJECT_DIR=$projdir" \
+        -D "SSH_REAL=$ssh_real" \
+        env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" /bin/zsh -i
     local exit_code=$?
 
     # Clean up marker
