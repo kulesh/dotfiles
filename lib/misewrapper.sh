@@ -85,7 +85,7 @@ function _sandbox_add_hooks() {
     cat >> "$mise_file" << EOF
 
 [hooks]
-enter = 'if [ -z "\$IN_SANDBOX" ] && [ -z "\$SANDBOX_EXITING" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.exiting-* >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "_SANDBOX_HOOK=1 source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+enter = 'if [ -z "\$IN_SANDBOX" ] && [ -z "\$SANDBOX_EXITING" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.exiting-*-${projname} >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "_SANDBOX_HOOK=1 source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
 leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
 EOF
 
@@ -102,8 +102,8 @@ function _workon_sandboxed() {
         return 0
     fi
 
-    # Clean up any stale exit markers from previous sandbox sessions
-    rm -f "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.exiting-*(N) 2>/dev/null
+    # Clean up exit markers for THIS project (from previous sandbox sessions)
+    rm -f "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.exiting-*-${projname}(N) 2>/dev/null
 
     # Get profile path and resolve SSH real path
     local profile_path
@@ -158,7 +158,8 @@ function _workon_sandboxed() {
 
     # Exit code 42 = implicit exit (cd'd out of project)
     # Other codes = explicit exit (user typed 'exit')
-    local exit_marker="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exiting-$$"
+    # Exit marker is project-specific so it only blocks re-entry to THIS project
+    local exit_marker="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exiting-$$-${projname}"
 
     if [[ $exit_code -eq 42 && -f "$dest_file" ]]; then
         # Implicit exit - go to intended destination
