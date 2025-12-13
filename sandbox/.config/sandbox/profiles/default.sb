@@ -56,30 +56,41 @@
 (deny file-read* (subpath (string-append HOME "/Library/Safari")))
 
 ;; =============================================================================
-;; FILE WRITES - Deny home, allow specific locations
+;; FILE WRITES - Allow specific locations, deny dangerous ones
 ;; =============================================================================
 
-;; Block ALL writes to home directory
-(deny file-write* (subpath HOME))
-
-;; Allow writes ONLY to these locations:
+;; Allow writes to project and tool directories
 (allow file-write* (subpath PROJECT_DIR))                                    ; project directory
 (allow file-write* (subpath (string-append HOME "/.cache")))                 ; cache
-(allow file-write* (subpath (string-append HOME "/.local/state")))           ; tool state
-(allow file-write* (subpath (string-append HOME "/.local/share/mise")))      ; mise
-(allow file-write* (subpath (string-append HOME "/.local/share/zoxide")))    ; zoxide
+(allow file-write* (subpath (string-append HOME "/.config")))                ; app configs
+(allow file-write* (subpath (string-append HOME "/.local")))                 ; local data/state
 (allow file-write* (subpath (string-append HOME "/.claude")))                ; claude (symlink)
-(allow file-write* (subpath (string-append HOME "/.dotfiles/claude")))       ; claude (real path)
+(allow file-write* (subpath (string-append HOME "/.dotfiles")))              ; dotfiles (real paths)
 (allow file-write* (subpath (string-append HOME "/.codex")))                 ; codex
 (allow file-write* (subpath (string-append HOME "/.opencode")))              ; opencode
-(allow file-write* (subpath (string-append HOME "/.config/gh")))             ; github cli
-;; zsh_history - main file, lock file, and temp file used during writes
-(allow file-write* (literal (string-append HOME "/.zsh_history")))
+(allow file-write* (subpath (string-append HOME "/.npm")))                   ; npm cache
+(allow file-write* (subpath (string-append HOME "/.pnpm")))                  ; pnpm
+(allow file-write* (literal (string-append HOME "/.zsh_history")))           ; shell history
 (allow file-write* (literal (string-append HOME "/.zsh_history.LOCK")))
 (allow file-write* (literal (string-append HOME "/.zsh_history.new")))
 (allow file-write* (subpath "/tmp"))                                         ; temp
 (allow file-write* (subpath "/private/tmp"))                                 ; temp
 (allow file-write* (subpath "/dev"))                                         ; devices
+
+;; Block dangerous writes (shell configs, keys, credentials)
+;; Note: symlinks resolve to real paths, so block both symlink and real locations
+(deny file-write* (literal (string-append HOME "/.zshrc")))
+(deny file-write* (literal (string-append HOME "/.zshenv")))
+(deny file-write* (literal (string-append HOME "/.bashrc")))
+(deny file-write* (literal (string-append HOME "/.bash_profile")))
+(deny file-write* (literal (string-append HOME "/.profile")))
+(deny file-write* (literal (string-append HOME "/.gitconfig")))
+(deny file-write* (subpath (string-append HOME "/.ssh")))                    ; SSH keys (symlink)
+(deny file-write* (subpath (string-append HOME "/.dotfiles/ssh")))           ; SSH keys (real)
+(deny file-write* (subpath (string-append HOME "/.dotfiles/zsh")))           ; shell configs (real)
+(deny file-write* (subpath (string-append HOME "/.dotfiles/git")))           ; git config (real)
+(deny file-write* (subpath (string-append HOME "/.gnupg")))                  ; GPG keys
+(deny file-write* (subpath (string-append HOME "/.aws")))                    ; AWS creds
 
 ;; Block system directory writes
 (deny file-write* (subpath "/System"))
