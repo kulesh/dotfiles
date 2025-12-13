@@ -1,106 +1,66 @@
 (version 1)
-(deny default)
 
-;; === PROCESS EXECUTION ===
-(allow process-fork)
-(allow process-exec)
-(allow signal)
+;; =============================================================================
+;; Sandbox profile for coding agents - PROJECT SCOPED
+;; =============================================================================
+;;
+;; Philosophy: Agents can READ broadly but WRITE only to project + tool state.
+;; Prevents: global installs, home dir modifications, secret access
+;;
+;; NOTE: Setuid binaries (ps, top, sudo, su, etc.) blocked by macOS kernel.
+;; Use alternatives: pgrep (for ps), htop (for top)
 
-;; === SYSTEM READ ACCESS ===
-;; Note: /Users and ${HOME} literals needed for path traversal (mkdir -p)
-(allow file-read*
-    (literal "/")
-    (literal "/Users")
-    (literal "${HOME}")
-    (subpath "/System")
-    (subpath "/usr")
-    (subpath "/bin")
-    (subpath "/sbin")
-    (subpath "/Library")
-    (subpath "/Applications")
-    (subpath "/private/var")
-    (subpath "/private/etc")
-    (subpath "/dev"))
+;; =============================================================================
+;; FILE READS - Order matters: allow broad, deny secrets, allow exceptions
+;; =============================================================================
 
-;; === DEVICE WRITE ACCESS (null, tty, fd) ===
-(allow file-write*
-    (subpath "/dev"))
+;; 1. Allow reading everything
+(allow file-read* (subpath "/"))
 
-;; === HOMEBREW (read-only) ===
-(allow file-read* (subpath "/opt/homebrew"))
+;; 2. DENY secrets
+;; NOTE: .ssh is NOT blocked - agents use SSH agent for auth, not direct key access.
+;;       Blocking .ssh breaks git SSH (can't read known_hosts). Accept this tradeoff.
+(deny file-read* (subpath "${HOME}/.aws"))
+(deny file-read* (literal "${HOME}/.netrc"))
+(deny file-read* (subpath "${HOME}/.gnupg/private-keys-v1.d"))
+(deny file-read* (subpath "${HOME}/Library/Keychains"))
+(deny file-read* (subpath "${HOME}/Library/Application Support/Google/Chrome"))
+(deny file-read* (subpath "${HOME}/Library/Application Support/Firefox"))
+(deny file-read* (subpath "${HOME}/Library/Safari"))
 
-;; === MISE and ZOXIDE (read/write for shims, cache, state, db) ===
-(allow file-read* file-write* (subpath "${HOME}/.local/share/mise"))
-(allow file-read* file-write* (subpath "${HOME}/.local/share/zoxide"))
-(allow file-read* file-write* (subpath "${HOME}/.local/state"))
-(allow file-read* (subpath "${HOME}/.local/bin"))
+;; =============================================================================
+;; FILE WRITES - Deny home, allow specific locations
+;; =============================================================================
 
-;; === CODING AGENTS (read/write for config and state) ===
-(allow file-read* file-write* (subpath "${HOME}/.claude"))
-(allow file-read* file-write* (subpath "${HOME}/.codex"))
-(allow file-read* file-write* (subpath "${HOME}/.opencode"))
-(allow file-read* file-write* (subpath "${HOME}/.config/gh"))
+;; Block ALL writes to home directory
+(deny file-write* (subpath "${HOME}"))
 
-;; === HOME CONFIG (read-only, except zsh_history) ===
-(allow file-read* (subpath "${HOME}/.config"))
-(allow file-read* (subpath "${HOME}/.zshrc"))
-(allow file-read* (subpath "${HOME}/.zshenv"))
-(allow file-read* (subpath "${HOME}/.dotfiles"))
-(allow file-read* file-write* (regex #"^${HOME}/\.zsh_history.*"))
+;; Allow writes ONLY to these locations:
+(allow file-write* (subpath "${PROJECT_DIR}"))              ; project directory
+(allow file-write* (subpath "${HOME}/.cache"))              ; cache (incl. mise downloads)
+(allow file-write* (subpath "${HOME}/.local/state"))        ; tool state
+(allow file-write* (subpath "${HOME}/.local/share/mise"))   ; mise installs + shims
+(allow file-write* (subpath "${HOME}/.local/share/zoxide")) ; zoxide db
+(allow file-write* (subpath "${HOME}/.claude"))             ; claude state
+(allow file-write* (subpath "${HOME}/.codex"))              ; codex state
+(allow file-write* (subpath "${HOME}/.opencode"))           ; opencode state
+(allow file-write* (subpath "${HOME}/.config/gh"))          ; github cli
+(allow file-write* (regex #"^${HOME}/\.zsh_history.*"))     ; shell history
+(allow file-write* (subpath "/tmp"))                        ; temp
+(allow file-write* (subpath "/private/tmp"))                ; temp
+(allow file-write* (subpath "/dev"))                        ; devices (tty, null, etc.)
 
-;; === LANGUAGE TOOLCHAINS (read-only) ===
-(allow file-read* (subpath "${HOME}/.cargo"))
-(allow file-read* (subpath "${HOME}/.rustup"))
-(allow file-read* (subpath "${HOME}/.npm"))
-(allow file-read* (subpath "${HOME}/.node"))
-(allow file-read* (subpath "${HOME}/.gem"))
-(allow file-read* (subpath "${HOME}/.bundle"))
-(allow file-read* (subpath "${HOME}/.pyenv"))
-(allow file-read* (subpath "${HOME}/.rbenv"))
+;; Block system directory writes
+(deny file-write* (subpath "/System"))
+(deny file-write* (subpath "/usr"))
+(deny file-write* (subpath "/bin"))
+(deny file-write* (subpath "/sbin"))
+(deny file-write* (subpath "/Library"))
+(deny file-write* (subpath "/Applications"))
+(deny file-write* (subpath "/opt/homebrew"))
 
-;; === MACOS APP SUPPORT (read-only for tools like zoxide) ===
-(allow file-read* (subpath "${HOME}/Library/Application Support"))
+;; =============================================================================
+;; EVERYTHING ELSE - Allow by default
+;; =============================================================================
 
-;; === PROJECT DIRECTORY (read/write) ===
-;; Note: ${HOME}/dev literal needed for path traversal to project subdirectories
-(allow file-read* (literal "${HOME}/dev"))
-(allow file-read* file-write* (subpath "${PROJECT_DIR}"))
-
-;; === TEMP (read/write) ===
-(allow file-read* file-write* (subpath "/tmp"))
-(allow file-read* file-write* (subpath "/private/tmp"))
-(allow file-read* file-write* (subpath "${HOME}/.cache"))
-
-;; === NETWORK ===
-(allow network-outbound)
-(allow network-inbound (local ip))
-(allow system-socket)
-
-;; === IPC / MACH ===
-(allow mach-lookup)
-(allow ipc-posix-shm)
-(allow sysctl-read)
-
-;; === TTY / PTY CONTROL ===
-(allow file-ioctl)
-
-;; === PROCESS INSPECTION (for ps, top, htop, debugging) ===
-(allow process-info-pidinfo)
-(allow process-info-listpids)
-(allow process-info-pidfdinfo)
-(allow process-info-rusage)
-(allow process-info-codesignature)
-
-;; === DOCKER ===
-(allow file-read* file-write* (literal "/var/run/docker.sock"))
-
-;; === SSH AGENT (for git SSH operations) ===
-;; Allows agent socket access without exposing private keys
-(allow file-read* file-write*
-    (regex #"^/private/tmp/com\.apple\.launchd\..*/Listeners$"))
-
-;; === SSH CONFIG (read-only) ===
-;; Allow reading SSH config and known_hosts, but NOT private keys
-(allow file-read* (literal "${HOME}/.ssh"))
-(allow file-read* (literal "${HOME}/.ssh/config"))
-(allow file-read* (literal "${HOME}/.ssh/known_hosts"))
+(allow default)
