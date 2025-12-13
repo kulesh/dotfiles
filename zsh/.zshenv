@@ -1,4 +1,4 @@
-# DOTFILES_DIR_PLACEHOLDER
+export DOTFILES_DIR="/Users/kulesh/.dotfiles"
 
 # Source shared variables
 source "$DOTFILES_DIR/include/shared_vars.sh"
@@ -15,6 +15,7 @@ export XDG_CACHE_HOME=$HOME_DIR/.cache
 export XDG_STATE_HOME=$HOME_DIR/.local/state
 
 export STARSHIP_CONFIG=$XDG_CONFIG_HOME/starship/starship.toml
+export _ZO_DATA_DIR=$XDG_CONFIG_HOME/zoxide/
 
 export HOMEBREW_AUTO_UPDATE_SECS=86400
 
