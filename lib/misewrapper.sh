@@ -85,7 +85,7 @@ function _sandbox_add_hooks() {
     cat >> "$mise_file" << EOF
 
 [hooks]
-enter = 'if [ -z "\$IN_SANDBOX" ] && [ -z "\$SANDBOX_EXITING" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.exiting-* >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+enter = 'if [ -z "\$IN_SANDBOX" ] && [ -z "\$SANDBOX_EXITING" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.exiting-* >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "_SANDBOX_HOOK=1 source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
 leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
 EOF
 
@@ -103,7 +103,7 @@ function _workon_sandboxed() {
     fi
 
     # Clean up any stale exit markers from previous sandbox sessions
-    rm -f "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.exiting-* 2>/dev/null
+    rm -f "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.exiting-*(N) 2>/dev/null
 
     # Get profile path and resolve SSH real path
     local profile_path
@@ -1423,8 +1423,9 @@ fi
 # Mise hooks only fire on directory change, not shell startup. When a new
 # terminal opens directly in a sandboxed project (via Ghostty auto-cd), we
 # need to detect the .sandbox marker and enter sandbox mode automatically.
+# Skip if _SANDBOX_HOOK is set (we're being sourced by a mise hook, not shell init).
 
-if [[ -z "$IN_SANDBOX" && -f ".sandbox" && -f ".mise.toml" ]]; then
+if [[ -z "$_SANDBOX_HOOK" && -z "$IN_SANDBOX" && -f ".sandbox" && -f ".mise.toml" ]]; then
     _workon_sandboxed "$(basename "$PWD")" "$PWD"
     local sandbox_exit=$?
     if [[ $sandbox_exit -ne 42 ]]; then
