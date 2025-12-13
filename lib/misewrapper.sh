@@ -80,12 +80,18 @@ function _sandbox_add_hooks() {
     local mise_file="$projdir/.mise.toml"
     local projname=$(basename "$projdir")
 
+    # Skip if hooks already exist
+    if grep -q '^\[hooks\]' "$mise_file" 2>/dev/null; then
+        echo "Hooks already exist in $mise_file"
+        return 0
+    fi
+
     # Append hooks to .mise.toml
-    # Note: IN_SANDBOX env var is set by sandbox-exec and inherited by child processes
+    # Note: Check for marker file (mise hooks don't inherit env vars)
     cat >> "$mise_file" << EOF
 
 [hooks]
-enter = 'if [ -z "\$IN_SANDBOX" ] && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+enter = 'if [ ! -f /tmp/.sandbox-entering ] && [ -f ".sandbox" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
 leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
 EOF
 
@@ -97,11 +103,9 @@ function _workon_sandboxed() {
     local projname="$1"
     local projdir="$2"
 
-    # Prevent nested sandboxes
+    # Prevent nested sandboxes (return 0 to avoid mise hook warnings)
     if [[ -n "$IN_SANDBOX" ]]; then
-        echo "Already in sandbox for: $SANDBOX_PROJECT"
-        echo "Exit current sandbox first (exit or Ctrl-D)"
-        return 1
+        return 0
     fi
 
     # Generate profile with expanded variables
@@ -123,11 +127,17 @@ function _workon_sandboxed() {
     # Save original directory to restore after sandbox exits
     local original_dir="$PWD"
 
+    # Create marker to block mise hook re-entry (mise hooks don't inherit env vars)
+    touch "/tmp/.sandbox-entering"
+
     # Launch sandboxed shell with sandbox env vars (for starship indicator and chpwd hook)
     # Pass TERM to ensure proper terminal handling (backspace, etc.)
     cd "$projdir"
     sandbox-exec -p "$profile" env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" /bin/zsh -i
     local exit_code=$?
+
+    # Clean up marker
+    rm -f "/tmp/.sandbox-entering"
 
     # Restore original directory
     cd "$original_dir"
