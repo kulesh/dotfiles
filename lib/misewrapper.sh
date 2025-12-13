@@ -81,11 +81,11 @@ function _sandbox_add_hooks() {
     fi
 
     # Append hooks to .mise.toml
-    # Hook checks: 1) not already in sandbox, 2) no entry markers, 3) .sandbox file exists, 4) actually at project dir
+    # Hook checks: 1) not already in sandbox, 2) no entry/exit markers, 3) .sandbox file exists, 4) actually at project dir
     cat >> "$mise_file" << EOF
 
 [hooks]
-enter = 'if [ -z "\$IN_SANDBOX" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
+enter = 'if [ -z "\$IN_SANDBOX" ] && [ -z "\$SANDBOX_EXITING" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.exiting-* >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
 leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
 EOF
 
@@ -155,17 +155,28 @@ function _workon_sandboxed() {
 
     # Exit code 42 = implicit exit (cd'd out of project)
     # Other codes = explicit exit (user typed 'exit')
+    local exit_marker="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exiting-$$"
+
     if [[ $exit_code -eq 42 && -f "$dest_file" ]]; then
         # Implicit exit - go to intended destination
         local destination
         destination=$(<"$dest_file")
         rm -f "$dest_file"
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit dest=$destination"
+        # Set env var to block mise hooks during/after transition
+        export SANDBOX_EXITING=1
+        touch "$exit_marker"
         cd "$destination"
+        rm -f "$exit_marker"
+        unset SANDBOX_EXITING
     elif [[ $exit_code -eq 42 ]]; then
         # Implicit exit but no dest file - restore original
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
+        export SANDBOX_EXITING=1
+        touch "$exit_marker"
         cd "$original_dir"
+        rm -f "$exit_marker"
+        unset SANDBOX_EXITING
     else
         # Explicit exit - print message
         _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"

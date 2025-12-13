@@ -1,4 +1,4 @@
 
 [hooks]
-enter = 'if [ -z "$IN_SANDBOX" ] && ! ls "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "$PWD" = "/Users/kulesh/dev/dotfiles" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed dotfiles /Users/kulesh/dev/dotfiles"; fi'
+enter = 'if [ -z "$IN_SANDBOX" ] && [ -z "$SANDBOX_EXITING" ] && ! ls "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && ! ls "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.exiting-* >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "$PWD" = "/Users/kulesh/dev/dotfiles" ]; then zsh -c "source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed dotfiles /Users/kulesh/dev/dotfiles"; fi'
 leave = '[ -n "$IN_SANDBOX" ] && exit 0 || true'
