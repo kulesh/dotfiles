@@ -72,9 +72,10 @@
 (allow file-write* (subpath (string-append HOME "/.codex")))                 ; codex
 (allow file-write* (subpath (string-append HOME "/.opencode")))              ; opencode
 (allow file-write* (subpath (string-append HOME "/.config/gh")))             ; github cli
-;; zsh_history - need literal for the file plus the lock file pattern
+;; zsh_history - main file, lock file, and temp file used during writes
 (allow file-write* (literal (string-append HOME "/.zsh_history")))
 (allow file-write* (literal (string-append HOME "/.zsh_history.LOCK")))
+(allow file-write* (literal (string-append HOME "/.zsh_history.new")))
 (allow file-write* (subpath "/tmp"))                                         ; temp
 (allow file-write* (subpath "/private/tmp"))                                 ; temp
 (allow file-write* (subpath "/dev"))                                         ; devices
