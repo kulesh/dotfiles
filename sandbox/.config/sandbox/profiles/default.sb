@@ -68,7 +68,8 @@
 (allow file-write* (subpath (string-append HOME "/.local/state")))           ; tool state
 (allow file-write* (subpath (string-append HOME "/.local/share/mise")))      ; mise
 (allow file-write* (subpath (string-append HOME "/.local/share/zoxide")))    ; zoxide
-(allow file-write* (subpath (string-append HOME "/.claude")))                ; claude
+(allow file-write* (subpath (string-append HOME "/.claude")))                ; claude (symlink)
+(allow file-write* (subpath (string-append HOME "/.dotfiles/claude")))       ; claude (real path)
 (allow file-write* (subpath (string-append HOME "/.codex")))                 ; codex
 (allow file-write* (subpath (string-append HOME "/.opencode")))              ; opencode
 (allow file-write* (subpath (string-append HOME "/.config/gh")))             ; github cli
