@@ -50,7 +50,9 @@
 (deny file-read* (subpath (string-append HOME "/.aws")))
 (deny file-read* (literal (string-append HOME "/.netrc")))
 (deny file-read* (subpath (string-append HOME "/.gnupg/private-keys-v1.d")))
-(deny file-read* (subpath (string-append HOME "/Library/Keychains")))
+;; Allowing keychain reads - needed for git credential-osxkeychain helper.
+;; Blocking this causes a confusing macOS "Keychain Not Found" dialog on startup.
+;; (deny file-read* (subpath (string-append HOME "/Library/Keychains")))
 (deny file-read* (subpath (string-append HOME "/Library/Application Support/Google/Chrome")))
 (deny file-read* (subpath (string-append HOME "/Library/Application Support/Firefox")))
 (deny file-read* (subpath (string-append HOME "/Library/Safari")))
