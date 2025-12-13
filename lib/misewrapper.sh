@@ -164,19 +164,14 @@ function _workon_sandboxed() {
 # Extract git remote information
 function get_git_remote_info() {
   local repo_dir="$1"
-  local current_dir="$PWD"
-  
+
   if [[ ! -d "$repo_dir/.git" ]]; then
     return 1
   fi
-  
-  if ! safe_cd "$repo_dir"; then
-    return 1
-  fi
-  
-  local remote_url=$(git remote get-url origin 2>/dev/null)
-  safe_cd "$current_dir"
-  
+
+  # Use git -C to avoid cd which triggers mise hooks
+  local remote_url=$(git -C "$repo_dir" remote get-url origin 2>/dev/null)
+
   if [[ -n "$remote_url" ]]; then
     echo "$remote_url"
     return 0
