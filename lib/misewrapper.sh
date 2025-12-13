@@ -151,19 +151,30 @@ function _workon_sandboxed() {
         -D "SSH_REAL=$ssh_real" \
         env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" /bin/zsh -i
     local exit_code=$?
+    local dest_file="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$$"
 
-    # Restore original directory
-    cd "$original_dir"
-
-    _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
-
-    # Pretty exit message
-		local red='\033[1;91m'
-    local cyan='\033[36m'
-    local dim='\033[2m'
-    local reset='\033[0m'
-
-    echo -e "${red}▸ sandbox exited${reset}: ${cyan}[$projname]${reset}"
+    # Exit code 42 = implicit exit (cd'd out of project)
+    # Other codes = explicit exit (user typed 'exit')
+    if [[ $exit_code -eq 42 && -f "$dest_file" ]]; then
+        # Implicit exit - go to intended destination
+        local destination
+        destination=$(<"$dest_file")
+        rm -f "$dest_file"
+        _sandbox_log "$projname" "EXIT" "pid=$$ implicit dest=$destination"
+        cd "$destination"
+    elif [[ $exit_code -eq 42 ]]; then
+        # Implicit exit but no dest file - restore original
+        _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
+        cd "$original_dir"
+    else
+        # Explicit exit - print message
+        _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
+        local red='\033[1;91m'
+        local cyan='\033[36m'
+        local reset='\033[0m'
+        echo -e "${red}▸ sandbox exited${reset}: ${cyan}[$projname]${reset}"
+        cd "$original_dir"
+    fi
 
     return $exit_code
 }
@@ -597,6 +608,11 @@ function workon() {
 
     if [[ "$use_sandbox" == true ]]; then
         _workon_sandboxed "$projname" "$projdir"
+        local sandbox_exit=$?
+        if [[ $sandbox_exit -ne 42 ]]; then
+            exit $sandbox_exit  # Explicit exit - close terminal
+        fi
+        # Implicit exit (42) - already cd'd to destination by _workon_sandboxed
     else
         if safe_cd "$projdir"; then
             echo "Now working on $projname"
@@ -1383,9 +1399,26 @@ if [[ -n "$IN_SANDBOX" && -n "$SANDBOX_PROJECT_DIR" ]]; then
     _sandbox_chpwd() {
         # Exit sandbox if we've left the project directory
         if [[ "$PWD" != "$SANDBOX_PROJECT_DIR"* ]]; then
-            # echo -e "\033[2m▸ leaving sandbox\033[0m"
-            exit 0
+            # Save destination for parent shell, exit with sentinel code 42
+            echo "$PWD" > "${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$$"
+            exit 42
         fi
     }
     chpwd_functions+=(_sandbox_chpwd)
+fi
+
+# =============================================================================
+# Auto-enter sandbox on shell startup
+# =============================================================================
+# Mise hooks only fire on directory change, not shell startup. When a new
+# terminal opens directly in a sandboxed project (via Ghostty auto-cd), we
+# need to detect the .sandbox marker and enter sandbox mode automatically.
+
+if [[ -z "$IN_SANDBOX" && -f ".sandbox" && -f ".mise.toml" ]]; then
+    _workon_sandboxed "$(basename "$PWD")" "$PWD"
+    local sandbox_exit=$?
+    if [[ $sandbox_exit -ne 42 ]]; then
+        exit $sandbox_exit  # Explicit exit - close terminal
+    fi
+    # Implicit exit (42) - already cd'd to destination by _workon_sandboxed
 fi
