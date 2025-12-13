@@ -40,12 +40,11 @@
 (allow file-read* (literal (string-append SSH_REAL "/known_hosts")))
 (allow file-read* (literal (string-append SSH_REAL "/config")))
 
-;; Allow public keys (*.pub)
-(allow file-read*
-    (require-all
-        (subpath SSH_REAL)
-        (vnode-type REGULAR-FILE)
-        (regex #".*\.pub$")))
+;; Allow public keys (explicit list since regex in require-all doesn't work)
+(allow file-read* (literal (string-append SSH_REAL "/id_rsa.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_ed25519.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_ecdsa.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_dsa.pub")))
 
 ;; Deny other secrets
 (deny file-read* (subpath (string-append HOME "/.aws")))
@@ -73,8 +72,9 @@
 (allow file-write* (subpath (string-append HOME "/.codex")))                 ; codex
 (allow file-write* (subpath (string-append HOME "/.opencode")))              ; opencode
 (allow file-write* (subpath (string-append HOME "/.config/gh")))             ; github cli
-;; zsh_history handled via subpath since regex with string-append doesn't work
-(allow file-write* (subpath (string-append HOME "/.zsh_history")))           ; shell history
+;; zsh_history - need literal for the file plus the lock file pattern
+(allow file-write* (literal (string-append HOME "/.zsh_history")))
+(allow file-write* (literal (string-append HOME "/.zsh_history.LOCK")))
 (allow file-write* (subpath "/tmp"))                                         ; temp
 (allow file-write* (subpath "/private/tmp"))                                 ; temp
 (allow file-write* (subpath "/dev"))                                         ; devices
