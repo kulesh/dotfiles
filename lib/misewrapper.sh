@@ -102,6 +102,9 @@ function _workon_sandboxed() {
         return 0
     fi
 
+    # Clean up any stale exit markers from previous sandbox sessions
+    rm -f "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.exiting-* 2>/dev/null
+
     # Get profile path and resolve SSH real path
     local profile_path
     profile_path=$(_sandbox_get_profile)
@@ -163,20 +166,16 @@ function _workon_sandboxed() {
         destination=$(<"$dest_file")
         rm -f "$dest_file"
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit dest=$destination"
-        # Set env var to block mise hooks during/after transition
-        export SANDBOX_EXITING=1
+        # Leave exit marker - it blocks mise hooks until next sandbox entry
         touch "$exit_marker"
         cd "$destination"
-        rm -f "$exit_marker"
-        unset SANDBOX_EXITING
+        # Don't remove marker here - let it persist to block prompt-time hooks
     elif [[ $exit_code -eq 42 ]]; then
         # Implicit exit but no dest file - restore original
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
-        export SANDBOX_EXITING=1
         touch "$exit_marker"
         cd "$original_dir"
-        rm -f "$exit_marker"
-        unset SANDBOX_EXITING
+        # Don't remove marker here
     else
         # Explicit exit - print message
         _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
