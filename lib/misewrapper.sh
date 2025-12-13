@@ -149,7 +149,7 @@ function _workon_sandboxed() {
         -D "HOME=$HOME" \
         -D "PROJECT_DIR=$projdir" \
         -D "SSH_REAL=$ssh_real" \
-        env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" /bin/zsh -i
+        env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" SANDBOX_PARENT_PID=$$ /bin/zsh -i
     local exit_code=$?
     local dest_file="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$$"
 
@@ -1399,8 +1399,8 @@ if [[ -n "$IN_SANDBOX" && -n "$SANDBOX_PROJECT_DIR" ]]; then
     _sandbox_chpwd() {
         # Exit sandbox if we've left the project directory
         if [[ "$PWD" != "$SANDBOX_PROJECT_DIR"* ]]; then
-            # Save destination for parent shell, exit with sentinel code 42
-            echo "$PWD" > "${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$$"
+            # Save destination for parent shell (use parent PID for file), exit with sentinel code 42
+            echo "$PWD" > "${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$SANDBOX_PARENT_PID"
             exit 42
         fi
     }
