@@ -2,6 +2,7 @@ format = """
 [](#9A348E)\
 $os\
 $username\
+${custom.sandbox}\
 [](bg:#DA627D fg:#9A348E)\
 $directory\
 [](fg:#DA627D bg:#FCA17D)\
@@ -147,3 +148,11 @@ disabled = false
 time_format = "%R" # Hour:Minute Format
 style = "bg:#33658A"
 format = '[ ♥ $time ]($style)'
+
+# Sandbox indicator - shows lock icon when IN_SANDBOX=1
+[custom.sandbox]
+command = "echo '🔒'"
+when = '[ "$IN_SANDBOX" = "1" ]'
+style = "bg:#9A348E fg:#FFFFFF bold"
+format = "[$output ]($style)"
+disabled = false

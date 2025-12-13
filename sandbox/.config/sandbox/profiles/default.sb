@@ -1,0 +1,85 @@
+(version 1)
+(deny default)
+
+;; === PROCESS EXECUTION ===
+(allow process-fork)
+(allow process-exec)
+(allow signal)
+
+;; === SYSTEM READ ACCESS ===
+;; Note: /Users and ${HOME} literals needed for path traversal (mkdir -p)
+(allow file-read*
+    (literal "/")
+    (literal "/Users")
+    (literal "${HOME}")
+    (subpath "/System")
+    (subpath "/usr")
+    (subpath "/bin")
+    (subpath "/sbin")
+    (subpath "/Library")
+    (subpath "/Applications")
+    (subpath "/private/var")
+    (subpath "/private/etc")
+    (subpath "/dev"))
+
+;; === DEVICE WRITE ACCESS (null, tty, fd) ===
+(allow file-write*
+    (subpath "/dev"))
+
+;; === HOMEBREW (read-only) ===
+(allow file-read* (subpath "/opt/homebrew"))
+
+;; === MISE and ZOXIDE (read/write for shims, cache, state, db) ===
+(allow file-read* file-write* (subpath "${HOME}/.local/share/mise"))
+(allow file-read* file-write* (subpath "${HOME}/.local/share/zoxide"))
+(allow file-read* file-write* (subpath "${HOME}/.local/state"))
+(allow file-read* (subpath "${HOME}/.local/bin"))
+
+;; === CODING AGENTS (read/write for config and state) ===
+(allow file-read* file-write* (subpath "${HOME}/.claude"))
+(allow file-read* file-write* (subpath "${HOME}/.codex"))
+(allow file-read* file-write* (subpath "${HOME}/.opencode"))
+
+;; === HOME CONFIG (read-only, except zsh_history) ===
+(allow file-read* (subpath "${HOME}/.config"))
+(allow file-read* (subpath "${HOME}/.zshrc"))
+(allow file-read* (subpath "${HOME}/.zshenv"))
+(allow file-read* (subpath "${HOME}/.dotfiles"))
+(allow file-read* file-write* (regex #"^${HOME}/\.zsh_history.*"))
+
+;; === LANGUAGE TOOLCHAINS (read-only) ===
+(allow file-read* (subpath "${HOME}/.cargo"))
+(allow file-read* (subpath "${HOME}/.rustup"))
+(allow file-read* (subpath "${HOME}/.npm"))
+(allow file-read* (subpath "${HOME}/.node"))
+(allow file-read* (subpath "${HOME}/.gem"))
+(allow file-read* (subpath "${HOME}/.bundle"))
+(allow file-read* (subpath "${HOME}/.pyenv"))
+(allow file-read* (subpath "${HOME}/.rbenv"))
+
+;; === MACOS APP SUPPORT (read-only for tools like zoxide) ===
+(allow file-read* (subpath "${HOME}/Library/Application Support"))
+
+;; === PROJECT DIRECTORY (read/write) ===
+;; Note: ${HOME}/dev literal needed for path traversal to project subdirectories
+(allow file-read* (literal "${HOME}/dev"))
+(allow file-read* file-write* (subpath "${PROJECT_DIR}"))
+
+;; === TEMP (read/write) ===
+(allow file-read* file-write* (subpath "/tmp"))
+(allow file-read* file-write* (subpath "/private/tmp"))
+(allow file-read* file-write* (subpath "${HOME}/.cache"))
+
+;; === NETWORK ===
+(allow network-outbound)
+(allow network-inbound (local ip))
+(allow system-socket)
+
+;; === IPC / MACH ===
+(allow mach-lookup)
+(allow ipc-posix-shm)
+(allow sysctl-read)
+
+;; === TTY / PTY CONTROL ===
+(allow file-ioctl)
+(allow process-info-pidinfo)
