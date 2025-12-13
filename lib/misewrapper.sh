@@ -117,11 +117,16 @@ function _workon_sandboxed() {
 
     _sandbox_log "$projname" "ENTER" "pid=$$ profile=default dir=$projdir"
 
-    echo "Entering sandboxed environment for: $projname"
-    echo "  Project (r/w): $projdir"
-    echo "  Tools (r/o):   ~/.local/share/mise, /opt/homebrew"
-    echo "  Network:       outbound allowed"
-    echo "  Exit with:     exit or Ctrl-D"
+    # Pretty sandbox banner
+    local cyan='\033[36m'
+    local dim='\033[2m'
+    local reset='\033[0m'
+
+    echo ""
+    echo -e "${cyan}▸ sandbox${reset} ${dim}│${reset} $projname"
+    echo -e "  ${dim}project${reset}  $projdir"
+    echo -e "  ${dim}tools${reset}    ~/.local/share/mise, /opt/homebrew"
+    echo -e "  ${dim}network${reset}  outbound allowed"
     echo ""
 
     # Save original directory to restore after sandbox exits
