@@ -68,28 +68,47 @@ function _sandbox_log() {
     echo "${timestamp} [${event_type}] ${message}" >> "${log_file}" 2>/dev/null
 }
 
-# Add mise hooks for auto-enter/exit sandbox on cd
+# =============================================================================
+# Sandbox entry hook (runs in non-sandbox shells on every cd)
+# =============================================================================
+# This replaces mise hooks for sandbox entry - zsh chpwd gives us better control
+# and avoids race conditions with marker files.
+if [[ -z "$IN_SANDBOX" ]]; then
+    _sandbox_entry_chpwd() {
+        # Skip if currently spawning/exiting a sandbox (prevents re-entry during cd)
+        [[ -n "$_SANDBOX_SPAWNING" ]] && return 0
+
+        # Check if current directory is a sandboxed project
+        [[ -f ".sandbox" && -f ".mise.toml" ]] || return 0
+
+        # Enter sandbox
+        _workon_sandboxed "$(basename "$PWD")" "$PWD"
+    }
+    chpwd_functions+=(_sandbox_entry_chpwd)
+fi
+
+# Legacy function - sandbox entry is now handled by zsh chpwd hook (_sandbox_entry_chpwd)
+# Kept for backwards compatibility with workon -s command
 function _sandbox_add_hooks() {
     local projdir="$1"
     local mise_file="$projdir/.mise.toml"
-    local projname=$(basename "$projdir")
 
-    # Skip if hooks already exist
+    # No mise hooks needed - sandbox detection via .sandbox marker + zsh chpwd
+    # Just add no-op hooks to prevent mise from complaining about missing hooks
     if grep -q '^\[hooks\]' "$mise_file" 2>/dev/null; then
-        echo "Hooks already exist in $mise_file"
+        echo "Hooks section already exists in $mise_file"
         return 0
     fi
 
-    # Append hooks to .mise.toml
-    # Hook checks: 1) not already in sandbox, 2) no entry/exit markers, 3) .sandbox file exists, 4) actually at project dir
-    cat >> "$mise_file" << EOF
+    cat >> "$mise_file" << 'EOF'
 
 [hooks]
-enter = 'if [ -z "\$IN_SANDBOX" ] && [ -z "\$SANDBOX_EXITING" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.exiting-*-${projname} >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "_SANDBOX_HOOK=1 source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
-leave = 'true'  # _sandbox_chpwd handles sandbox exit with proper exit code
+# Sandbox entry/exit handled by zsh chpwd hooks, not mise
+enter = 'true'
+leave = 'true'
 EOF
 
-    echo "Sandbox hooks added to $mise_file"
+    echo "No-op hooks added to $mise_file (sandbox managed by zsh chpwd)"
 }
 
 # Enter sandboxed environment using macOS sandbox-exec
@@ -97,18 +116,17 @@ function _workon_sandboxed() {
     local projname="$1"
     local projdir="$2"
 
-    # Prevent nested sandboxes (return 0 to avoid mise hook warnings)
-    if [[ -n "$IN_SANDBOX" ]]; then
-        return 0
-    fi
+    # Prevent nested sandboxes
+    [[ -n "$IN_SANDBOX" ]] && return 0
 
-    # Clean up exit markers for THIS project (from previous sandbox sessions)
-    rm -f "${XDG_CACHE_HOME:-$HOME/.cache}"/sandbox/.exiting-*-${projname}(N) 2>/dev/null
+    # Set spawning guard - prevents _sandbox_entry_chpwd from re-entering during cd
+    _SANDBOX_SPAWNING=1
 
     # Get profile path and resolve SSH real path
     local profile_path
     profile_path=$(_sandbox_get_profile)
     if [[ ! -f "$profile_path" ]]; then
+        unset _SANDBOX_SPAWNING
         echo "Error: Sandbox profile not found: $profile_path" >&2
         return 1
     fi
@@ -119,11 +137,11 @@ function _workon_sandboxed() {
 
     # Pretty sandbox banner
     local cyan='\033[36m'
-		local green='\033[1;92m'
+    local green='\033[1;92m'
     local dim='\033[2m'
     local reset='\033[0m'
 
-    echo -e "${green}▸ sandbox entered${reset}: ${dim}${reset}${cyan}[$projname]${reset}"
+    echo -e "${green}▸ sandbox entered${reset}: ${cyan}[$projname]${reset}"
     echo -e "  ${dim}project${reset}  $projdir"
     echo -e "  ${dim}tools${reset}    mise, homebrew, docker"
     echo -e "  ${dim}network${reset}  outbound allowed"
@@ -131,60 +149,44 @@ function _workon_sandboxed() {
     # Save original directory to restore after sandbox exits
     local original_dir="$PWD"
 
-    # Create short-lived marker to block mise hook during initial cd (XDG-compliant)
-    # Marker is PID-specific and removed immediately after cd, before sandbox-exec
-    local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}"
-    local marker_dir="$cache_dir/sandbox"
-    mkdir -p "$marker_dir"
-    local marker="$marker_dir/.entering-$$"
-    touch "$marker"
-
-    # cd triggers mise hook, but marker blocks re-entry
+    # cd to project directory (no marker files needed - _SANDBOX_SPAWNING guards us)
     cd "$projdir"
 
-    # Remove marker immediately - past the dangerous cd
-    rm -f "$marker"
-
-    # Launch sandboxed shell with sandbox env vars (for starship indicator and chpwd hook)
-    # Pass TERM to ensure proper terminal handling (backspace, etc.)
-    # Use -f with -D parameters so profile can use (param "...") for dynamic values
+    # Launch sandboxed shell with env vars for starship indicator and chpwd hook
     sandbox-exec -f "$profile_path" \
         -D "HOME=$HOME" \
         -D "PROJECT_DIR=$projdir" \
         -D "SSH_REAL=$ssh_real" \
         env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" SANDBOX_PARENT_PID=$$ /bin/zsh -i
     local exit_code=$?
-    local dest_file="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$$"
 
-    # Exit code 42 = implicit exit (cd'd out of project)
-    # Other codes = explicit exit (user typed 'exit')
-    # Exit marker is project-specific so it only blocks re-entry to THIS project
-    local exit_marker="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exiting-$$-${projname}"
+    # Handle sandbox exit
+    local dest_file="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$$"
 
     if [[ $exit_code -eq 42 && -f "$dest_file" ]]; then
         # Implicit exit - go to intended destination
-        local destination
-        destination=$(<"$dest_file")
+        local destination=$(<"$dest_file")
         rm -f "$dest_file"
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit dest=$destination"
-        # Exit marker blocks mise hook during this cd, then removed to allow re-entry
-        touch "$exit_marker"
         cd "$destination"
-        rm -f "$exit_marker"
     elif [[ $exit_code -eq 42 ]]; then
-        # Implicit exit but no dest file - restore original
+        # Implicit exit but no dest file - stay at project dir
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
-        touch "$exit_marker"
-        cd "$original_dir"
-        rm -f "$exit_marker"
     else
-        # Explicit exit - print message
+        # Explicit exit - print message and restore original dir
         _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
         local red='\033[1;91m'
-        local cyan='\033[36m'
-        local reset='\033[0m'
         echo -e "${red}▸ sandbox exited${reset}: ${cyan}[$projname]${reset}"
         cd "$original_dir"
+    fi
+
+    # Clear spawning guard - NOW chpwd hooks can fire again
+    unset _SANDBOX_SPAWNING
+
+    # Scenario 5: If we landed in ANOTHER sandboxed project, enter it
+    if [[ $exit_code -eq 42 && -f ".sandbox" && -f ".mise.toml" ]]; then
+        _workon_sandboxed "$(basename "$PWD")" "$PWD"
+        return $?
     fi
 
     return $exit_code
