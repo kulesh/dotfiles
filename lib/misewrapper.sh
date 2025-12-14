@@ -162,6 +162,10 @@ function _workon_sandboxed() {
     # Handle sandbox exit
     local dest_file="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$$"
 
+    # Show exit message for all exits
+    local red='\033[1;91m'
+    echo -e "${red}▸ sandbox exited${reset}: ${cyan}[$projname]${reset}"
+
     if [[ $exit_code -eq 42 && -f "$dest_file" ]]; then
         # Implicit exit - go to intended destination
         local destination=$(<"$dest_file")
@@ -172,10 +176,8 @@ function _workon_sandboxed() {
         # Implicit exit but no dest file - stay at project dir
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
     else
-        # Explicit exit - print message and restore original dir
+        # Explicit exit - restore original dir
         _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
-        local red='\033[1;91m'
-        echo -e "${red}▸ sandbox exited${reset}: ${cyan}[$projname]${reset}"
         cd "$original_dir"
     fi
 
