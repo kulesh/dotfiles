@@ -167,16 +167,16 @@ function _workon_sandboxed() {
         destination=$(<"$dest_file")
         rm -f "$dest_file"
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit dest=$destination"
-        # Leave exit marker - it blocks mise hooks until next sandbox entry
+        # Exit marker blocks mise hook during this cd, then removed to allow re-entry
         touch "$exit_marker"
         cd "$destination"
-        # Don't remove marker here - let it persist to block prompt-time hooks
+        rm -f "$exit_marker"
     elif [[ $exit_code -eq 42 ]]; then
         # Implicit exit but no dest file - restore original
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
         touch "$exit_marker"
         cd "$original_dir"
-        # Don't remove marker here
+        rm -f "$exit_marker"
     else
         # Explicit exit - print message
         _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
