@@ -81,8 +81,15 @@ if [[ -z "$IN_SANDBOX" ]]; then
         # Check if current directory is a sandboxed project
         [[ -f ".sandbox" && -f ".mise.toml" ]] || return 0
 
-        # Enter sandbox - pass OLDPWD so explicit exit returns to where user was before cd
-        _workon_sandboxed "$(basename "$PWD")" "$PWD" "$OLDPWD"
+        # Enter sandbox
+        _workon_sandboxed "$(basename "$PWD")" "$PWD"
+        local sandbox_exit=$?
+
+        # Explicit exit (not 42) = exit the shell entirely
+        if [[ $sandbox_exit -ne 42 ]]; then
+            exit $sandbox_exit
+        fi
+        # Implicit exit (42) - already cd'd to destination by _workon_sandboxed
     }
     chpwd_functions+=(_sandbox_entry_chpwd)
 fi
@@ -111,12 +118,9 @@ EOF
 }
 
 # Enter sandboxed environment using macOS sandbox-exec
-# Args: projname projdir [return_dir]
-#   return_dir: where to cd on explicit exit (defaults to PWD, but chpwd passes OLDPWD)
 function _workon_sandboxed() {
     local projname="$1"
     local projdir="$2"
-    local return_dir="${3:-$PWD}"  # Where to go on explicit exit
 
     # Prevent nested sandboxes
     [[ -n "$IN_SANDBOX" ]] && return 0
@@ -176,9 +180,8 @@ function _workon_sandboxed() {
         # Implicit exit but no dest file - stay at project dir
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
     else
-        # Explicit exit - return to where user was before entering sandbox
-        _sandbox_log "$projname" "EXIT" "pid=$$ explicit return=$return_dir"
-        cd "$return_dir"
+        # Explicit exit - caller handles shell exit
+        _sandbox_log "$projname" "EXIT" "pid=$$ explicit"
     fi
 
     # Clear spawning guard - NOW chpwd hooks can fire again
