@@ -81,8 +81,8 @@ if [[ -z "$IN_SANDBOX" ]]; then
         # Check if current directory is a sandboxed project
         [[ -f ".sandbox" && -f ".mise.toml" ]] || return 0
 
-        # Enter sandbox
-        _workon_sandboxed "$(basename "$PWD")" "$PWD"
+        # Enter sandbox - pass OLDPWD so explicit exit returns to where user was before cd
+        _workon_sandboxed "$(basename "$PWD")" "$PWD" "$OLDPWD"
     }
     chpwd_functions+=(_sandbox_entry_chpwd)
 fi
@@ -111,9 +111,12 @@ EOF
 }
 
 # Enter sandboxed environment using macOS sandbox-exec
+# Args: projname projdir [return_dir]
+#   return_dir: where to cd on explicit exit (defaults to PWD, but chpwd passes OLDPWD)
 function _workon_sandboxed() {
     local projname="$1"
     local projdir="$2"
+    local return_dir="${3:-$PWD}"  # Where to go on explicit exit
 
     # Prevent nested sandboxes
     [[ -n "$IN_SANDBOX" ]] && return 0
@@ -145,9 +148,6 @@ function _workon_sandboxed() {
     echo -e "  ${dim}tools${reset}    mise, homebrew, docker"
     echo -e "  ${dim}network${reset}  outbound allowed"
 
-    # Save original directory to restore after sandbox exits
-    local original_dir="$PWD"
-
     # cd to project directory (no marker files needed - _SANDBOX_SPAWNING guards us)
     cd "$projdir"
 
@@ -176,9 +176,9 @@ function _workon_sandboxed() {
         # Implicit exit but no dest file - stay at project dir
         _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
     else
-        # Explicit exit - restore original dir
-        _sandbox_log "$projname" "EXIT" "pid=$$ code=$exit_code"
-        cd "$original_dir"
+        # Explicit exit - return to where user was before entering sandbox
+        _sandbox_log "$projname" "EXIT" "pid=$$ explicit return=$return_dir"
+        cd "$return_dir"
     fi
 
     # Clear spawning guard - NOW chpwd hooks can fire again
