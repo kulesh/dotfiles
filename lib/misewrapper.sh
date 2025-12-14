@@ -86,7 +86,7 @@ function _sandbox_add_hooks() {
 
 [hooks]
 enter = 'if [ -z "\$IN_SANDBOX" ] && [ -z "\$SANDBOX_EXITING" ] && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.entering-* >/dev/null 2>&1 && ! ls "\${XDG_CACHE_HOME:-\$HOME/.cache}"/sandbox/.exiting-*-${projname} >/dev/null 2>&1 && [ -f ".sandbox" ] && [ "\$PWD" = "${projdir}" ]; then zsh -c "_SANDBOX_HOOK=1 source ~/.dotfiles/lib/misewrapper.sh && _workon_sandboxed ${projname} ${projdir}"; fi'
-leave = '[ -n "\$IN_SANDBOX" ] && exit 0 || true'
+leave = 'true'  # _sandbox_chpwd handles sandbox exit with proper exit code
 EOF
 
     echo "Sandbox hooks added to $mise_file"
