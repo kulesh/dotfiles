@@ -108,7 +108,6 @@ enter = 'true'
 leave = 'true'
 EOF
 
-    echo "No-op hooks added to $mise_file (sandbox managed by zsh chpwd)"
 }
 
 # Enter sandboxed environment using macOS sandbox-exec
