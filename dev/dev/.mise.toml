@@ -2,7 +2,6 @@
 redactions = ["SECRET_*", "*_TOKEN", "PASSWORD"]
 
 [tools]
-"npm:@anthropic-ai/claude-code" = "latest"
 "npm:@openai/codex" = "latest"
 "npm:@google/gemini-cli" = "latest"
 "npm:opencode-ai" = "latest"

@@ -28,8 +28,8 @@ brew "lazygit"
 brew "bat"
 brew "htop"
 brew "ollama"
-brew "aider"
-brew "repomix"
+# brew "aider"
+# brew "repomix"
 brew "pandoc"
 brew "glow"
 brew "gh"
@@ -66,6 +66,7 @@ cask "zed"
 cask "mactex" # ya ya, I still use LaTex for documents!
 cask "obsidian"
 cask "rectangle"
+cask "claude-code"
 
 # Nerd Fonts for coding and terminal
 cask "font-fira-code-nerd-font"    # Great for coding
