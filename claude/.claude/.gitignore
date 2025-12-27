@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# Except these
+!commands/
+!commands/**
+!settings.json
+!.gitignore
