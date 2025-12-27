@@ -168,7 +168,7 @@ generate_ssh_keys() {
   # Check if keys already exist
   if [[ -f "$key_file" ]]; then
     echo "SSH key already exists at $key_file"
-    read -q "REPLY?Do you want to generate a new key anyway? (y/n) "
+    read -q "REPLY?Do you want to generate a new key anyway? (y/n) " || true
     echo ""
     if [[ $REPLY =~ ^[Nn]$ ]]; then
       echo "Keeping existing SSH key."
@@ -210,7 +210,7 @@ generate_ssh_keys() {
   echo "2. Paste the key (it's already in your clipboard on macOS)"
   echo "3. Give it a title (e.g., $(hostname))"
   echo ""
-  read -q "REPLY?Press Y when you've added the key to GitHub (y/n) "
+  read -q "REPLY?Press Y when you've added the key to GitHub (y/n) " || true
   echo ""
  
   if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -230,7 +230,7 @@ generate_ssh_keys() {
   # Set git config if email was provided
   if [[ -n "$email" ]]; then
     echo "Would you like to set this email in your git config? (y/n)"
-    read -q "REPLY?"
+    read -q "REPLY?" || true
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       read "name?Enter your name for git config: "
