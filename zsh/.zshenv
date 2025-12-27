@@ -1,4 +1,4 @@
-export DOTFILES_DIR="/Users/kulesh/.dotfiles"
+# DOTFILES_DIR_PLACEHOLDER
 
 # Source shared variables
 source "$DOTFILES_DIR/include/shared_vars.sh"
@@ -20,3 +20,6 @@ export _ZO_DATA_DIR=$XDG_CONFIG_HOME/zoxide/
 export HOMEBREW_AUTO_UPDATE_SECS=86400
 
 umask 0002
+
+# uv
+export PATH="$HOME_DIR/.local/bin:$PATH"

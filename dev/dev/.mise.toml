@@ -2,11 +2,16 @@
 redactions = ["SECRET_*", "*_TOKEN", "PASSWORD"]
 
 [tools]
+python = "latest"
+uv = "latest"
+node = "latest"
+npm = "latest"
+
 "npm:@openai/codex" = "latest"
 "npm:@google/gemini-cli" = "latest"
 "npm:opencode-ai" = "latest"
-python = "latest"
 "npm:playwright" = "latest"
+"npm:@zed-industries/claude-code-acp" = "latest"
 
 [env]
 _.file = { path = ".keys.json", redact = true }

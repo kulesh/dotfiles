@@ -66,7 +66,7 @@ cask "zed"
 cask "mactex" # ya ya, I still use LaTex for documents!
 cask "obsidian"
 cask "rectangle"
-cask "claude-code"
+# cask "claude-code" # use "native install"!
 
 # Nerd Fonts for coding and terminal
 cask "font-fira-code-nerd-font"    # Great for coding
