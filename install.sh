@@ -135,6 +135,11 @@ install_dotfiles()
   return 0
 }
 
+install_native_tools() {
+    echo "==> Claude Code"
+    curl -fsSL https://claude.ai/install.sh | bash
+}
+
 # Make mise tasks executable (TODO: leaky abstraction...)
 fix_mise_permissions() {
     local tasks_dir="$HOME_DIR/.config/mise/tasks"
@@ -260,6 +265,7 @@ then
     echo "     [+] dotfile installation complete"
 		generate_ssh_keys
 		customize_macos
+		install_native_tools
     echo "     [+] All Done."
 else
     echo "     [x] There was an error installing Homebrew!"
