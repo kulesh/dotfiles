@@ -5,4 +5,5 @@
 !commands/
 !commands/**
 !settings.json
+!statusline.sh
 !.gitignore
