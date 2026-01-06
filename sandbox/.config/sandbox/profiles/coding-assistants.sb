@@ -1,0 +1,48 @@
+(version 1)
+(debug deny) ; logs denied ops  [oai_citation:4‡Reverse Engineering](https://reverse.put.as/wp-content/uploads/2011/09/Apple-Sandbox-Guide-v1.0.pdf)
+
+(define HOME (param "HOME"))
+(define PROJECT_DIR (param "PROJECT_DIR"))
+(define SSH_REAL (param "SSH_REAL"))
+(define AGENT_STATE (string-append HOME "/dev/_agent_state")) ; or pass as param
+
+;; Default: allow (keeps agent effective)
+(allow default)
+
+;; -------------------------
+;; READS: keep broad, deny secrets
+;; -------------------------
+
+;; IMPORTANT: you don’t need (allow file-read* (subpath "/")) if default is allow.
+;; It can make debugging precedence harder.
+
+;; Block SSH private keys (deny all regular files in SSH dir, then allow safe ones)
+(deny file-read*
+  (require-all (subpath SSH_REAL) (vnode-type REGULAR-FILE)))
+
+(allow file-read* (literal (string-append SSH_REAL "/known_hosts")))
+(allow file-read* (literal (string-append SSH_REAL "/config")))
+(allow file-read* (literal (string-append SSH_REAL "/id_rsa.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_ed25519.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_ecdsa.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_dsa.pub")))
+
+;; Expand secret denies (these are common “oops exfil” spots)
+(deny file-read* (subpath (string-append HOME "/.aws")))
+(deny file-read* (subpath (string-append HOME "/.kube")))
+(deny file-read* (subpath (string-append HOME "/.config/gh")))
+(deny file-read* (literal (string-append HOME "/.npmrc")))
+(deny file-read* (subpath (string-append HOME "/.docker")))
+;; …keep your existing Keychains / browser denies…
+
+;; -------------------------
+;; WRITES: deny by default, allow only project + tight state
+;; -------------------------
+
+(deny file-write* (subpath "/"))        ; baseline “no writes anywhere”
+(allow file-write* (subpath PROJECT_DIR))
+(allow file-write* (subpath AGENT_STATE))
+(allow file-write* (subpath "/tmp"))
+(allow file-write* (subpath "/private/tmp"))
+
+;; Avoid (allow file-write* (subpath "/dev")) unless you have a proven need.
