@@ -88,7 +88,7 @@ if [[ -o interactive ]]; then
 		alias_if_exists time hyperfine
 		alias_if_exists vim nvim
 		alias_if_exists retag='ctags -f ".tags" -R --totals --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
-		alias brewup='brew update && brew bundle upgrade'
+		alias brewup='brew update && brew upgrade && brew bundle upgrade'
 fi
 
 export PATH="/opt/homebrew/bin:$PATH"

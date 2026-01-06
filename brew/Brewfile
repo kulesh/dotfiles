@@ -5,6 +5,7 @@
 # tap "homebrew/bundle" # Tap is deprecated, leaving it as an example
 tap "steveyegge/beads"
 tap "kulesh/tap"
+tap "jnsahaj/lumen"
 
 # Brews
 brew "coreutils"
@@ -40,6 +41,8 @@ brew "yt-dlp"
 brew "steveyegge/beads/bd", args: ["head"]
 brew "kulesh/tap/tc"
 brew "kulesh/tap/aiobscura"
+brew "jnsahaj/lumen/lumen"
+brew "mdcat"
 
 # Bugaboo: https://github.com/mas-cli/mas/issues/1029
 # Apple Store apps
@@ -72,3 +75,4 @@ cask "rectangle"
 cask "font-fira-code-nerd-font"    # Great for coding
 cask "font-jetbrains-mono-nerd-font" # Alternative coding font
 cask "font-hack-nerd-font"         # Terminal-friendly
+cask "font-zed-mono-nerd-font"
