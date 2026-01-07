@@ -43,7 +43,7 @@ cat > "package.json" << EOF
   "devDependencies": {
     "@biomejs/biome": "latest",
     "@types/bun": "latest",
-    "typescript": "^5.0.0",
+    "typescript": "latest",
     "vitest": "latest"
   }
 }
@@ -292,12 +292,12 @@ cat > "packages/cli/package.json" << EOF
   },
   "dependencies": {
     "${PACKAGE_SCOPE}/core": "workspace:*",
-    "ink": "^5.0.0",
-    "react": "^18.0.0"
+    "ink": "latest",
+    "react": "latest"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
-    "ink-testing-library": "^4.0.0"
+    "@types/react": "latest",
+    "ink-testing-library": "latest"
   }
 }
 EOF
