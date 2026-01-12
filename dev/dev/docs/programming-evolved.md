@@ -1,4 +1,4 @@
-# Programming Evolved: Lessons & Observations
+# Programming, Evolved: Lessons & Observations
 
 Drafted on December 2025 (v1), January 2026 (v2)
 
