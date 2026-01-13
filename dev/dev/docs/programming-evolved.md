@@ -38,8 +38,8 @@ I don’t intend to add another definition to the already extensive [list of age
 10. Coding assistants come with a sandbox. However, the sandbox tends to get in the way of the agents that make up the assistants. So I rely on an exo-sandbox; a sandbox outside of coding assistants. I am now [using sandbox-exec to contain my sessions](https://github.com/kulesh/dotfiles/pull/8/files) and turned off sandboxes in the coding assistants. Not recommending for everyone but just know you have choices.
 11. There is so much fun, beauty and pleasure in writing code by hand. You can still handcraft code. Just don’t expect this to be your job. This is your passion.
 
-[^1]: I think it is happening faster than ever because distribution channels are mature, most layers are software, and network of people is large and dense.
+[^1]: This evolution is accelerating because distribution channels are mature, most layers of the stack are now software, and the network of practitioners is both large and densely connected.
 
-[^2]: We are in the midst of a Cambrian explosion of software engineering is not too grandiose to be honest. I thought I'd save that line for 2026 look back.
+[^2]: Calling this a Cambrian explosion of software engineering (as oppose to programming) may sound grandiose, but it is directionally correct. I’ll save the retrospective verdict for a 2026 look-back.
 
-[^3]: I have come across one instance since then, in which Opus 4.5 thought instability of the program is due to macos virtualization layer when in fact it was due to connection exhaustion. I had it bisect the code to find the problem itself; however, unfortunately not before it decided to replace vz with qemu.
+[^3]: I have since encountered one counterexample: Opus 4.5 attributed system instability to the macOS virtualization layer when the root cause was connection pool exhaustion. I eventually had it bisect the code to find the issue; though not before it replaced vz with Qemu :-)
