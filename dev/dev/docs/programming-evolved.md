@@ -8,7 +8,7 @@ I have been using Copilot, Cody, and Cursor for about a year and a half. I also 
 
 Let me first define some terms.
 
-## Software Engineering vs. Programming
+### Software Engineering vs. Programming
 
 I like [Titus Winter's definition of Software Engineering](https://www.youtube.com/watch?t=472&v=tISy7EJQPzI&feature=youtu.be&themeRefresh=1). Software Engineering is a function of programming, people, and time. Programming is the pursuit of one person to solve a problem they know using code. When you add time, teams, and trade-offs to programming it is software engineering. Software Engineering is a team sport. Software Engineering has always been about collaborating with people to learn and understand a problem, writing code to solve the problem, finding and fixing bugs, and evolving the solution over time as the problem evolves.
 
@@ -16,7 +16,7 @@ Programming has undergone several major evolutions. Languages progressed from ma
 
 It is happening again and it is happening more broadly and rapidly than any previous evolution[^1]. We are in the midst of a Cambrian explosion of programming[^2].
 
-## Agents vs. Assistants
+### Agents vs. Assistants
 
 I don’t intend to add another definition to the already extensive [list of agent definitions](https://simonwillison.net/tags/agent-definitions/). Instead, for the sake of clarity in this document, I will distinguish between agents and assistants. Claude Code and Codex are coding assistants composed of multiple agents working in concert. Coding assistants and agents are built around a model.
 
