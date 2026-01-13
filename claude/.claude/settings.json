@@ -7,10 +7,6 @@
     "USE_BUILTIN_RIPGREP": "1"
   },
   "includeCoAuthoredBy": false,
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline.sh"
-  },
   "permissions": {
     "allow": [
       "Bash(mise:*)",
@@ -88,6 +84,10 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline.sh"
+  },
   "enabledPlugins": {
     "frontend-design@claude-code-plugins": true,
     "context7@claude-plugins-official": true,
@@ -96,18 +96,31 @@
     "code-review@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true
+    "pyright-lsp@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true
   },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "network": {
-      "allowUnixSockets": ["/var/run/docker.sock"],
+      "allowUnixSockets": [
+        "/var/run/docker.sock"
+      ],
       "allowLocalBinding": true
     },
-    "excludedCommands": ["git", "docker"]
+    "excludedCommands": [
+      "git",
+      "docker"
+    ]
   },
-  "companyAnnouncements": ["Welcome to Claude Code! (global)"],
-  "additionalDirectories": ["~/dev/*", "~/.local/*", "~/.cache/*", "/tmp/*"],
+  "companyAnnouncements": [
+    "Welcome to Claude Code! (global)"
+  ],
+  "additionalDirectories": [
+    "~/dev/*",
+    "~/.local/*",
+    "~/.cache/*",
+    "/tmp/*"
+  ],
   "defaultMode": "plan"
 }
