@@ -38,6 +38,9 @@ I don’t intend to add another definition to the already extensive [list of age
 10. Coding assistants come with a sandbox. However, the sandbox tends to get in the way of the agents that make up the assistants. So I rely on an exo-sandbox; a sandbox outside of coding assistants. I am now [using sandbox-exec to contain my sessions](https://github.com/kulesh/dotfiles/pull/8/files) and turned off sandboxes in the coding assistants. Not recommending for everyone but just know you have choices.
 11. There is so much fun, beauty and pleasure in writing code by hand. You can still handcraft code. Just don’t expect this to be your job. This is your passion.
 
+---
+[Discussion on Hacker News](https://news.ycombinator.com/item?id=46632039)
+
 [^1]: This evolution is accelerating because distribution channels are mature, most layers of the stack are now software, and the network of practitioners is both large and densely connected.
 
 [^2]: Calling this a Cambrian explosion of software engineering (as oppose to programming) may sound grandiose, but it is directionally correct. I’ll save the retrospective verdict for a 2026 look-back.
