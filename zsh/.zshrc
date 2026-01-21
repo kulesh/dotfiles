@@ -1,4 +1,4 @@
-export PATH="/opt/homebrew/bin:$PATH"
+export PATH="/opt/homebrew/bin:/opt/homebrew/opt/ruby/bin:$PATH"
 export EDITOR="vim"
 
 #umask for homrbrew multiuser
@@ -90,6 +90,4 @@ if [[ -o interactive ]]; then
 		alias_if_exists retag='ctags -f ".tags" -R --totals --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
 		alias brewup='brew update && brew upgrade && brew bundle upgrade'
 fi
-
-export PATH="/opt/homebrew/bin:$PATH"
 

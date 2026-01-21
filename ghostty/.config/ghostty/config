@@ -1,8 +1,9 @@
 macos-option-as-alt=true
 keybind = alt+left=unbind
 keybind = alt+right=unbind
+theme=dark:tokyonight storm,light:belafonte day
 # theme=dark:tokyonight storm,light:tokyonight day
-theme=tokyonight storm
+# theme=tokyonight storm
 shell-integration=zsh
 keybind = shift+enter=text:\n
 

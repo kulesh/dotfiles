@@ -1,5 +1,7 @@
 # Three Practices for an Effective Engineering Organization
 
+Drafted in March 2020
+
 The speed with which an engineering team can make production changes safely underscores the team’s effectiveness. Though a myriad of KPIs can be tracked and a slew of practices can be adopted to define and improve effectiveness I found focusing on making every new engineer deploy on day one, building products that can be tested in production, and prototyping based product development will mold an effective engineering practice. Let’s dig into why they matter and how to adopt them.
 
 ### 1. Deploy on Day One
