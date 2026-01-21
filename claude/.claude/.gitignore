@@ -4,6 +4,8 @@
 # Except these
 !commands/
 !commands/**
+!skills/
+!skills/**
 !settings.json
 !statusline.sh
 !.gitignore
