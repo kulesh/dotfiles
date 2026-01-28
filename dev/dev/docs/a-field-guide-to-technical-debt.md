@@ -1,5 +1,7 @@
 # A Field Guide to Technical Debt
 
+Drafted September 2019, revised December 2025
+
 All good businesses accrue debt and manage it deliberately. Similarly, a sound technology strategy must accrue technical debt intentionally and manage it appropriately. This is a framework for doing exactly that, written for both technical and non-technical audiences.
 
 ## Overview
