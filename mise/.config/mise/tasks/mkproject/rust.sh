@@ -6,7 +6,7 @@
 echo "Setting up Rust workspace project..."
 
 # Copy Rust-specific static files (will override base files if same name)
-TEMPLATE_DIR="${0:a:h}/rust"
+TEMPLATE_DIR="${0:a:h}/rust/files"
 if [[ -d "$TEMPLATE_DIR" ]]; then
     echo "Copying Rust template files..."
     cp -r "$TEMPLATE_DIR"/. "$PWD/"

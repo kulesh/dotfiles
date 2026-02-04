@@ -1,13 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code when working with code in this FastAPI project.
-
-## First Things First
-
-BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
-
 ## Project Overview
-
 This is a FastAPI application managed with:
 
 - **mise-en-place** for Python version and development tools

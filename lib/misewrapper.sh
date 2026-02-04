@@ -359,6 +359,91 @@ list_project_types() {
     echo "  #MISE description=\"Your description here\""
 }
 
+# Escape replacement text for sed
+function _mkproject_escape_sed() {
+    local value="$1"
+    value="${value//\\/\\\\}"
+    value="${value//&/\\&}"
+    echo "$value"
+}
+
+# Apply standard placeholders in generated docs
+function _mkproject_apply_doc_placeholders() {
+    local target_file="$1"
+    local project_name="$2"
+
+    [[ -f "$target_file" ]] || return 0
+
+    local module_name="${project_name//-/_}"
+    local project_name_sed=$(_mkproject_escape_sed "$project_name")
+    local module_name_sed=$(_mkproject_escape_sed "$module_name")
+
+    sed -i.bak \
+        -e "s|<project-name>|${project_name_sed}|g" \
+        -e "s|<project_name>|${project_name_sed}|g" \
+        -e "s|<module_name>|${module_name_sed}|g" \
+        "$target_file" && rm -f "$target_file.bak"
+}
+
+# Generate CLAUDE.md and AGENTS.md from shared header + template-specific content
+function _mkproject_generate_docs() {
+    local project_path="$1"
+    local project_type="$2"
+    local project_name="$3"
+
+    local shared_dir="${SCRIPT_DIR}/mise/.config/mise/tasks/mkproject/_shared"
+    local template_dir="${SCRIPT_DIR}/mise/.config/mise/tasks/mkproject/${project_type}"
+    local base_dir="${SCRIPT_DIR}/mise/.config/mise/tasks/mkproject/base"
+
+    local claude_header="${shared_dir}/CLAUDE.header.md"
+    local agents_header="${shared_dir}/AGENTS.header.md"
+    local claude_body="${template_dir}/CLAUDE.project.md"
+    local agents_body="${template_dir}/AGENTS.project.md"
+
+    local legacy_claude="${template_dir}/CLAUDE.md"
+    local legacy_agents="${template_dir}/AGENTS.md"
+    local base_claude="${base_dir}/CLAUDE.project.md"
+    local base_agents="${base_dir}/AGENTS.project.md"
+
+    if [[ ! -f "$claude_header" ]]; then
+        echo "⚠️  Warning: Missing shared header: $claude_header"
+        return 1
+    fi
+
+    if [[ ! -f "$claude_body" ]]; then
+        if [[ -f "$legacy_claude" ]]; then
+            claude_body="$legacy_claude"
+        elif [[ -f "$base_claude" ]]; then
+            claude_body="$base_claude"
+        else
+            echo "⚠️  Warning: Missing CLAUDE project content for template '$project_type'"
+            return 1
+        fi
+    fi
+
+    if [[ ! -f "$agents_header" ]]; then
+        agents_header="$claude_header"
+    fi
+
+    if [[ ! -f "$agents_body" ]]; then
+        if [[ -f "$legacy_agents" ]]; then
+            agents_body="$legacy_agents"
+        elif [[ -f "$base_agents" ]]; then
+            agents_body="$base_agents"
+        else
+            agents_body="$claude_body"
+        fi
+    fi
+
+    cat "$claude_header" "$claude_body" > "$project_path/CLAUDE.md" || return 1
+    cat "$agents_header" "$agents_body" > "$project_path/AGENTS.md" || return 1
+
+    _mkproject_apply_doc_placeholders "$project_path/CLAUDE.md" "$project_name"
+    _mkproject_apply_doc_placeholders "$project_path/AGENTS.md" "$project_name"
+
+    return 0
+}
+
 # Create a new project
 mkproject() {
     local project_name="$1"
@@ -396,6 +481,9 @@ mkproject() {
     
     # Run the project setup task in the project directory
     if mise run --cd "$project_path" "mkproject:$project_type"; then
+        if ! _mkproject_generate_docs "$project_path" "$project_type" "$project_name"; then
+            echo "⚠️  Warning: Failed to generate CLAUDE.md/AGENTS.md"
+        fi
         echo "✅ Project '$project_name' created successfully"
         echo "📁 Location: $project_path"
         safe_cd "$project_path"

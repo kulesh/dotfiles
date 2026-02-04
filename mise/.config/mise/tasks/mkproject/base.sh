@@ -5,7 +5,7 @@
 echo "Initializing project in: $PWD"
 
 # Copy static files from template directory
-TEMPLATE_DIR="${0:a:h}/base"
+TEMPLATE_DIR="${0:a:h}/base/files"
 if [[ -d "$TEMPLATE_DIR" ]]; then
     echo "Copying base template files..."
     cp -r "$TEMPLATE_DIR"/. "$PWD/"

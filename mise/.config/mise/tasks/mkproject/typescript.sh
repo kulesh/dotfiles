@@ -5,8 +5,8 @@
 
 echo "Setting up TypeScript workspace project..."
 
-# Copy TypeScript-specific static files (includes CLAUDE.md)
-TEMPLATE_DIR="${0:a:h}/typescript"
+# Copy TypeScript-specific static files
+TEMPLATE_DIR="${0:a:h}/typescript/files"
 if [[ -d "$TEMPLATE_DIR" ]]; then
     echo "Copying TypeScript template files..."
     cp -r "$TEMPLATE_DIR"/. "$PWD/"
@@ -395,9 +395,6 @@ describe('App', () => {
   });
 });
 EOF
-
-# Update CLAUDE.md with actual project name
-sed -i.bak "s/<project-name>/$PROJECT_NAME/g" CLAUDE.md && rm -f CLAUDE.md.bak
 
 # Extend .gitignore with TypeScript-specific patterns
 cat >> .gitignore << 'EOF'

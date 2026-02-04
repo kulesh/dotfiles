@@ -1,13 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code when working with code in this Rust project.
-
-## First Things First
-
-BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
-
 ## Project Overview
-
 This is a Rust workspace project managed with:
 
 - **mise-en-place** for Rust toolchain version management

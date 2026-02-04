@@ -1,13 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code when working with this TypeScript project.
-
-## First Things First
-
-BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
-
 ## Project Overview
-
 This is a TypeScript monorepo managed with:
 
 - **mise-en-place** for Bun runtime version management

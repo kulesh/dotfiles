@@ -5,8 +5,8 @@
 
 echo "Setting up Next.js + Convex project..."
 
-# Copy Convex-specific static files (includes CLAUDE.md)
-TEMPLATE_DIR="${0:a:h}/convex"
+# Copy Convex-specific static files
+TEMPLATE_DIR="${0:a:h}/convex/files"
 if [[ -d "$TEMPLATE_DIR" ]]; then
     echo "Copying Convex template files..."
     cp -r "$TEMPLATE_DIR"/. "$PWD/"
@@ -922,9 +922,6 @@ bun.lockb
 *.tsbuildinfo
 next-env.d.ts
 EOF
-
-# Update CLAUDE.md with actual project name
-sed -i.bak "s/<project-name>/$PROJECT_NAME/g" CLAUDE.md && rm -f CLAUDE.md.bak
 
 # Add radix-ui/react-label and class-variance-authority for shadcn components
 cat > "package.json.tmp" << EOF

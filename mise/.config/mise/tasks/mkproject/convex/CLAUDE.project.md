@@ -1,13 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code when working with this Convex + Next.js project.
-
-## First Things First
-
-BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
-
 ## Project Overview
-
 This is a full-stack web application using:
 
 - **Frontend**: Next.js 16 (App Router) with React 19

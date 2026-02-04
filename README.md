@@ -94,30 +94,35 @@ Each `workon` spawns an independent sandboxed shell—run as many as you need fo
 
 | Template | Description |
 |----------|-------------|
-| **base** | Git, README, .gitignore, CLAUDE.md |
+| **base** | Git, README, .gitignore, CLAUDE.md, AGENTS.md |
 | **python** | pyproject.toml structure |
 | **fastapi** | Async API with testing setup |
 | **ruby** | Bundler setup |
 | **rails** | Full MVC structure |
 
-Each template includes a `CLAUDE.md` with framework-specific guidance for AI assistants.
+Each template includes a `CLAUDE.project.md` with framework-specific guidance for AI assistants. A shared header lives in `mise/.config/mise/tasks/mkproject/_shared/`, and `mkproject` generates `CLAUDE.md` and `AGENTS.md` in the new project.
 
 ### Template Architecture
 
 ```
 mise/.config/mise/tasks/mkproject/
+├── _shared/
+│   ├── CLAUDE.header.md   # Shared guidance header
+│   └── AGENTS.header.md   # Shared guidance header (Codex)
 ├── base/
-│   └── CLAUDE.md          # Guidance for all projects
+│   └── CLAUDE.project.md  # Base project guidance
 ├── fastapi/
-│   ├── CLAUDE.md          # FastAPI-specific guidance
-│   └── .env.example       # Configuration template
+│   ├── CLAUDE.project.md  # FastAPI-specific guidance
+│   └── files/
+│       └── .env.example   # Configuration template
 └── fastapi.sh             # Generates project structure
 ```
 
 When you run `mkproject my-api fastapi`:
-1. Static files are copied from the template directory
+1. Static files are copied from the template `files/` directory
 2. The template script generates framework-specific code
-3. Dependencies are installed via mise and package managers
+3. `CLAUDE.md` + `AGENTS.md` are generated from shared + template-specific docs
+4. Dependencies are installed via mise and package managers
 
 ### Adding Custom Templates
 
@@ -128,9 +133,11 @@ When you run `mkproject my-api fastapi`:
 
 2. Add static files (optional):
    ```sh
-   touch mise/.config/mise/tasks/mkproject/mytemplate/CLAUDE.md
-   touch mise/.config/mise/tasks/mkproject/mytemplate/.gitignore
+   mkdir mise/.config/mise/tasks/mkproject/mytemplate/files
+   touch mise/.config/mise/tasks/mkproject/mytemplate/files/.gitignore
+   touch mise/.config/mise/tasks/mkproject/mytemplate/CLAUDE.project.md
    ```
+   If you want Codex-specific guidance, add `AGENTS.project.md` too. If it’s missing, `mkproject` reuses `CLAUDE.project.md`.
 
 3. Create the template script:
    ```sh
@@ -142,7 +149,7 @@ When you run `mkproject my-api fastapi`:
 
    echo "Setting up custom project..."
 
-   TEMPLATE_DIR="${0:a:h}/mytemplate"
+   TEMPLATE_DIR="${0:a:h}/mytemplate/files"
    if [[ -d "$TEMPLATE_DIR" ]]; then
        cp -r "$TEMPLATE_DIR"/. "$PWD/"
    fi
