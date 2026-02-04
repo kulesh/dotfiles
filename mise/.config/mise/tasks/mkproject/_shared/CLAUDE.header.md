@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with code in this project.
+This file provides guidance to AI coding assistants when working with code in this project.
 
 ## First Things First
 

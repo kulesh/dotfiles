@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code when working with code in this project.
+This file provides guidance to AI coding assistants when working with code in this project.
 
 ## First Things First
 
@@ -94,4 +94,3 @@ Keep the project directory clean and organized at all times so it is easier to f
 - Assume collaborators have expert-level knowledge.
 - Focus on technical detail, underlying mechanisms, and edge cases.
 - Use a succinct, analytical tone. Avoid exposition of basics unless explicitly requested.
-

@@ -31,17 +31,13 @@ dependencies = []
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "pytest-cov", 
-    "black",
+    "pytest-cov",
     "ruff",
     "mypy"
 ]
 
 [project.scripts]
 $PROJECT_NAME = "$MODULE_NAME:main"
-
-[tool.black]
-line-length = 88
 
 [tool.ruff]
 line-length = 88
@@ -112,13 +108,13 @@ def test_main(capsys):
 EOF
 
 # Install development dependencies and package in editable mode
-mise exec -- uv add --dev pytest pytest-cov black ruff mypy
+mise exec -- uv add --dev pytest pytest-cov ruff mypy
 mise exec -- uv pip install -e .
 mise exec -- uv sync
 
 echo "Python project setup complete!"
 echo "Try: uv run pytest"
 echo "Try: uv run $PROJECT_NAME"
-echo "Try: uv run black src/ tests/"
+echo "Try: uv run ruff format src/ tests/"
 echo "Try: uv run ruff check src/ tests/"
 echo "Try: uv run mypy src/"

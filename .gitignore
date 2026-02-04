@@ -6,3 +6,4 @@ ssh/.ssh/*
 !ssh/.ssh/config
 
 .DS_Store
+AGENTS.md

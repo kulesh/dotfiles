@@ -46,16 +46,12 @@ dev = [
     "pytest-asyncio",
     "httpx",
     "pytest-cov",
-    "black",
     "ruff",
     "mypy"
 ]
 
 [project.scripts]
 $PROJECT_NAME = "$MODULE_NAME:main"
-
-[tool.black]
-line-length = 88
 
 [tool.ruff]
 line-length = 88
