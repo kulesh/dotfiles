@@ -444,6 +444,69 @@ function _mkproject_generate_docs() {
     return 0
 }
 
+# Handle cleanup for failed project creation
+function _mkproject_handle_failure() {
+    local project_path="$1"
+    local project_name="$2"
+
+    [[ -d "$project_path" ]] || return 0
+
+    local archive_dir="${MISE_PROJECTS_DIR}/.archive"
+    local timestamp=$(date +"%Y%m%d_%H%M%S")
+    local archive_path="${archive_dir}/${project_name}_failed_${timestamp}"
+
+    local cleanup_action="${MKPROJECT_CLEANUP:-}"
+    case "$cleanup_action" in
+        keep|archive|delete)
+            ;;
+        *)
+            cleanup_action=""
+            ;;
+    esac
+
+    if [[ -z "$cleanup_action" && -t 0 ]]; then
+        echo ""
+        echo "How should I handle the incomplete project?"
+        echo "  [1] Keep it in place"
+        echo "  [2] Archive to: $archive_path"
+        echo "  [3] Delete it"
+        echo -n "Choice [1-3]: "
+        read -r response
+        case "$response" in
+            2) cleanup_action="archive" ;;
+            3) cleanup_action="delete" ;;
+            *) cleanup_action="keep" ;;
+        esac
+    fi
+
+    case "$cleanup_action" in
+        archive)
+            mkdir -p "$archive_dir"
+            if mv "$project_path" "$archive_path"; then
+                echo "📦 Archived incomplete project to:"
+                echo "   $archive_path"
+            else
+                echo "❌ Error: Failed to archive incomplete project"
+                return 1
+            fi
+            ;;
+        delete)
+            if rm -rf "$project_path"; then
+                echo "🗑️  Deleted incomplete project: $project_path"
+            else
+                echo "❌ Error: Failed to delete incomplete project"
+                return 1
+            fi
+            ;;
+        *)
+            # keep
+            echo "⚠️  Incomplete project left at: $project_path"
+            ;;
+    esac
+
+    return 0
+}
+
 # Create a new project
 mkproject() {
     local project_name="$1"
@@ -489,8 +552,8 @@ mkproject() {
         safe_cd "$project_path"
     else
         echo "❌ Error: Failed to create $project_type project"
-        echo "   ⚠️  Incomplete project left at: $project_path"
-        echo "   You may want to manually remove it or investigate the issue"
+        _mkproject_handle_failure "$project_path" "$project_name"
+        echo "   You may want to investigate the issue before retrying"
         return 1
     fi
 }

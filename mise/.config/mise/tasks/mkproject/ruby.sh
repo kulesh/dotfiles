@@ -5,6 +5,13 @@
 
 echo "Setting up Ruby project..."
 
+# Copy Ruby-specific static files (if any)
+TEMPLATE_DIR="${0:a:h}/ruby/files"
+if [[ -d "$TEMPLATE_DIR" ]]; then
+    echo "Copying Ruby template files..."
+    cp -r "$TEMPLATE_DIR"/. "$PWD/"
+fi
+
 # Get the Ruby version from mise
 RUBY_VERSION=$(mise exec -- ruby -e "puts RUBY_VERSION")
 PROJECT_NAME=$(basename "$PWD")
