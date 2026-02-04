@@ -3,14 +3,12 @@
 #MISE dir="{{cwd}}"
 #MISE depends=["mkproject:base", "mkproject:tools:ruby"]
 
+source "${0:a:h}/_shared/template_helpers.sh"
+
 echo "Setting up Ruby project..."
 
 # Copy Ruby-specific static files (if any)
-TEMPLATE_DIR="${0:a:h}/ruby/files"
-if [[ -d "$TEMPLATE_DIR" ]]; then
-    echo "Copying Ruby template files..."
-    cp -r "$TEMPLATE_DIR"/. "$PWD/"
-fi
+copy_template_files "ruby" "Ruby"
 
 # Get the Ruby version from mise
 RUBY_VERSION=$(mise exec -- ruby -e "puts RUBY_VERSION")

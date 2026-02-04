@@ -3,14 +3,12 @@
 #MISE dir="{{cwd}}"
 #MISE depends=["mkproject:base", "mkproject:tools:rust"]
 
+source "${0:a:h}/_shared/template_helpers.sh"
+
 echo "Setting up Rust workspace project..."
 
 # Copy Rust-specific static files (will override base files if same name)
-TEMPLATE_DIR="${0:a:h}/rust/files"
-if [[ -d "$TEMPLATE_DIR" ]]; then
-    echo "Copying Rust template files..."
-    cp -r "$TEMPLATE_DIR"/. "$PWD/"
-fi
+copy_template_files "rust" "Rust"
 
 PROJECT_NAME=$(basename "$PWD")
 # Convert to valid Rust crate name (replace hyphens with underscores for module names)

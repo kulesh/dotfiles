@@ -3,14 +3,12 @@
 #MISE dir="{{cwd}}"
 #MISE depends=["mkproject:base", "mkproject:tools:convex"]
 
+source "${0:a:h}/_shared/template_helpers.sh"
+
 echo "Setting up Next.js + Convex project..."
 
 # Copy Convex-specific static files
-TEMPLATE_DIR="${0:a:h}/convex/files"
-if [[ -d "$TEMPLATE_DIR" ]]; then
-    echo "Copying Convex template files..."
-    cp -r "$TEMPLATE_DIR"/. "$PWD/"
-fi
+copy_template_files "convex" "Convex"
 
 PROJECT_NAME=$(basename "$PWD")
 

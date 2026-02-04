@@ -2,14 +2,12 @@
 #MISE description="Initialize basic project structure"
 #MISE dir="{{cwd}}"
 
+source "${0:a:h}/_shared/template_helpers.sh"
+
 echo "Initializing project in: $PWD"
 
 # Copy static files from template directory
-TEMPLATE_DIR="${0:a:h}/base/files"
-if [[ -d "$TEMPLATE_DIR" ]]; then
-    echo "Copying base template files..."
-    cp -r "$TEMPLATE_DIR"/. "$PWD/"
-fi
+copy_template_files "base" "base"
 
 git init
 touch README.md .gitignore

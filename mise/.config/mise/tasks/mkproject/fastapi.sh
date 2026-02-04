@@ -3,14 +3,12 @@
 #MISE dir="{{cwd}}"
 #MISE depends=["mkproject:base", "mkproject:tools:python"]
 
+source "${0:a:h}/_shared/template_helpers.sh"
+
 echo "Setting up FastAPI project..."
 
 # Copy FastAPI-specific static files (will override base files if same name)
-TEMPLATE_DIR="${0:a:h}/fastapi/files"
-if [[ -d "$TEMPLATE_DIR" ]]; then
-    echo "Copying FastAPI template files..."
-    cp -r "$TEMPLATE_DIR"/. "$PWD/"
-fi
+copy_template_files "fastapi" "FastAPI"
 
 PROJECT_NAME=$(basename "$PWD")
 # Convert to valid Python module name (replace hyphens with underscores)

@@ -3,14 +3,12 @@
 #MISE dir="{{cwd}}"
 #MISE depends=["mkproject:base", "mkproject:tools:python"]
 
+source "${0:a:h}/_shared/template_helpers.sh"
+
 echo "Setting up Python project..."
 
 # Copy Python-specific static files (if any)
-TEMPLATE_DIR="${0:a:h}/python/files"
-if [[ -d "$TEMPLATE_DIR" ]]; then
-    echo "Copying Python template files..."
-    cp -r "$TEMPLATE_DIR"/. "$PWD/"
-fi
+copy_template_files "python" "Python"
 
 PROJECT_NAME=$(basename "$PWD")
 # Convert to valid Python module name (replace hyphens with underscores)

@@ -352,7 +352,7 @@ list_project_types() {
     done
     
     echo ""
-    echo "Usage: mkproject <project_name> [template_type]"
+    echo "Usage: mkproject [--dry-run|-n] <project_name> [template_type]"
     echo "       Default template: base"
     echo ""
     echo "To add descriptions to your templates, add this line to your task files:"
@@ -509,11 +509,39 @@ function _mkproject_handle_failure() {
 
 # Create a new project
 mkproject() {
-    local project_name="$1"
-    local project_type="${2:-base}"
+    local project_name=""
+    local project_type="base"
+    local dry_run=false
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --dry-run|-n)
+                dry_run=true
+                shift
+                ;;
+            -*)
+                echo "❌ Error: Unknown option '$1'"
+                echo "Usage: mkproject [--dry-run|-n] <project_name> [project_type]"
+                return 1
+                ;;
+            *)
+                if [[ -z "$project_name" ]]; then
+                    project_name="$1"
+                elif [[ "$project_type" == "base" ]]; then
+                    project_type="$1"
+                else
+                    echo "❌ Error: Too many arguments"
+                    echo "Usage: mkproject [--dry-run|-n] <project_name> [project_type]"
+                    return 1
+                fi
+                shift
+                ;;
+        esac
+    done
     
     if [[ -z "$project_name" ]]; then
-        echo "Usage: mkproject <project_name> [project_type]"
+        echo "Usage: mkproject [--dry-run|-n] <project_name> [project_type]"
         list_project_types
         return 1
     fi
@@ -533,6 +561,25 @@ mkproject() {
         echo "❌ Error: Project type '$project_type' not found"
         list_project_types
         return 1
+    fi
+
+    if [[ "$dry_run" == true ]]; then
+        local template_files_dir="${SCRIPT_DIR}/mise/.config/mise/tasks/mkproject/${project_type}/files"
+
+        echo "Dry run: mkproject"
+        echo "  Project:  $project_name"
+        echo "  Template: $project_type"
+        echo "  Path:     $project_path"
+        if [[ -d "$template_files_dir" ]]; then
+            echo "  Files:    $template_files_dir"
+        fi
+        echo ""
+        echo "Would:"
+        echo "  - create $project_path"
+        echo "  - create and trust .mise.toml"
+        echo "  - run: mise run --cd \"$project_path\" \"mkproject:$project_type\""
+        echo "  - generate CLAUDE.md and AGENTS.md"
+        return 0
     fi
     
     echo "Creating $project_type project: $project_name"

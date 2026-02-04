@@ -3,14 +3,12 @@
 #MISE dir="{{cwd}}"
 #MISE depends=["mkproject:base", "mkproject:tools:typescript"]
 
+source "${0:a:h}/_shared/template_helpers.sh"
+
 echo "Setting up TypeScript workspace project..."
 
 # Copy TypeScript-specific static files
-TEMPLATE_DIR="${0:a:h}/typescript/files"
-if [[ -d "$TEMPLATE_DIR" ]]; then
-    echo "Copying TypeScript template files..."
-    cp -r "$TEMPLATE_DIR"/. "$PWD/"
-fi
+copy_template_files "typescript" "TypeScript"
 
 PROJECT_NAME=$(basename "$PWD")
 # For scoped packages
