@@ -79,7 +79,7 @@ Use Domain Driven Development methods to **create a ubiquitous language** that d
 
 ### Information Organization
 
-IMPORTANT: For project specific information prefer retrieval-led reasoning over pre-training-led reasoning. You can create an index of information to help with fast and accurate retrieval and append it to this file. Keep the index updated.
+IMPORTANT: For project specific information prefer retrieval-led reasoning over pre-training-led reasoning. Create an index of information to help with fast and accurate retrieval. Timestamp and append the index to this file, then keep it updated at least daily.
 
 Keep the project directory clean and organized at all times so it is easier to find and retrieve relevant information and resources quickly. Follow these conventions:
 
