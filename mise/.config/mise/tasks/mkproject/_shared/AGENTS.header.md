@@ -37,6 +37,7 @@ Use Domain Driven Development methods to **create a ubiquitous language** that d
 - Implement the components using idiomatic code in the chosen language
 - Use the latest versions of reusable open source components
 - Don't reinvent the wheel unless it simplifies
+- Document Architecture Decision Records (ADRS) in docs/adrs/ and keep them updated
 
 ### Tests and Testability
 
@@ -59,7 +60,6 @@ Use Domain Driven Development methods to **create a ubiquitous language** that d
 - Write an engaging and accurate on-boarding documentation to help collaborators
   (humans and AI) on-board quickly and collaborate with you
 - Keep product specification, architecture, and on-boarding documentation clear, concise, and correct
-- Documentation should help on-board collaborators quickly
 - Document the a clear and complete mental model of the working software
 - Use diagrams over prose to document components, architecture, and data flows
 - All documentation should be written under docs/ directory
