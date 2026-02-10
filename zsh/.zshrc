@@ -89,5 +89,13 @@ if [[ -o interactive ]]; then
 		alias_if_exists vim nvim
 		alias_if_exists retag='ctags -f ".tags" -R --totals --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
 		alias brewup='brew update && brew upgrade && brew bundle upgrade'
+
+		function y() {
+			local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+			command yazi "$@" --cwd-file="$tmp"
+			IFS= read -r -d '' cwd < "$tmp"
+			[ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd"
+			rm -f -- "$tmp"
+		}
 fi
 
