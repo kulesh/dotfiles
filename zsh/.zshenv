@@ -1,4 +1,6 @@
-# DOTFILES_DIR_PLACEHOLDER
+# Resolve dotfiles root: .zshenv → (symlink) → .dotfiles/zsh/.zshenv
+# :A resolves symlinks, :h :h walks up zsh/ → dotfiles root
+export DOTFILES_DIR="${${(%):-%x}:A:h:h}"
 
 # Source shared variables
 source "$DOTFILES_DIR/include/shared_vars.sh"
