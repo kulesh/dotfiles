@@ -93,6 +93,28 @@ load test_helper
     rm -rf "$tmpdir"
 }
 
+# =============================================================================
+# rmproject argument parsing
+# =============================================================================
+
+@test "rmproject: parses project name after flags" {
+    # rmproject --delete myproject should set project_name="myproject", not "--delete"
+    local tmpdir=$(mktemp -d)
+    run zsh -c "
+        source '${DOTFILES_ROOT}/include/shared_vars.sh'
+        _MISEWRAPPER_DOTFILES_DIR='${DOTFILES_ROOT}'
+        MISE_PROJECTS_DIR='$tmpdir'
+        source '${DOTFILES_ROOT}/lib/git_utils.sh'
+        source '${DOTFILES_ROOT}/lib/project.sh'
+        # Project doesn't exist, so rmproject should fail with 'not found' for 'myproject'
+        rmproject --delete myproject 2>&1
+    "
+    # Should complain about 'myproject' not found, NOT '--delete' not found
+    [[ "$output" == *"myproject"* ]]
+    [[ "$output" != *"'--delete' not found"* ]]
+    rm -rf "$tmpdir"
+}
+
 @test "generate_docs: works for all template types with project content" {
     for template in base python fastapi ruby rails rust typescript convex; do
         local tmpdir=$(mktemp -d)
