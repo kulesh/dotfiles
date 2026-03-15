@@ -39,9 +39,11 @@ brew "colima"
 brew "yt-dlp"
 brew "kulesh/tap/tc"
 brew "kulesh/tap/aiobscura"
+brew "kulesh/tap/seatbelt"
 brew "jnsahaj/lumen/lumen"
 brew "mdcat"
 brew "mole"
+brew "tree-sitter"
 
 # Bugaboo: https://github.com/mas-cli/mas/issues/1029
 # Apple Store apps
