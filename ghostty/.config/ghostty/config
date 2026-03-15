@@ -1,12 +1,12 @@
 macos-option-as-alt=true
 keybind = alt+left=unbind
 keybind = alt+right=unbind
-theme=dark:tokyonight storm,light:belafonte day
-# theme=dark:tokyonight storm,light:tokyonight day
+# theme=dark:tokyonight storm,light:belafonte day
+theme=dark:tokyonight storm,light:tokyonight day
 # theme=tokyonight storm
 shell-integration=zsh
 keybind = shift+enter=text:\n
 
 #font-family="Hack Nerd Font Mono"
 #font-family="ZedMono Nerd Font Mono"
-font-size = 14
+font-size = 11
