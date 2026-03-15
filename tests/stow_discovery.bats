@@ -37,13 +37,14 @@ discover_packages() {
 
 @test "discovery: excludes infrastructure directories" {
     local tmpdir=$(mktemp -d)
-    mkdir -p "$tmpdir"/{zsh,include,lib,docs,tests}
+    mkdir -p "$tmpdir"/{zsh,include,lib,docs,tests,tmp}
     local result=$(discover_packages "$tmpdir")
     [[ "$result" == *"zsh"* ]]
     [[ "$result" != *"include"* ]]
     [[ "$result" != *"lib"* ]]
     [[ "$result" != *"docs"* ]]
     [[ "$result" != *"tests"* ]]
+    [[ "$result" != *"tmp"* ]]
     rm -rf "$tmpdir"
 }
 

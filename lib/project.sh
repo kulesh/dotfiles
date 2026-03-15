@@ -637,7 +637,7 @@ function check_removal_warnings() {
 
 # Remove a project with optional archiving
 rmproject() {
-    local project_name="$1"
+    local project_name=""
     local archive_mode=true  # Default to archive mode
 
     # Parse arguments

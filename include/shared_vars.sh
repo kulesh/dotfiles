@@ -6,4 +6,4 @@ PROJECT_DIR="$HOME_DIR/dev"
 
 # Directories that are part of the dotfiles infrastructure, NOT stow packages.
 # Everything else at the top level is auto-discovered as a stow package.
-_DOTFILES_INFRA=("include" "lib" "docs" "tests")
+_DOTFILES_INFRA=("include" "lib" "docs" "tests" "tmp")
