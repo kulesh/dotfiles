@@ -3,7 +3,6 @@
 
 # Taps
 # tap "homebrew/bundle" # Tap is deprecated, leaving it as an example
-tap "steveyegge/beads"
 tap "kulesh/tap"
 tap "jnsahaj/lumen"
 
@@ -38,7 +37,6 @@ brew "docker"
 brew "docker-compose"
 brew "colima"
 brew "yt-dlp"
-brew "steveyegge/beads/bd", args: ["head"]
 brew "kulesh/tap/tc"
 brew "kulesh/tap/aiobscura"
 brew "jnsahaj/lumen/lumen"

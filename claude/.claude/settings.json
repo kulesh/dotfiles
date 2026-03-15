@@ -11,7 +11,6 @@
     "allow": [
       "Bash(mise:*)",
       "Bash(tree:*)",
-      "Bash(bd:*)",
       "Bash(find:*)",
       "Bash(git:*)",
       "Read(~/.zshrc)",
@@ -60,30 +59,7 @@
       "WebFetch(domain:*)"
     ]
   },
-  "hooks": {
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bd prime"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bd prime"
-          }
-        ]
-      }
-    ]
-  },
+  "hooks": {},
   "statusLine": {
     "type": "command",
     "command": "bash ~/.claude/statusline.sh"

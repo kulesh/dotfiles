@@ -11,8 +11,6 @@ copy_template_files "base" "base"
 
 git init
 touch README.md .gitignore
-bd init
-bd doctor --fix --yes
 
 # Use the directory name as project name
 echo "# $(basename "$PWD")" > README.md
