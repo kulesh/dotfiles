@@ -1,5 +1,1 @@
-
-[hooks]
-# Sandbox entry/exit handled by zsh chpwd hooks, not mise
-enter = 'true'
-leave = 'true'
+# Dotfiles repo — not a sandboxed project

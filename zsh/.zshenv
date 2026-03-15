@@ -3,17 +3,15 @@
 # Source shared variables
 source "$DOTFILES_DIR/include/shared_vars.sh"
 
-#default location of things
-export XDG_CONFIG_HOME=$HOME_DIR/.config
-export STARSHIP_CONFIG=$HOME_DIR/.config/starship/starship.toml
-export DOTFILES=$HOME_DIR/.dotfiles
-export PROJECTS=$PROJECT_DIR
-
+# XDG base directories
 export XDG_CONFIG_HOME=$HOME_DIR/.config
 export XDG_DATA_HOME=$HOME_DIR/.local/share
 export XDG_CACHE_HOME=$HOME_DIR/.cache
 export XDG_STATE_HOME=$HOME_DIR/.local/state
 
+# Tool-specific paths
+export DOTFILES=$HOME_DIR/.dotfiles
+export PROJECTS=$PROJECT_DIR
 export STARSHIP_CONFIG=$XDG_CONFIG_HOME/starship/starship.toml
 export _ZO_DATA_DIR=$XDG_CONFIG_HOME/zoxide/
 

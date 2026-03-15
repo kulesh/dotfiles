@@ -48,11 +48,11 @@ install_homebrew()
     if brew bundle --file="$BREWFILE_PATH"; then
         echo "✅ Homebrew packages installed successfully!"
         brew bundle --file="$BREWFILE_PATH" cleanup --force
-				brew doctor || echo "⚠️  brew doctor found some warnings (usually harmless)"
-				return 0
+        brew doctor || echo "⚠️  brew doctor found some warnings (usually harmless)"
+        return 0
     else
-        echo "⚠️Some Homebrew installations may have failed. Please check the output above."
-				return 1
+        echo "⚠️ Some Homebrew installations may have failed. Please check the output above."
+        return 1
     fi
 }
 
@@ -92,10 +92,10 @@ $dotfiles_dir_line
 # install the dot files in $HOME_DIR
 install_dotfiles()
 {
-	echo "🔗 Setting up dotfiles with stow..."
-  
-	local dev_dir="$PROJECT_DIR"
-  if [[ ! -d "$dev_dir" ]]; then
+    echo "🔗 Setting up dotfiles with stow..."
+
+    local dev_dir="$PROJECT_DIR"
+    if [[ ! -d "$dev_dir" ]]; then
     echo "Creating dev directory for projects..."
     mkdir -p "$dev_dir"
   fi
@@ -245,12 +245,12 @@ generate_ssh_keys() {
 }
 
 customize_macos() {
-	local screenshot_dir="~/Pictures/Screenshots"
-	if [[ ! -d "$screenshot_dir" ]]; then
-		echo "Creating Screenshot directory for projects..."
-		mkdir -p "$screenshot_dir"
-	fi
-	defaults write com.apple.screencapture location "$screenshot_dir"
+    local screenshot_dir="~/Pictures/Screenshots"
+    if [[ ! -d "$screenshot_dir" ]]; then
+        echo "Creating Screenshot directory for projects..."
+        mkdir -p "$screenshot_dir"
+    fi
+    defaults write com.apple.screencapture location "$screenshot_dir"
 }
 
 # Unleash the dots!
@@ -258,14 +258,13 @@ echo "Installing Homebrew..."
 install_homebrew
 exit_code=$?
 echo "Homebrew installation exit code: $exit_code"
-if [ $exit_code -eq 0 ]
-then
- 		install_dotfiles
-		fix_mise_permissions
+if [ $exit_code -eq 0 ]; then
+    install_dotfiles
+    fix_mise_permissions
     echo "     [+] dotfile installation complete"
-		generate_ssh_keys
-		customize_macos
-		install_native_tools
+    generate_ssh_keys
+    customize_macos
+    install_native_tools
     echo "     [+] All Done."
 else
     echo "     [x] There was an error installing Homebrew!"
