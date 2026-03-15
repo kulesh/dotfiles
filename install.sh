@@ -48,54 +48,21 @@ install_homebrew()
     if brew bundle --file="$BREWFILE_PATH"; then
         echo "✅ Homebrew packages installed successfully!"
         brew bundle --file="$BREWFILE_PATH" cleanup --force
-				brew doctor || echo "⚠️  brew doctor found some warnings (usually harmless)"
-				return 0
+        brew doctor || echo "⚠️  brew doctor found some warnings (usually harmless)"
+        return 0
     else
-        echo "⚠️Some Homebrew installations may have failed. Please check the output above."
-				return 1
-    fi
-}
-
-# Inject DOTFILES_DIR into .zshenv for runtime use
-inject_dotfiles_dir() {
-    local zshenv_file="$INSTALL_SCRIPT_AT/zsh/.zshenv"
-    local dotfiles_dir_line="export DOTFILES_DIR=\"$INSTALL_SCRIPT_AT\""
-
-    if [[ -f "$zshenv_file" ]]; then
-        # Check if DOTFILES_DIR is already set
-        if grep -q "^export DOTFILES_DIR=" "$zshenv_file"; then
-            # Update existing line
-            sed -i '' "s|^export DOTFILES_DIR=.*|$dotfiles_dir_line|" "$zshenv_file"
-            echo "✅ Updated DOTFILES_DIR in .zshenv"
-        elif grep -q "# DOTFILES_DIR_PLACEHOLDER" "$zshenv_file"; then
-            # Replace placeholder
-            sed -i '' "s|# DOTFILES_DIR_PLACEHOLDER|$dotfiles_dir_line|" "$zshenv_file"
-            echo "✅ Injected DOTFILES_DIR into .zshenv"
-        else
-            # Add at the top after shebang if present
-            if head -n1 "$zshenv_file" | grep -q "^#!"; then
-                sed -i '' "2i\\
-$dotfiles_dir_line
-" "$zshenv_file"
-            else
-                sed -i '' "1i\\
-$dotfiles_dir_line
-" "$zshenv_file"
-            fi
-            echo "✅ Added DOTFILES_DIR to .zshenv"
-        fi
-    else
-        echo "⚠️ .zshenv not found at $zshenv_file"
+        echo "⚠️ Some Homebrew installations may have failed. Please check the output above."
+        return 1
     fi
 }
 
 # install the dot files in $HOME_DIR
 install_dotfiles()
 {
-	echo "🔗 Setting up dotfiles with stow..."
-  
-	local dev_dir="$PROJECT_DIR"
-  if [[ ! -d "$dev_dir" ]]; then
+    echo "🔗 Setting up dotfiles with stow..."
+
+    local dev_dir="$PROJECT_DIR"
+    if [[ ! -d "$dev_dir" ]]; then
     echo "Creating dev directory for projects..."
     mkdir -p "$dev_dir"
   fi
@@ -107,28 +74,34 @@ install_dotfiles()
     brew install stow
   fi
   
-  # Inject DOTFILES_DIR before stowing
-  inject_dotfiles_dir
-
   # Change to the dotfiles directory (required for stow to work correctly)
   cd "$INSTALL_SCRIPT_AT"
-  
-  # List of packages to stow
-  local packages=(${STOWED_PACKAGES})
-  
+
+  # Auto-discover stow packages: every top-level directory that isn't
+  # hidden or part of the dotfiles infrastructure (include/, lib/, etc.)
+  local packages=()
+  for dir in */; do
+    local dirname="${dir%/}"
+    [[ "$dirname" == .* ]] && continue
+    # Skip infrastructure directories
+    local is_infra=false
+    for infra in "${_DOTFILES_INFRA[@]}"; do
+      [[ "$dirname" == "$infra" ]] && { is_infra=true; break; }
+    done
+    $is_infra && continue
+    packages+=("$dirname")
+  done
+
+  echo "Discovered stow packages: ${packages[*]}"
+
   # Stow each package
   for package in "${packages[@]}"; do
-    if [[ -d "$package" ]]; then
-      echo "Stowing $package..."
-      stow --verbose --adopt --target="$HOME_DIR" --restow "$package"
-      
-      if [[ $? -eq 0 ]]; then
-        echo "✅ $package linked successfully"
-      else
-        echo "⚠️ Failed to stow $package"
-      fi
+    echo "Stowing $package..."
+    stow --verbose --adopt --target="$HOME_DIR" --restow "$package"
+    if [[ $? -eq 0 ]]; then
+      echo "✅ $package linked successfully"
     else
-      echo "⚠️ Package directory $package not found, skipping..."
+      echo "⚠️ Failed to stow $package"
     fi
   done
   
@@ -245,12 +218,12 @@ generate_ssh_keys() {
 }
 
 customize_macos() {
-	local screenshot_dir="~/Pictures/Screenshots"
-	if [[ ! -d "$screenshot_dir" ]]; then
-		echo "Creating Screenshot directory for projects..."
-		mkdir -p "$screenshot_dir"
-	fi
-	defaults write com.apple.screencapture location "$screenshot_dir"
+    local screenshot_dir="~/Pictures/Screenshots"
+    if [[ ! -d "$screenshot_dir" ]]; then
+        echo "Creating Screenshot directory for projects..."
+        mkdir -p "$screenshot_dir"
+    fi
+    defaults write com.apple.screencapture location "$screenshot_dir"
 }
 
 # Unleash the dots!
@@ -258,14 +231,13 @@ echo "Installing Homebrew..."
 install_homebrew
 exit_code=$?
 echo "Homebrew installation exit code: $exit_code"
-if [ $exit_code -eq 0 ]
-then
- 		install_dotfiles
-		fix_mise_permissions
+if [ $exit_code -eq 0 ]; then
+    install_dotfiles
+    fix_mise_permissions
     echo "     [+] dotfile installation complete"
-		generate_ssh_keys
-		customize_macos
-		install_native_tools
+    generate_ssh_keys
+    customize_macos
+    install_native_tools
     echo "     [+] All Done."
 else
     echo "     [x] There was an error installing Homebrew!"

@@ -74,9 +74,9 @@ cdproject                         # cd to current mise project root
 
 | File | Purpose |
 |------|---------|
-| `include/shared_vars.sh` | `HOME_DIR`, `PROJECT_DIR` (`~/dev`), `STOWED_PACKAGES` |
+| `include/shared_vars.sh` | `HOME_DIR`, `PROJECT_DIR` (`~/dev`), `_DOTFILES_INFRA` |
 | `mise/.config/mise/config.toml` | `not_found_auto_install = true`, `experimental = true` |
-| `lib/misewrapper.sh` | Project creation, cloning, discovery, tab completion, git integration, sandboxing, archival |
+| `lib/misewrapper.sh` | Entrypoint — loads `git_utils.sh`, `sandbox.sh`, `project.sh`, `navigate.sh` |
 
 ### Dependencies
 

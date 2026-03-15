@@ -1,31 +1,10 @@
 export PATH="/opt/homebrew/bin:/opt/homebrew/opt/ruby/bin:$PATH"
 export EDITOR="vim"
 
-#umask for homrbrew multiuser
+# umask for homebrew multiuser
 umask 0002
 export CLICOLOR=YES
 export LSCOLORS="Gxfxcxdxbxegedabagacad"
-
-#vcs info
-autoload -Uz vcs_info
-
-zstyle ':vcs_info:*' stagedstr '%F{28}●'
-zstyle ':vcs_info:*' unstagedstr '%F{11}●'
-zstyle ':vcs_info:*' check-for-changes true
-zstyle ':vcs_info:(sv[nk]|bzr):*' branchformat '%b%F{1}:%F{11}%r'
-zstyle ':vcs_info:*' enable git svn
-precmd () {
-  if [[ -z $(git ls-files --other --exclude-standard 2> /dev/null) ]] {
-    zstyle ':vcs_info:*' formats ' [%F{green}%b%c%u%F{blue}]'
-  } else {
-    zstyle ':vcs_info:*' formats ' [%F{green}%b%c%u%F{red}●%F{blue}]'
-  }
-
-  vcs_info
-}
-
-setopt prompt_subst
-PROMPT='%F{white}%n@%m %c${vcs_info_msg_0_}%F{white} %(?/%F{white}/%F{red})%% %{$reset_color%}'
 
 # history
 setopt EXTENDED_HISTORY
@@ -80,22 +59,20 @@ alias_if_exists() {
 # Alias only in interactive shell to avoid tripping Claude Code
 if [[ -o interactive ]]; then
     eval "$(zoxide init zsh --cmd cd)"
-		# eval "$(zoxide init zsh --cmd cd)"
-		alias_if_exists cat bat
-		alias_if_exists top htop
-		alias_if_exists grep rg
-		alias_if_exists ls eza
-		alias_if_exists time hyperfine
-		alias_if_exists vim nvim
-		alias_if_exists retag='ctags -f ".tags" -R --totals --exclude=tmp --exclude=log --exclude=.git . $(bundle list --paths)'
-		alias brewup='brew update && brew upgrade && brew bundle upgrade'
+    alias_if_exists cat bat
+    alias_if_exists top htop
+    alias_if_exists grep rg
+    alias_if_exists ls eza
+    alias_if_exists time hyperfine
+    alias_if_exists vim nvim
+    alias brewup='brew update && brew upgrade && brew bundle upgrade'
 
-		function y() {
-			local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
-			command yazi "$@" --cwd-file="$tmp"
-			IFS= read -r -d '' cwd < "$tmp"
-			[ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd"
-			rm -f -- "$tmp"
-		}
+    function y() {
+        local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+        command yazi "$@" --cwd-file="$tmp"
+        IFS= read -r -d '' cwd < "$tmp"
+        [ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd"
+        rm -f -- "$tmp"
+    }
 fi
 
