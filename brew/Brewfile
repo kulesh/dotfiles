@@ -42,6 +42,7 @@ brew "kulesh/tap/aiobscura"
 brew "jnsahaj/lumen/lumen"
 brew "mdcat"
 brew "mole"
+brew "bats-core"
 
 # Bugaboo: https://github.com/mas-cli/mas/issues/1029
 # Apple Store apps
