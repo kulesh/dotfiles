@@ -112,23 +112,32 @@ install_dotfiles()
 
   # Change to the dotfiles directory (required for stow to work correctly)
   cd "$INSTALL_SCRIPT_AT"
-  
-  # List of packages to stow
-  local packages=(${STOWED_PACKAGES})
-  
+
+  # Auto-discover stow packages: every top-level directory that isn't
+  # hidden or part of the dotfiles infrastructure (include/, lib/, etc.)
+  local packages=()
+  for dir in */; do
+    local dirname="${dir%/}"
+    [[ "$dirname" == .* ]] && continue
+    # Skip infrastructure directories
+    local is_infra=false
+    for infra in "${_DOTFILES_INFRA[@]}"; do
+      [[ "$dirname" == "$infra" ]] && { is_infra=true; break; }
+    done
+    $is_infra && continue
+    packages+=("$dirname")
+  done
+
+  echo "Discovered stow packages: ${packages[*]}"
+
   # Stow each package
   for package in "${packages[@]}"; do
-    if [[ -d "$package" ]]; then
-      echo "Stowing $package..."
-      stow --verbose --adopt --target="$HOME_DIR" --restow "$package"
-      
-      if [[ $? -eq 0 ]]; then
-        echo "✅ $package linked successfully"
-      else
-        echo "⚠️ Failed to stow $package"
-      fi
+    echo "Stowing $package..."
+    stow --verbose --adopt --target="$HOME_DIR" --restow "$package"
+    if [[ $? -eq 0 ]]; then
+      echo "✅ $package linked successfully"
     else
-      echo "⚠️ Package directory $package not found, skipping..."
+      echo "⚠️ Failed to stow $package"
     fi
   done
   
