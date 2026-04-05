@@ -91,6 +91,7 @@
       "docker"
     ]
   },
+  "effortLevel": "high",
   "companyAnnouncements": [
     "Welcome to Claude Code! (global)"
   ],

@@ -44,7 +44,7 @@ brew "jnsahaj/lumen/lumen"
 brew "mdcat"
 brew "mole"
 brew "bats-core"
-brew "tree-sitter"
+brew "tree-sitter-cli"
 
 # Bugaboo: https://github.com/mas-cli/mas/issues/1029
 # Apple Store apps
@@ -65,11 +65,11 @@ brew "tree-sitter"
 # Optional: Add any casks you frequently use
 # cask "visual-studio-code"
 # cask "docker"
-cask "cursor"
+# cask "cursor"
 cask "ghostty"
-cask "zed"
+# cask "zed"
 cask "mactex" # ya ya, I still use LaTex for documents!
-cask "obsidian"
+# cask "obsidian"
 cask "rectangle"
 # cask "claude-code" # use "native install"!
 

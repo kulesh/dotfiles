@@ -15,3 +15,8 @@ npm = "latest"
 
 [env]
 _.file = { path = ".keys.json", redact = true }
+
+[hooks]
+# Sandbox entry/exit handled by zsh chpwd hooks, not mise
+enter = 'true'
+leave = 'true'
