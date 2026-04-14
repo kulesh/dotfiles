@@ -1,0 +1,11 @@
+{
+  "lastChangelogVersion": "0.67.1",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.4",
+  "packages": [
+    "npm:@the-forge-flow/visual-explainer-pi",
+    "npm:pi-annotate",
+    "npm:pi-powerline-footer",
+    "npm:pi-design-deck"
+  ]
+}
