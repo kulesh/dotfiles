@@ -1,53 +1,179 @@
-# File should be in ~/.config/mise/config.toml
+# ~/.config/mise/config.toml — Machine configuration
+#
+# This file replaces both install.sh and brew/Brewfile.
+# Stow remains for dotfile symlinks (convention > declaration).
+#
+# Fresh machine:
+#   curl https://mise.run | sh
+#   git clone https://github.com/kulesh/dotfiles.git ~/.dotfiles
+#   cd ~/.dotfiles && mise bootstrap
+#
+# Day 2:
+#   mise bootstrap packages use brew:foo          # add a formula
+#   mise bootstrap packages use brew-cask:bar     # add a cask
+#   mise bootstrap --only packages                # install packages only
+#   mise bootstrap --only task                    # re-run stow only
+#   mise bootstrap status                         # check everything
+#   mise bootstrap --dry-run                      # preview changes
+
+# =============================================================================
+# Tools — dev runtimes managed per-project by mise
+# =============================================================================
+
 [tools]
 uv = "latest"
-# node = "latest"
-# global tool versions go here
-# you can set these with `mise use -g`
-# node = 'lts'
-# python = ['3.10', '3.11']
+
+# =============================================================================
+# Settings
+# =============================================================================
 
 [settings]
-# plugins can read the versions files used by other version managers (if enabled by the plugin)
-# for example, .nvmrc in the case of node's nvm
-# idiomatic_version_file = true                     # enabled by default (unlike asdf)
+experimental = true
 idiomatic_version_file_enable_tools = []
-
-# configure `mise install` to always keep the downloaded archive
-always_keep_download = false        # deleted after install by default
-always_keep_install = false         # deleted on failure by default
-
-# configure how frequently (in minutes) to fetch updated plugin repository changes
-# this is updated whenever a new runtime is installed
-# (note: this isn't currently implemented but there are plans to add it: https://github.com/jdx/mise/issues/128)
-plugin_autoupdate_last_check_duration = '1 week' # set to 0 to disable updates
-
-# config files with these prefixes will be trusted by default
-# trusted_config_paths = [
-#     '~/work/my-trusted-projects',
-# ]
-
-verbose = false       # set to true to see full installation output, see `MISE_VERBOSE`
-http_timeout = "30s"  # set the timeout for http requests as duration string, see `MISE_HTTP_TIMEOUT`
-jobs = 4              # number of plugins or runtimes to install in parallel. The default is `4`.
-raw = false           # set to true to directly pipe plugins to stdin/stdout/stderr
-yes = false           # set to true to automatically answer yes to all prompts
-
-not_found_auto_install = true # see MISE_NOT_FOUND_AUTO_INSTALL
-task_output = "prefix" # see Tasks Runner for more information
-paranoid = false       # see MISE_PARANOID
-
-shorthands_file = '~/.config/mise/shorthands.toml' # path to the shorthands file, see `MISE_SHORTHANDS_FILE`
-# disable_default_shorthands = false # disable the default shorthands, see `MISE_DISABLE_DEFAULT_SHORTHANDS`
-# disable_tools = ['node']           # disable specific tools, generally used to turn off core tools
-
-env_file = '.env' # load env vars from a dotenv file, see `MISE_ENV_FILE`
-
-experimental = true # enable experimental features
-
-# configure messages displayed when entering directories with config files
+always_keep_download = false
+always_keep_install = false
+plugin_autoupdate_last_check_duration = '1 week'
+verbose = false
+http_timeout = "30s"
+jobs = 4
+not_found_auto_install = true
+paranoid = false
+env_file = '.env'
 status = { missing_tools = "if_other_versions_installed", show_env = false, show_tools = false }
 
-# "_" is a special key for information you'd like to put into mise.toml that mise will never parse
-# [_]
-# foo = "bar"
+# =============================================================================
+# Bootstrap: Homebrew taps
+# =============================================================================
+
+[bootstrap.brew.taps]
+"kulesh/tap" = "https://github.com/kulesh/homebrew-tap"
+"jnsahaj/lumen" = "https://github.com/jnsahaj/homebrew-lumen"
+
+# =============================================================================
+# Bootstrap: packages (replaces brew/Brewfile)
+# =============================================================================
+
+[bootstrap.packages]
+# Core utilities
+"brew:coreutils" = { os = "macos" }
+"brew:mas" = { os = "macos" }
+"brew:stow" = { os = "macos" }
+
+# Search & navigation
+"brew:fd" = "latest"
+"brew:ripgrep" = "latest"
+"brew:fzf" = "latest"
+"brew:zoxide" = "latest"
+"brew:tree" = "latest"
+
+# Dev tools
+"brew:neovim" = "latest"
+"brew:bat" = "latest"
+"brew:htop" = "latest"
+"brew:highlight" = "latest"
+"brew:aspell" = "latest"
+"brew:pandoc" = "latest"
+"brew:glow" = "latest"
+"brew:mdcat" = "latest"
+
+# Shell prompt
+"brew:starship" = "latest"
+
+# Git
+"brew:git-delta" = "latest"
+"brew:lazygit" = "latest"
+"brew:gh" = "latest"
+
+# Runtime management (mise manages itself)
+"brew:mise" = "latest"
+
+# File manager
+"brew:yazi" = "latest"
+
+# Benchmarking & modern coreutils
+"brew:hyperfine" = "latest"
+"brew:eza" = "latest"
+
+# Containers
+"brew:docker" = { os = "macos" }
+"brew:docker-compose" = { os = "macos" }
+"brew:colima" = { os = "macos" }
+
+# Media & AI
+"brew:yt-dlp" = "latest"
+"brew:ollama" = "latest"
+
+# Custom taps
+"brew:kulesh/tap/tc" = "latest"
+"brew:kulesh/tap/aiobscura" = "latest"
+"brew:kulesh/tap/seatbelt" = "latest"
+"brew:jnsahaj/lumen/lumen" = "latest"
+
+# Testing
+"brew:bats-core" = "latest"
+"brew:tree-sitter-cli" = "latest"
+
+# Network
+"brew:mole" = "latest"
+
+# Languages (system-level, used outside mise-managed projects)
+"brew:node" = "latest"
+"brew:ruby" = "latest"
+
+# Casks (macOS GUI apps)
+"brew-cask:ghostty" = { os = "macos" }
+"brew-cask:mactex" = { os = "macos" }
+"brew-cask:rectangle" = { os = "macos" }
+
+# Nerd Fonts
+"brew-cask:font-fira-code-nerd-font" = { os = "macos" }
+"brew-cask:font-jetbrains-mono-nerd-font" = { os = "macos" }
+"brew-cask:font-hack-nerd-font" = { os = "macos" }
+"brew-cask:font-zed-mono-nerd-font" = { os = "macos" }
+
+# =============================================================================
+# Bootstrap: task (stow + macOS setup — replaces install.sh)
+# =============================================================================
+
+[tasks.bootstrap]
+description = "Stow dotfiles, set mise task permissions, configure macOS"
+run = '''
+#!/usr/bin/env zsh
+set -e
+
+DOTFILES_DIR="${DOTFILES:-$HOME/.dotfiles}"
+source "$DOTFILES_DIR/include/shared_vars.sh"
+
+# --- Stow dotfiles ---
+echo "Stowing dotfiles..."
+cd "$DOTFILES_DIR"
+
+for dir in */; do
+    dirname="${dir%/}"
+    [[ "$dirname" == .* ]] && continue
+    is_infra=false
+    for infra in "${_DOTFILES_INFRA[@]}"; do
+        [[ "$dirname" == "$infra" ]] && { is_infra=true; break; }
+    done
+    $is_infra && continue
+    echo "  stow $dirname"
+    stow --verbose=0 --adopt --target="$HOME" --restow "$dirname"
+done
+
+# --- Mise task permissions ---
+tasks_dir="$HOME/.config/mise/tasks"
+[[ -d "$tasks_dir" ]] && find "$tasks_dir" -type f -exec chmod +x {} \;
+
+# --- Projects directory ---
+[[ -d "$PROJECT_DIR" ]] || mkdir -p "$PROJECT_DIR"
+
+# --- macOS customization ---
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    screenshot_dir="$HOME/Pictures/Screenshots"
+    [[ -d "$screenshot_dir" ]] || mkdir -p "$screenshot_dir"
+    defaults write com.apple.screencapture location "$screenshot_dir"
+    echo "macOS defaults applied."
+fi
+
+echo "Bootstrap complete."
+'''
