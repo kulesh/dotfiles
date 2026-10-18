@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-# Shared variables between install.sh, .zshenv, and misewrapper.sh
+# Shared variables between .zshenv, misewrapper.sh, and tasks/bootstrap
 HOME_DIR=$HOME # Makes it easy to test
 PROJECT_DIR="$HOME_DIR/dev"
 

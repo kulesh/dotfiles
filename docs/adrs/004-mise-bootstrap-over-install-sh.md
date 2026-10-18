@@ -1,6 +1,6 @@
 # ADR-004: Mise Bootstrap Replaces install.sh and Brewfile
 
-**Status:** Proposed (testing)
+**Status:** Accepted
 **Date:** 2026-10-17
 
 ## Context

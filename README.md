@@ -5,22 +5,24 @@ A simple macOS specific dotfiles management system for making my developer exper
 2. Grokable -- I understand how everything works
 3. Contained -- changes are local to `$PROJECT_DIR`
 
-The system does three things:
-- Uses [Homebrew](https://brew.sh/) for managing system-wide dependencies using [Brew Bundles](https://docs.brew.sh/Brew-Bundle-and-Brewfile)
-- Uses [mise-en-place](https://mise.jdx.dev/) for managing development environments and project level dependencies
+The system does two things:
+- Uses [mise-en-place](https://mise.jdx.dev/) for system packages, development environments, and bootstrap orchestration
 - Uses [GNU Stow](https://www.gnu.org/software/stow/) for managing dotfiles
 
 ## Installation
 
 ```sh
-xcode-select --install
-sudo xcodebuild -license
-git clone https://github.com/kulesh/dotfiles.git ~/.dotfiles
-cd ~/.dotfiles
-/bin/zsh install.sh
+curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh | bash
 ```
 
-This installs dependencies from the Brewfile and creates symlinks to dotfiles.
+This installs mise, clones the repo, and runs `mise bootstrap` — which installs Homebrew packages, stows dotfile symlinks, and configures macOS.
+
+To re-run on an existing machine:
+
+```sh
+cd ~/.dotfiles
+mise bootstrap
+```
 
 ## Quick Start
 
@@ -57,6 +59,24 @@ showproject
 | `rmproject <name>` | Archive project (safe removal) |
 | `rmproject <name> --delete` | Permanently delete project |
 | `list_project_types` | Show available templates |
+
+## Package Management
+
+System packages are declared in `mise/.config/mise/config.toml` under `[bootstrap.packages]`.
+
+```sh
+# Add a formula
+mise bootstrap packages use brew:foo
+
+# Add a cask
+mise bootstrap packages use brew-cask:bar
+
+# Check what's installed vs declared
+mise bootstrap packages status
+
+# Install only packages
+mise bootstrap --only packages
+```
 
 ## Sandboxing
 
@@ -137,7 +157,7 @@ When you run `mkproject my-api fastapi`:
    touch mise/.config/mise/tasks/mkproject/mytemplate/files/.gitignore
    touch mise/.config/mise/tasks/mkproject/mytemplate/CLAUDE.project.md
    ```
-   If you want Codex-specific guidance, add `AGENTS.project.md` too. If it’s missing, `mkproject` reuses `CLAUDE.project.md`.
+   If you want Codex-specific guidance, add `AGENTS.project.md` too. If it's missing, `mkproject` reuses `CLAUDE.project.md`.
 
 3. Create the template script:
    ```sh
@@ -159,7 +179,7 @@ When you run `mkproject my-api fastapi`:
 
 ## Toolchain
 
-See Brewfile for the full list. Highlights:
+See `[bootstrap.packages]` in `mise/.config/mise/config.toml` for the full list. Highlights:
 - [Neovim](http://neovim.io/) with [CodeCompanion](https://github.com/olimorris/codecompanion.nvim) - editor and AI
 - [Ghostty](http://ghostty.org/) - terminal
 - [mise](https://mise.jdx.dev/) - version management and task runner

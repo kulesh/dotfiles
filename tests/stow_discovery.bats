@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# Tests for stow package auto-discovery logic in install.sh
+# Tests for stow package auto-discovery logic in tasks/bootstrap
 
 load test_helper
 
@@ -73,7 +73,6 @@ discover_packages() {
     [[ "$result" == *"git"* ]]
     [[ "$result" == *"mise"* ]]
     [[ "$result" == *"nvim"* ]]
-    [[ "$result" == *"brew"* ]]
     [[ "$result" == *"starship"* ]]
     [[ "$result" == *"yazi"* ]]
     [[ "$result" == *"sandbox"* ]]

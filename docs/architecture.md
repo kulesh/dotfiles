@@ -1,24 +1,50 @@
 # Architecture
 
-## Three Pillars
+## Two Pillars
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        ~/.dotfiles/                             │
 │                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐    │
-│  │   Homebrew    │  │  GNU Stow    │  │   mise-en-place    │    │
-│  │              │  │              │  │                    │    │
-│  │  System-wide  │  │  Symlinks    │  │  Per-project       │    │
-│  │  tools from   │  │  tool configs│  │  dev environments  │    │
-│  │  Brewfile     │  │  to $HOME    │  │  and task runner   │    │
-│  └──────┬───────┘  └──────┬───────┘  └────────┬───────────┘    │
-│         │                 │                    │                │
-│         ▼                 ▼                    ▼                │
-│  brew install ...   ~/.config/tool/     ~/dev/project/          │
-│  brew bundle        ~/.zshrc            .mise.toml              │
-│                     ~/.gitconfig        python, node, etc.      │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐    │
+│  │      mise-en-place        │  │       GNU Stow            │    │
+│  │                           │  │                           │    │
+│  │  System packages (brew)   │  │  Symlinks tool configs    │    │
+│  │  Dev tools & runtimes     │  │  to $HOME                 │    │
+│  │  Bootstrap orchestration  │  │                           │    │
+│  │  Project task runner      │  │                           │    │
+│  └────────────┬─────────────┘  └────────────┬──────────────┘    │
+│               │                              │                   │
+│               ▼                              ▼                   │
+│  brew install ...                 ~/.config/tool/                │
+│  mise bootstrap                   ~/.zshrc                       │
+│  ~/dev/project/.mise.toml         ~/.gitconfig                   │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+## Bootstrap Flow
+
+```
+curl https://mise.run | sh          # or: ~/.dotfiles/mise.sh
+        │
+        ▼
+┌───────────────────────────────────────────┐
+│ mise.sh (bootloader)                      │
+│   1. Install Xcode CLI tools if needed    │
+│   2. Install mise                         │
+│   3. Clone dotfiles repo                  │
+│   4. mise trust && mise bootstrap         │
+└────────┬──────────────────────────────────┘
+         │
+         ▼
+┌───────────────────────────────────────────┐
+│ mise bootstrap (run order)                │
+│   1. [bootstrap.packages] → Homebrew      │
+│      installs formulae, casks, fonts      │
+│   2. [tasks.bootstrap] → tasks/bootstrap  │
+│      stow, permissions, macOS defaults    │
+│   3. [tools] → uv, etc.                  │
+└───────────────────────────────────────────┘
 ```
 
 ## Component Map
@@ -26,7 +52,7 @@
 ```
 ~/.dotfiles/
 │
-├── install.sh                 Bootstrap: Homebrew → Stow → SSH → macOS
+├── mise.sh                    Bootloader: installs mise, clones repo, bootstraps
 ├── include/shared_vars.sh     HOME_DIR, PROJECT_DIR, infra exclusions
 │
 ├── lib/                       Shell libraries (sourced at shell startup)
@@ -36,21 +62,21 @@
 │   ├── sandbox.sh             macOS sandbox-exec lifecycle and hooks
 │   └── git_utils.sh           Git introspection utilities
 │
-├── brew/Brewfile              Declarative system dependencies
-│
 ├── mise/.config/mise/
-│   ├── config.toml            Global mise settings
-│   └── tasks/mkproject/       Project templates
-│       ├── _shared/           CLAUDE.md and AGENTS.md headers
-│       ├── base.sh            Git init, README, .gitignore
-│       ├── python.sh          pyproject.toml + uv
-│       ├── fastapi.sh         Async API scaffold
-│       ├── rust.sh            Cargo workspace
-│       ├── typescript.sh      Bun + Ink monorepo
-│       ├── ruby.sh            Bundler setup
-│       ├── rails.sh           Full MVC
-│       ├── convex.sh          Next.js + Convex
-│       └── tools/             Tool installation tasks (python, rust, etc.)
+│   ├── config.toml            Machine config: settings, packages, bootstrap task
+│   └── tasks/
+│       ├── bootstrap          Stow + permissions + macOS setup
+│       └── mkproject/         Project templates
+│           ├── _shared/       CLAUDE.md and AGENTS.md headers
+│           ├── base.sh        Git init, README, .gitignore
+│           ├── python.sh      pyproject.toml + uv
+│           ├── fastapi.sh     Async API scaffold
+│           ├── rust.sh        Cargo workspace
+│           ├── typescript.sh  Bun + Ink monorepo
+│           ├── ruby.sh        Bundler setup
+│           ├── rails.sh       Full MVC
+│           ├── convex.sh      Next.js + Convex
+│           └── tools/         Tool installation tasks (python, rust, etc.)
 │
 ├── <tool>/                    Stow packages (auto-discovered)
 │   └── .config/<tool>/        Symlinked to ~/.config/<tool>/
