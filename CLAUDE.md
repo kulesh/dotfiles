@@ -23,19 +23,25 @@ To put this philosophy to practice:
 
 ## Project Overview
 
-macOS dotfiles management system built on three pillars:
+macOS dotfiles management system built on two pillars:
 
-- **Homebrew** — system-wide dependencies via Brew Bundles
-- **mise-en-place** — development environments and project-level dependencies
-- **GNU Stow** — dotfile symlink management
+- **mise-en-place** — system packages, dev environments, bootstrap orchestration, and task runner
+- **GNU Stow** — dotfile symlink management (convention-based, zero-config)
 
 Designed to be evolving, grokable, and contained to the project directory.
 
 ### Key Commands
 
 ```bash
-# Bootstrap a fresh machine (run from ~/.dotfiles)
-/bin/zsh install.sh
+# Bootstrap a fresh machine
+curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh | bash
+
+# Or if already cloned
+cd ~/.dotfiles && mise bootstrap
+
+# Day 2: add packages
+mise bootstrap packages use brew:foo
+mise bootstrap packages use brew-cask:bar
 
 # Project lifecycle
 mkproject <name> [template]       # Create from template (base, python, fastapi, ruby, rails, etc.)
@@ -53,20 +59,21 @@ cdproject                         # cd to current mise project root
 
 ```
 ~/.dotfiles/
-├── install.sh                # Bootstrap script
+├── mise.sh                   # Bootloader: installs mise, clones repo, bootstraps
 ├── include/shared_vars.sh    # Shared configuration variables
 ├── lib/misewrapper.sh        # Project management functions
-├── brew/Brewfile             # Homebrew dependencies
-├── mise/.config/mise/        # Mise configuration and tasks
-│   ├── config.toml           #   Global mise settings
-│   └── tasks/mkproject/      #   Project templates
+├── mise/.config/mise/
+│   ├── config.toml           #   Machine config: settings, packages, bootstrap
+│   └── tasks/
+│       ├── bootstrap         #   Stow + permissions + macOS setup
+│       └── mkproject/        #   Project templates
 ├── sandbox/.config/sandbox/  # macOS sandbox-exec profiles
 ├── <tool>/                   # Per-tool configurations (stowed to $HOME)
 │   └── .config/<tool>/
 └── dev/                      # Dev directory structure template
 ```
 
-**Stow packages:** zsh, git, ghostty, ssh, mise, nvim, brew, starship, dev, claude, sandbox
+**Stow packages:** zsh, git, ghostty, ssh, mise, nvim, starship, dev, claude, sandbox, pi, yazi
 
 **Project templates** (`mise/.config/mise/tasks/mkproject/`): base, python, fastapi, ruby, rails, rust, typescript, convex
 
@@ -74,17 +81,18 @@ cdproject                         # cd to current mise project root
 
 | File | Purpose |
 |------|---------|
+| `mise/.config/mise/config.toml` | `[bootstrap.packages]`, `[tools]`, `[settings]`, `[tasks.bootstrap]` |
+| `mise/.config/mise/tasks/bootstrap` | Stow loop, task permissions, macOS defaults |
 | `include/shared_vars.sh` | `HOME_DIR`, `PROJECT_DIR` (`~/dev`), `_DOTFILES_INFRA` |
-| `mise/.config/mise/config.toml` | `not_found_auto_install = true`, `experimental = true` |
 | `lib/misewrapper.sh` | Entrypoint — loads `git_utils.sh`, `sandbox.sh`, `project.sh`, `navigate.sh` |
 
 ### Dependencies
 
-Core tools via Brewfile:
+Core tools declared in `[bootstrap.packages]` (config.toml):
 
 | Category | Tools |
 |----------|-------|
-| Version management | mise |
+| Runtime management | mise |
 | Symlink management | stow |
 | Search & navigation | fd, ripgrep, fzf, zoxide |
 | Dev environment | neovim, ghostty |
