@@ -32,7 +32,6 @@ experimental = true
 idiomatic_version_file_enable_tools = []
 always_keep_download = false
 always_keep_install = false
-plugin_autoupdate_last_check_duration = '1 week'
 verbose = false
 http_timeout = "30s"
 jobs = 4
