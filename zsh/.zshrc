@@ -65,7 +65,6 @@ if [[ -o interactive ]]; then
     alias_if_exists ls eza
     alias_if_exists time hyperfine
     alias_if_exists vim nvim
-    alias brewup='brew update && brew upgrade'
 
     function y() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
