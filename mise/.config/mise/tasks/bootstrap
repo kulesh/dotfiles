@@ -1,8 +1,6 @@
 #!/usr/bin/env zsh
 #MISE description="Stow dotfiles, set permissions, configure macOS"
 
-set -e
-
 DOTFILES_DIR="${DOTFILES:-$HOME/.dotfiles}"
 source "$DOTFILES_DIR/include/shared_vars.sh"
 
@@ -32,9 +30,9 @@ tasks_dir="$HOME/.config/mise/tasks"
 # --- macOS ---
 if [[ "$OSTYPE" == "darwin"* ]]; then
     screenshot_dir="$HOME/Pictures/Screenshots"
-    [[ -d "$screenshot_dir" ]] || mkdir -p "$screenshot_dir"
-    defaults write com.apple.screencapture location "$screenshot_dir"
-    echo "macOS defaults applied."
+    if mkdir -p "$screenshot_dir" 2>/dev/null; then
+        defaults write com.apple.screencapture location "$screenshot_dir"
+    fi
 fi
 
 echo "Bootstrap complete."
