@@ -24,7 +24,7 @@ done
 
 # --- Mise task permissions ---
 tasks_dir="$HOME/.config/mise/tasks"
-[[ -d "$tasks_dir" ]] && find "$tasks_dir" -type f -exec chmod +x {} \;
+[[ -d "$tasks_dir" ]] && find "$tasks_dir" -type f \( -name "*.sh" -o ! -name "*.*" \) -exec chmod +x {} \;
 
 # --- Projects directory ---
 [[ -d "$PROJECT_DIR" ]] || mkdir -p "$PROJECT_DIR"
