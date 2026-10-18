@@ -1,0 +1,40 @@
+#!/usr/bin/env zsh
+#MISE description="Stow dotfiles, set permissions, configure macOS"
+
+set -e
+
+DOTFILES_DIR="${DOTFILES:-$HOME/.dotfiles}"
+source "$DOTFILES_DIR/include/shared_vars.sh"
+
+# --- Stow dotfiles ---
+echo "Stowing dotfiles..."
+cd "$DOTFILES_DIR"
+
+for dir in */; do
+    dirname="${dir%/}"
+    [[ "$dirname" == .* ]] && continue
+    is_infra=false
+    for infra in "${_DOTFILES_INFRA[@]}"; do
+        [[ "$dirname" == "$infra" ]] && { is_infra=true; break; }
+    done
+    $is_infra && continue
+    echo "  stow $dirname"
+    stow --verbose=0 --adopt --target="$HOME" --restow "$dirname"
+done
+
+# --- Mise task permissions ---
+tasks_dir="$HOME/.config/mise/tasks"
+[[ -d "$tasks_dir" ]] && find "$tasks_dir" -type f -exec chmod +x {} \;
+
+# --- Projects directory ---
+[[ -d "$PROJECT_DIR" ]] || mkdir -p "$PROJECT_DIR"
+
+# --- macOS ---
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    screenshot_dir="$HOME/Pictures/Screenshots"
+    [[ -d "$screenshot_dir" ]] || mkdir -p "$screenshot_dir"
+    defaults write com.apple.screencapture location "$screenshot_dir"
+    echo "macOS defaults applied."
+fi
+
+echo "Bootstrap complete."
