@@ -24,18 +24,11 @@ list_project_types() {
     fi
 
     # Find maximum template name length for alignment
-    local max_name_length=0
-    echo "$mkproject_tasks" | while IFS= read -r line; do
+    local max_name_length=12
+    while IFS= read -r line; do
         local task_name=$(echo "$line" | awk '{print $1}' | sed 's/mkproject://')
-        if [[ ${#task_name} -gt $max_name_length ]]; then
-            max_name_length=${#task_name}
-        fi
-    done
-
-    # Use a minimum width of 12 characters
-    if [[ $max_name_length -lt 12 ]]; then
-        max_name_length=12
-    fi
+        [[ ${#task_name} -gt $max_name_length ]] && max_name_length=${#task_name}
+    done <<< "$mkproject_tasks"
 
     # Parse and display tasks with better parsing
     echo "$mkproject_tasks" | while IFS= read -r line; do
@@ -383,7 +376,8 @@ cloneproject() {
     fi
 
     # Parse GitHub URL
-    local url_info=$(parse_github_url "$first_arg" "$second_arg")
+    local url_info
+    url_info=$(parse_github_url "$first_arg" "$second_arg")
     if [[ $? -ne 0 ]]; then
         echo "❌ Error: Invalid format. Use 'gh user/repo' or full GitHub URL"
         echo "Examples:"
@@ -628,11 +622,7 @@ function check_removal_warnings() {
 
     safe_cd "$original_dir"
 
-    if [[ "$has_warnings" == true ]]; then
-        return 0  # Has warnings
-    else
-        return 1  # No warnings
-    fi
+    [[ "$has_warnings" == true ]]
 }
 
 # Remove a project with optional archiving

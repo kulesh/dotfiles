@@ -89,30 +89,11 @@ function get_last_modified() {
 # Check git status and return structured information
 function get_git_status_info() {
     local repo_dir="$1"
-    local current_dir="$PWD"
 
-    if [[ ! -d "$repo_dir/.git" ]]; then
-        return 1
-    fi
+    [[ -d "$repo_dir/.git" ]] || return 1
 
-    if ! safe_cd "$repo_dir"; then
-        return 1
-    fi
-
-    local git_status=$(git status --porcelain 2>/dev/null)
-    local has_changes=false
-
-    if [[ -n "$git_status" ]]; then
-        has_changes=true
-    fi
-
-    safe_cd "$current_dir"
-
-    if [[ "$has_changes" == true ]]; then
-        return 0  # Has changes
-    else
-        return 1  # Clean
-    fi
+    local git_status=$(git -C "$repo_dir" status --porcelain 2>/dev/null)
+    [[ -n "$git_status" ]]
 }
 
 # Parse GitHub URL and extract repository information

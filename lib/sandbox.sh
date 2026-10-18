@@ -11,7 +11,8 @@ typeset -g SANDBOX_LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/sandbox/logs"
 
 # Get the real path to ~/.ssh (resolving symlinks)
 function _sandbox_get_ssh_real() {
-    python3 -c "import os; print(os.path.realpath(os.path.expanduser('~/.ssh')))"
+    local _p="$HOME/.ssh"
+    echo "${_p:A}"
 }
 
 # Return path to sandbox profile template
@@ -59,27 +60,6 @@ if [[ -z "$IN_SANDBOX" ]]; then
     chpwd_functions+=(_sandbox_entry_chpwd)
 fi
 
-# Legacy function - sandbox entry is now handled by zsh chpwd hook (_sandbox_entry_chpwd)
-# Kept for backwards compatibility with workon -s command
-function _sandbox_add_hooks() {
-    local projdir="$1"
-    local mise_file="$projdir/.mise.toml"
-
-    # No mise hooks needed - sandbox detection via .sandbox marker + zsh chpwd
-    if grep -q '^\[hooks\]' "$mise_file" 2>/dev/null; then
-        echo "Hooks section already exists in $mise_file"
-        return 0
-    fi
-
-    cat >> "$mise_file" << 'EOF'
-
-[hooks]
-# Sandbox entry/exit handled by zsh chpwd hooks, not mise
-enter = 'true'
-leave = 'true'
-EOF
-
-}
 
 # Enter sandboxed environment using macOS sandbox-exec
 function _workon_sandboxed() {

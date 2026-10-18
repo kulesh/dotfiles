@@ -61,10 +61,9 @@ function workon() {
         return 1
     fi
 
-    # First-time sandbox setup: create marker and add hooks
+    # First-time sandbox setup: create marker (chpwd detects it on cd)
     if [[ "$use_sandbox" == true && ! -f "$projdir/.sandbox" ]]; then
         touch "$projdir/.sandbox"
-        _sandbox_add_hooks "$projdir"
         echo "Sandbox enabled for $projname"
     fi
 
@@ -358,8 +357,10 @@ function show_git_activity() {
     fi
 
     echo -e "${bold}📜 Recent${reset}"
-    if git log --oneline -n 3 2>/dev/null | head -3 >/dev/null; then
-        git log --format="  %C(dim)%h%C(reset) %s" -n 3 2>/dev/null
+    local log_output
+    log_output=$(git log --format="  %C(dim)%h%C(reset) %s" -n 3 2>/dev/null)
+    if [[ -n "$log_output" ]]; then
+        echo "$log_output"
     else
         echo -e "  ${dim}(no commits yet)${reset}"
     fi
