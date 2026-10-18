@@ -40,10 +40,10 @@ Replace `install.sh` and `brew/Brewfile` with `mise bootstrap`. Keep GNU Stow fo
 ## Fresh Machine Flow
 
 ```bash
-curl https://mise.run | sh
-git clone https://github.com/kulesh/dotfiles.git ~/.dotfiles
-cd ~/.dotfiles && mise bootstrap
+curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh | bash
 ```
+
+This runs `mise.sh`, which installs Xcode CLI tools (if needed), installs mise, clones the repo, and runs `mise bootstrap`.
 
 ## Consequences
 

@@ -1,12 +1,7 @@
 # ~/.config/mise/config.toml — Machine configuration
 #
-# This file replaces both install.sh and brew/Brewfile.
-# Stow remains for dotfile symlinks (convention > declaration).
-#
-# Fresh machine:
-#   curl https://mise.run | sh
-#   git clone https://github.com/kulesh/dotfiles.git ~/.dotfiles
-#   cd ~/.dotfiles && mise bootstrap
+# Fresh machine:  curl -fsSL .../mise.sh | bash
+# Or if cloned:   cd ~/.dotfiles && mise bootstrap
 #
 # Day 2:
 #   mise bootstrap packages use brew:foo          # add a formula
@@ -49,7 +44,7 @@ status = { missing_tools = "if_other_versions_installed", show_env = false, show
 "jnsahaj/lumen" = "https://github.com/jnsahaj/homebrew-lumen"
 
 # =============================================================================
-# Bootstrap: packages (replaces brew/Brewfile)
+# Bootstrap: system packages
 # =============================================================================
 
 [bootstrap.packages]

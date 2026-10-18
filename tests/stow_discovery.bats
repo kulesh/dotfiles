@@ -3,7 +3,7 @@
 
 load test_helper
 
-# Simulate the discovery logic from install.sh in a temp directory
+# Simulate the discovery logic from tasks/bootstrap in a temp directory
 discover_packages() {
     local test_dir="$1"
     zsh -c "
