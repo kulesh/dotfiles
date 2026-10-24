@@ -85,3 +85,19 @@ bootstrap() {
     [ "$status" -ne 0 ]
     [[ "$output" != *"mise install"* ]]
 }
+
+@test "previews cloning own repos, skipping dotfiles and existing projects" {
+    cat > "$STUBS/gh" <<'STUB'
+#!/bin/sh
+case "$1 $2" in
+  "auth status") exit 0;;
+  "repo list") printf 'kulesh/dotfiles\nkulesh/alpha\nkulesh/beta\n';;
+esac
+STUB
+    mkdir -p "$TARGET/dev/beta"
+    bootstrap
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would clone kulesh/alpha"* ]]
+    [[ "$output" != *"would clone kulesh/beta"* ]]
+    [[ "$output" != *"would clone kulesh/dotfiles"* ]]
+}

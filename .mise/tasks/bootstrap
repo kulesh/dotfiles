@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-#MISE description="Link dotfiles, install global tools, log in to GitHub, apply macOS defaults"
+#MISE description="Link dotfiles, install tools, log in to GitHub, clone your repos, apply macOS defaults"
 #MISE raw=true  # interactive steps (GitHub login, installers) need the terminal
 set -euo pipefail
 
@@ -47,3 +47,20 @@ fi
 # A developer machine should be ready to push. gh's login flow generates
 # ~/.ssh/id_ed25519 if it's missing, uploads it, and sets git to use SSH.
 gh auth status &>/dev/null || run gh auth login --hostname github.com --git-protocol ssh --web
+
+# Clone your own repos (no forks, no archived) into ~/dev as managed
+# projects. Each runs in its own zsh so one bad repo is reported, not fatal.
+if gh auth status &>/dev/null; then
+    self=$(git -C "$dotfiles" remote get-url origin 2>/dev/null || true)
+    failed=()
+    for repo in ${(f)"$(gh repo list --source --no-archived --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner')"}; do
+        [[ ${self%.git} == *[:/]$repo ]] && continue   # already at ~/.dotfiles
+        [[ -d $PROJECT_DIR/${repo#*/} ]] && continue
+        if testing; then echo "would clone $repo"; continue; fi
+        MKPROJECT_CLEANUP=delete zsh -c 'source "$1/lib/misewrapper.sh" && cloneproject gh "$2"' _ "$dotfiles" "$repo" ||
+            failed+=("$repo")
+    done
+    if (( ${#failed} )); then echo "Could not clone: ${failed[*]}"; fi
+else
+    echo "would clone your GitHub repos into $PROJECT_DIR"
+fi
