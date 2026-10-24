@@ -7,9 +7,11 @@ set -euo pipefail
 dotfiles=${0:A:h:h:h}
 source "$dotfiles/include/shared_vars.sh"
 
-# Create before stowing, otherwise stow folds ~/dev into a symlink
-# to the repo and new projects would land inside the dotfiles checkout.
+# Create these before stowing. Stow links a whole directory into the repo
+# when it doesn't exist yet, so new projects would land in the dotfiles
+# checkout and SSH keys would be deleted along with it.
 mkdir -p "$PROJECT_DIR"
+mkdir -p -m 700 "$HOME_DIR/.ssh"
 
 # Every top-level directory is a stow package unless it's infrastructure.
 for package in "$dotfiles"/*(/:t); do
@@ -46,7 +48,14 @@ fi
 
 # A developer machine should be ready to push. gh's login flow generates
 # ~/.ssh/id_ed25519 if it's missing, uploads it, and sets git to use SSH.
-gh auth status &>/dev/null || run gh auth login --hostname github.com --git-protocol ssh --web
+# Already logged in but no key (e.g. a reinstall): make one and upload it.
+key=$HOME_DIR/.ssh/id_ed25519
+if ! gh auth status &>/dev/null; then
+    run gh auth login --hostname github.com --git-protocol ssh --web
+elif [[ ! -f $key ]]; then
+    run ssh-keygen -t ed25519 -f "$key" -C "$(id -un)@$(hostname -s)"
+    run gh ssh-key add "$key.pub" --title "$(hostname -s)"
+fi
 
 # Clone your own repos (no forks, no archived) into ~/dev as managed
 # projects. Each runs in its own zsh so one bad repo is reported, not fatal.
@@ -57,7 +66,7 @@ if gh auth status &>/dev/null; then
         [[ ${self%.git} == *[:/]$repo ]] && continue   # already at ~/.dotfiles
         [[ -d $PROJECT_DIR/${repo#*/} ]] && continue
         if testing; then echo "would clone $repo"; continue; fi
-        MKPROJECT_CLEANUP=delete zsh -c 'source "$1/lib/misewrapper.sh" && cloneproject gh "$2"' _ "$dotfiles" "$repo" ||
+        zsh -c 'source "$1/lib/misewrapper.sh" && cloneproject gh "$2"' _ "$dotfiles" "$repo" ||
             failed+=("$repo")
     done
     if (( ${#failed} )); then echo "Could not clone: ${failed[*]}"; fi

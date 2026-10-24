@@ -306,62 +306,7 @@ mkproject() {
     fi
 }
 
-# Clone repository content with conflict resolution
-function clone_repository_content() {
-    local github_url="$1"
-    local repo_name="$2"
-
-    # Set up git remote
-    echo "🔗 Setting up GitHub remote..."
-    if ! git remote add origin "$github_url"; then
-        echo "❌ Error: Failed to add GitHub remote"
-        echo "   ⚠️  Project created but not linked to GitHub"
-        return 1
-    fi
-
-    # Try to pull from main branch first, then master
-    echo "⬇️  Pulling repository content..."
-    local pulled=false
-
-    # Try main branch with unrelated histories merge
-    if git pull origin main --allow-unrelated-histories --no-edit 2>/dev/null; then
-        pulled=true
-        echo "✅ Successfully pulled from 'main' branch"
-    # If that fails due to conflicts, force reset to remote
-    elif git fetch origin main 2>/dev/null && git reset --hard origin/main 2>/dev/null; then
-        pulled=true
-        echo "✅ Successfully pulled from 'main' branch (with reset)"
-    # Try master branch with unrelated histories merge
-    elif git pull origin master --allow-unrelated-histories --no-edit 2>/dev/null; then
-        pulled=true
-        echo "✅ Successfully pulled from 'master' branch"
-    # If that fails due to conflicts, force reset to remote
-    elif git fetch origin master 2>/dev/null && git reset --hard origin/master 2>/dev/null; then
-        pulled=true
-        echo "✅ Successfully pulled from 'master' branch (with reset)"
-    else
-        echo "❌ Error: Failed to pull from repository"
-        echo "   Possible causes:"
-        echo "   - Repository doesn't exist or is private"
-        echo "   - Network connection issues"
-        echo "   - Repository is empty"
-        echo "   - Authentication required"
-        echo ""
-        echo "   ⚠️  Base project created with GitHub remote configured"
-        echo "   You can manually pull with: git pull origin <branch_name>"
-        return 1
-    fi
-
-    # Trust mise config if it was pulled from the repo
-    if [[ -e ".mise.toml" ]]; then
-        echo "🔧 Trusting mise configuration from repository..."
-        mise trust .mise.toml
-    fi
-
-    return 0
-}
-
-# Clone a GitHub project using mkproject base template
+# Clone a GitHub repository as a managed project
 cloneproject() {
     local first_arg="$1"
     local second_arg="$2"
@@ -399,33 +344,22 @@ cloneproject() {
         return 1
     fi
 
-    echo "Creating base project and cloning from GitHub..."
     echo "📦 Repository: $github_url"
-    echo "📁 Local name: $repo_name"
 
-    # Create base project using mkproject
-    if ! mkproject "$repo_name" base; then
-        echo "❌ Error: Failed to create base project"
+    # Clone first: a failed clone leaves nothing behind, git's own error
+    # is visible, and the repo's default branch is whatever it is.
+    if ! git clone "$github_url" "$project_path"; then
+        echo "❌ Error: Failed to clone $github_url"
         return 1
     fi
 
-    # We should now be in the project directory from mkproject
-    local current_dir="$PWD"
-    if [[ "$current_dir" != "$project_path" ]]; then
-        echo "❌ Error: Unexpected directory after mkproject"
-        return 1
-    fi
+    safe_cd "$project_path" || return 1
 
-    # Clone repository content
-    if clone_repository_content "$github_url" "$repo_name"; then
-        echo "✅ Project '$repo_name' cloned successfully"
-        echo "📁 Location: $project_path"
-        echo "🔗 Remote: $github_url"
-        echo ""
-        echo "Use 'workon $repo_name' to return to this project anytime"
-    else
-        return 1
-    fi
+    # A mise config is what makes a directory a project (workon, lsprojects).
+    [[ -e .mise.toml || -e .tool-versions ]] || touch .mise.toml
+    [[ -e .mise.toml ]] && mise trust .mise.toml
+
+    echo "✅ Project '$repo_name' cloned to $project_path"
 }
 
 # Update a cloned project by pulling latest changes
