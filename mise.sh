@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # mise.sh — Bootloader for dotfiles
 #
-# Installs mise, clones this repo if needed, then hands off to mise bootstrap.
+# Installs prerequisites, clones this repo, then hands off to mise bootstrap.
 # This is the only script you run on a fresh machine:
 #
 #   curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh | bash
@@ -14,7 +14,7 @@ set -e
 DOTFILES_REPO="https://github.com/kulesh/dotfiles.git"
 DOTFILES_DIR="$HOME/.dotfiles"
 
-# --- Xcode CLI tools (provides git on macOS) ---
+# --- Xcode CLI tools (provides git, clang on macOS) ---
 if [[ "$(uname)" == "Darwin" ]] && ! xcode-select -p &>/dev/null; then
     echo "Installing Xcode Command Line Tools..."
     xcode-select --install
@@ -23,6 +23,17 @@ if [[ "$(uname)" == "Darwin" ]] && ! xcode-select -p &>/dev/null; then
         sleep 5
     done
     echo "Xcode CLI tools installed."
+fi
+
+# --- Homebrew (mise skips brew: packages if brew is missing) ---
+if [[ "$(uname)" == "Darwin" ]] && ! command -v brew &>/dev/null; then
+    echo "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [[ $(uname -m) == "arm64" ]]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    else
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
 fi
 
 # --- mise ---
