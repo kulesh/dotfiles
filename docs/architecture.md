@@ -45,6 +45,7 @@ bash <(curl -fsSL .../mise.sh)
 │   2. [bootstrap.user] → chsh to zsh       │
 │   3. .mise/tasks/bootstrap                │
 │      mkdir ~/dev → stow → mise install    │
+│      → trust ~/dev → Claude Code          │
 │      → macOS defaults                     │
 └───────────────────────────────────────────┘
 ```
