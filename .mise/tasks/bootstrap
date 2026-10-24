@@ -31,7 +31,10 @@ if testing; then mise install --dry-run; else mise install; fi
 # on every prompt there.
 run mise trust "$PROJECT_DIR/.mise.toml"
 
-command -v claude &>/dev/null || run sh -c 'curl -fsSL https://claude.ai/install.sh | bash'
+# Check the install path too: mise.sh runs in bash, where ~/.local/bin
+# isn't on PATH, so command -v alone would reinstall on every run.
+command -v claude &>/dev/null || [[ -x $HOME/.local/bin/claude ]] ||
+    run sh -c 'curl -fsSL https://claude.ai/install.sh | bash'
 
 if [[ $OSTYPE == darwin* ]]; then
     screenshots=$HOME/Pictures/Screenshots
