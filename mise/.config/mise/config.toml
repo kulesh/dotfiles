@@ -126,6 +126,13 @@ status = { missing_tools = "if_other_versions_installed", show_env = false, show
 "brew-cask:font-zed-mono-nerd-font" = { os = "macos" }
 
 # =============================================================================
+# Bootstrap: login shell
+# =============================================================================
+
+[bootstrap.user]
+login_shell = "zsh"
+
+# =============================================================================
 # Bootstrap task: script at tasks/bootstrap (same pattern as mkproject)
 # =============================================================================
 
