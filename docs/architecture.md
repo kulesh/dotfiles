@@ -47,6 +47,7 @@ bash <(curl -fsSL .../mise.sh)
 │      mkdir ~/dev → stow → mise install    │
 │      → trust ~/dev → Claude Code          │
 │      → macOS defaults                     │
+│      → gh auth login (SSH key → GitHub)   │
 └───────────────────────────────────────────┘
 ```
 
