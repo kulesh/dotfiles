@@ -52,10 +52,12 @@ if [[ ! -d "$DOTFILES_DIR" ]]; then
 fi
 
 # --- Hand off to mise ---
-# Point mise at the config inside the repo (stow hasn't linked it to
-# ~/.config/mise/config.toml yet — that happens during bootstrap)
+# Pre-link mise config so bootstrap can find packages and tasks
+# (stow will adopt this symlink later during the bootstrap task)
+mkdir -p "$HOME/.config"
+ln -snf "$DOTFILES_DIR/mise/.config/mise" "$HOME/.config/mise"
+
 cd "$DOTFILES_DIR"
-export MISE_GLOBAL_CONFIG_FILE="$DOTFILES_DIR/mise/.config/mise/config.toml"
-mise trust "$MISE_GLOBAL_CONFIG_FILE"
+mise trust
 echo "Running mise bootstrap..."
 mise bootstrap
