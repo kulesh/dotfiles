@@ -18,8 +18,11 @@ DOTFILES_DIR="$HOME/.dotfiles"
 if [[ "$(uname)" == "Darwin" ]] && ! xcode-select -p &>/dev/null; then
     echo "Installing Xcode Command Line Tools..."
     xcode-select --install
-    echo "Waiting for Xcode CLI tools (press any key when the installer finishes)..."
-    read -n 1 -s
+    echo "Waiting for Xcode CLI tools to install (this takes a few minutes)..."
+    until xcode-select -p &>/dev/null; do
+        sleep 5
+    done
+    echo "Xcode CLI tools installed."
 fi
 
 # --- mise ---
