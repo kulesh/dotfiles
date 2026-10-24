@@ -101,3 +101,20 @@ STUB
     [[ "$output" != *"would clone kulesh/beta"* ]]
     [[ "$output" != *"would clone kulesh/dotfiles"* ]]
 }
+
+@test "creates ~/.ssh as a private real directory so keys stay out of the repo" {
+    bootstrap
+    [ "$status" -eq 0 ]
+    [ -d "$TARGET/.ssh" ]
+    [ ! -L "$TARGET/.ssh" ]
+    [ "$(stat -c %a "$TARGET/.ssh" 2>/dev/null || stat -f %Lp "$TARGET/.ssh")" = "700" ]
+    [ -L "$TARGET/.ssh/config" ]
+}
+
+@test "previews generating and uploading a key when logged in without one" {
+    printf '#!/bin/sh\n[ "$1 $2" = "auth status" ] && exit 0\n' > "$STUBS/gh"
+    bootstrap
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: ssh-keygen -t ed25519 -f $TARGET/.ssh/id_ed25519"* ]]
+    [[ "$output" == *"would run: gh ssh-key add $TARGET/.ssh/id_ed25519.pub"* ]]
+}

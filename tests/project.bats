@@ -129,3 +129,39 @@ load test_helper
         rm -rf "$tmpdir"
     done
 }
+
+# cloneproject against local bare repos, via url.insteadOf for github.com
+setup_clone() {
+    CLONE_ROOT=$(mktemp -d)
+    git -c init.defaultBranch=trunk init -q "$CLONE_ROOT/seed"
+    git -C "$CLONE_ROOT/seed" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+    mkdir -p "$CLONE_ROOT/remote" "$CLONE_ROOT/dev" "$CLONE_ROOT/bin"
+    git clone -q --bare "$CLONE_ROOT/seed" "$CLONE_ROOT/remote/alpha.git"
+    printf '[url "%s/remote/"]\n\tinsteadOf = git@github.com:kulesh/\n' "$CLONE_ROOT" > "$CLONE_ROOT/gitconfig"
+    printf '#!/bin/sh\n' > "$CLONE_ROOT/bin/mise"; chmod +x "$CLONE_ROOT/bin/mise"
+}
+
+run_cloneproject() {
+    GIT_CONFIG_GLOBAL="$CLONE_ROOT/gitconfig" PATH="$CLONE_ROOT/bin:$PATH" run zsh -c "
+        source '${DOTFILES_ROOT}/lib/misewrapper.sh'
+        MISE_PROJECTS_DIR='$CLONE_ROOT/dev'
+        cloneproject gh '$1'"
+}
+
+@test "cloneproject: clones a repo whose default branch isn't main or master" {
+    setup_clone
+    run_cloneproject kulesh/alpha
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$CLONE_ROOT/dev/alpha" branch --show-current)" = "trunk" ]
+    [ -f "$CLONE_ROOT/dev/alpha/.mise.toml" ]
+    rm -rf "$CLONE_ROOT"
+}
+
+@test "cloneproject: a failed clone reports git's error and leaves nothing behind" {
+    setup_clone
+    run_cloneproject kulesh/missing
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"Could not read from remote repository"* || "$output" == *"does not appear to be a git repository"* ]]
+    [ ! -e "$CLONE_ROOT/dev/missing" ]
+    rm -rf "$CLONE_ROOT"
+}
