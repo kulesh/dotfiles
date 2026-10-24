@@ -10,7 +10,9 @@ setup() {
     STUBS=$(mktemp -d)
     # Record machine-level calls instead of performing them.
     printf '#!/bin/sh\necho "mise $*"\n' > "$STUBS/mise"
-    chmod +x "$STUBS/mise"
+    # gh reports "not logged in" so the login step is always exercised.
+    printf '#!/bin/sh\n[ "$1 $2" = "auth status" ] && exit 1\necho "gh $*"\n' > "$STUBS/gh"
+    chmod +x "$STUBS/mise" "$STUBS/gh"
 }
 
 teardown() {
@@ -60,6 +62,13 @@ bootstrap() {
     [[ "$output" == *"mise install --dry-run"* ]]
     [[ "$output" == *"would run: mise trust"* ]]
     [[ "$output" != *$'\nmise trust'* ]]
+}
+
+@test "previews GitHub login over SSH when not authenticated" {
+    bootstrap
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: gh auth login --hostname github.com --git-protocol ssh"* ]]
+    [[ "$output" != *$'\ngh auth login'* ]]
 }
 
 @test "is safe to run twice" {
