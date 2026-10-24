@@ -1,7 +1,7 @@
 # ~/.config/mise/config.toml — Runtime configuration (stowed)
 #
-# Bootstrap config (packages, taps, login shell) lives at the repo root
-# in .mise.toml where mise bootstrap --from can find it.
+# Bootstrap config (packages, taps, login shell) lives in .mise.toml at
+# the repo root because it must be readable before stow links this file.
 
 [tools]
 uv = "latest"

@@ -1,54 +1,37 @@
 #!/usr/bin/env bash
-# mise.sh — Bootloader for dotfiles
-#
-# Installs Xcode CLI tools, Homebrew, and mise, clones the repo to
-# ~/.dotfiles, then runs mise bootstrap from there.
+# mise.sh — install what mise can't install itself, then hand off to it.
 #
 #   bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
-set -e
+#
+# Safe to re-run: every step checks before acting.
+set -euo pipefail
 
-DOTFILES_REPO="https://github.com/kulesh/dotfiles.git"
-DOTFILES_DIR="$HOME/.dotfiles"
+repo=https://github.com/kulesh/dotfiles.git
+dotfiles=$HOME/.dotfiles
 
-# --- Xcode CLI tools (provides git, clang on macOS) ---
-if [[ "$(uname)" == "Darwin" ]] && ! xcode-select -p &>/dev/null; then
-    echo "Installing Xcode Command Line Tools..."
+[[ $(uname) == Darwin ]] || { echo "mise.sh: macOS only" >&2; exit 1; }
+
+# 1. Xcode Command Line Tools provide git and a compiler. The installer
+#    is a GUI dialog that returns immediately, so wait until it's done.
+if ! xcode-select -p &>/dev/null; then
     xcode-select --install
-    echo "Waiting for Xcode CLI tools to install (this takes a few minutes)..."
-    until xcode-select -p &>/dev/null; do
-        sleep 5
-    done
-    echo "Xcode CLI tools installed."
+    echo "Complete the Xcode Command Line Tools dialog. Waiting..."
+    until xcode-select -p &>/dev/null; do sleep 5; done
 fi
 
-# --- Homebrew (mise skips brew: packages if brew is missing) ---
-if [[ "$(uname)" == "Darwin" ]] && ! command -v brew &>/dev/null; then
-    echo "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    if [[ $(uname -m) == "arm64" ]]; then
-        eval "$(/opt/homebrew/bin/brew shellenv)"
-    else
-        eval "$(/usr/local/bin/brew shellenv)"
-    fi
-fi
+# 2. Homebrew. mise drives it but can't install it. Check by path, not
+#    PATH: a fresh shell won't have brew on PATH even after it's installed.
+if [[ $(uname -m) == arm64 ]]; then brew=/opt/homebrew/bin/brew; else brew=/usr/local/bin/brew; fi
+[[ -x $brew ]] || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+eval "$("$brew" shellenv)"
 
-# --- mise ---
-if ! command -v mise &>/dev/null; then
-    echo "Installing mise..."
-    curl -fsSL https://mise.run | sh
-fi
-eval "$(~/.local/bin/mise activate bash)"
+# 3. mise, via Homebrew so `mup` upgrades it along with everything else.
+command -v mise &>/dev/null || "$brew" install mise
 
-# --- Dotfiles ---
-if [[ ! -d "$DOTFILES_DIR" ]]; then
-    echo "Cloning dotfiles..."
-    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
-fi
+# 4. The repo lives at a fixed path because stow's symlinks point into it.
+[[ -d $dotfiles ]] || git clone "$repo" "$dotfiles"
 
-# --- Bootstrap ---
-# .mise.toml at the repo root has [bootstrap.packages] and [bootstrap.user].
-# .mise/tasks/bootstrap has the stow loop. No symlinks or env vars needed.
-cd "$DOTFILES_DIR"
+# 5. Hand off: mise reads .mise.toml and runs .mise/tasks/bootstrap.
+cd "$dotfiles"
 mise trust
-echo "Running mise bootstrap..."
 mise bootstrap

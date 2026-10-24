@@ -59,7 +59,7 @@ cdproject                         # cd to current mise project root
 
 ```
 ~/.dotfiles/
-├── mise.sh                   # Bootloader: installs prerequisites, runs mise bootstrap --from
+├── mise.sh                   # Bootloader: Xcode CLI tools, Homebrew, mise, clone, mise bootstrap
 ├── .mise.toml                # Bootstrap config: packages, taps, login shell
 ├── .mise/tasks/bootstrap     # Bootstrap task: stow + permissions + macOS setup
 ├── include/shared_vars.sh    # Shared configuration variables

@@ -30,19 +30,22 @@ bash <(curl -fsSL .../mise.sh)
         ▼
 ┌───────────────────────────────────────────┐
 │ mise.sh (bootloader)                      │
-│   1. Install Xcode CLI tools if needed    │
-│   2. Install Homebrew if needed           │
-│   3. Install mise if needed               │
-│   4. mise bootstrap --from <repo>         │
+│   1. Xcode CLI tools (waits for dialog)   │
+│   2. Homebrew                             │
+│   3. mise (via brew)                      │
+│   4. git clone → ~/.dotfiles              │
+│   5. mise trust && mise bootstrap         │
 └────────┬──────────────────────────────────┘
          │
          ▼
 ┌───────────────────────────────────────────┐
 │ mise bootstrap (reads .mise.toml)         │
-│   1. [bootstrap.packages] → Homebrew      │
-│      installs formulae, casks, fonts      │
+│   1. [bootstrap.packages] → formulae,     │
+│      casks, fonts                         │
 │   2. [bootstrap.user] → chsh to zsh       │
-│   3. [tasks.bootstrap] → stow, macOS      │
+│   3. .mise/tasks/bootstrap                │
+│      mkdir ~/dev → stow → mise install    │
+│      → macOS defaults                     │
 └───────────────────────────────────────────┘
 ```
 

@@ -15,7 +15,7 @@ The system does two things:
 bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
 ```
 
-This installs Xcode CLI tools, Homebrew, and mise, then runs `mise bootstrap --from` which clones the repo and applies the configuration: system packages, login shell, dotfile symlinks, and macOS settings.
+This installs Xcode CLI tools, Homebrew, and mise, clones the repo to `~/.dotfiles`, then runs `mise bootstrap`: system packages, login shell, dotfile symlinks, global tools, and macOS settings.
 
 To re-run on an existing machine:
 

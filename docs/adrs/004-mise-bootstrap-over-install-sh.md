@@ -43,7 +43,9 @@ Replace `install.sh` and `brew/Brewfile` with `mise bootstrap`. Keep GNU Stow fo
 bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
 ```
 
-This runs `mise.sh`, which installs Xcode CLI tools (if needed), installs mise, clones the repo, and runs `mise bootstrap`.
+This runs `mise.sh`, which installs the three things mise can't install itself (Xcode CLI tools, Homebrew, mise), clones the repo to `~/.dotfiles`, and runs `mise bootstrap`.
+
+Bootstrap config (`[bootstrap.packages]`, `[bootstrap.user]`) lives in `.mise.toml` at the repo root, not in the stowed `mise/.config/mise/config.toml`, because it must be readable before stow has run. `mise bootstrap --from` was tried and rejected: it clones to `~/.local/share/mise/bootstrap-repo`, but stow's symlinks need a stable checkout at `~/.dotfiles`.
 
 ## Consequences
 
