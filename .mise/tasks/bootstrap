@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
-#MISE description="Link dotfiles with stow, install global tools, apply macOS defaults"
+#MISE description="Link dotfiles, install global tools, log in to GitHub, apply macOS defaults"
+#MISE raw=true  # interactive steps (GitHub login, installers) need the terminal
 set -euo pipefail
 
 # This file lives at <repo>/.mise/tasks/bootstrap
@@ -40,5 +41,6 @@ if [[ $OSTYPE == darwin* ]]; then
     fi
 fi
 
-[[ -f $HOME/.ssh/id_ed25519 ]] ||
-    echo "Next: gh auth login --git-protocol ssh   # creates an SSH key and adds it to GitHub"
+# A developer machine should be ready to push. gh's login flow generates
+# ~/.ssh/id_ed25519 if it's missing, uploads it, and sets git to use SSH.
+gh auth status &>/dev/null || run gh auth login --hostname github.com --git-protocol ssh --web
