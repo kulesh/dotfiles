@@ -34,7 +34,7 @@ Designed to be evolving, grokable, and contained to the project directory.
 
 ```bash
 # Bootstrap a fresh machine
-curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
 
 # Or if already cloned
 cd ~/.dotfiles && mise bootstrap

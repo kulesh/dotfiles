@@ -12,7 +12,7 @@ The system does two things:
 ## Installation
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
 ```
 
 This installs mise, clones the repo, and runs `mise bootstrap` — which installs Homebrew packages, stows dotfile symlinks, and configures macOS.
