@@ -14,8 +14,12 @@ mkdir -p "$PROJECT_DIR"
 for package in "$dotfiles"/*(/:t); do
     (( ${_DOTFILES_INFRA[(Ie)$package]} )) && continue
     echo "stow $package"
-    stow --dir="$dotfiles" --target="$HOME" --adopt --restow "$package"
+    stow --dir="$dotfiles" --target="$HOME_DIR" --adopt --restow "$package"
 done
+
+# Everything below changes the real machine regardless of HOME_DIR,
+# so a test run (HOME_DIR pointed elsewhere) stops after linking.
+[[ $HOME_DIR == "$HOME" ]] || exit 0
 
 # Global tools live in the config stow just linked; mise resolved tools
 # before this task ran, so a fresh process installs them now.
