@@ -48,6 +48,7 @@ bash <(curl -fsSL .../mise.sh)
 │      → trust ~/dev → Claude Code          │
 │      → macOS defaults                     │
 │      → gh auth login (SSH key → GitHub)   │
+│      → cloneproject each own repo → ~/dev │
 └───────────────────────────────────────────┘
 ```
 
