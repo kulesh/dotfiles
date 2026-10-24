@@ -24,7 +24,7 @@ cd ~/.dotfiles
 mise bootstrap
 ```
 
-To try the symlinks without touching your real `$HOME`, point `HOME_DIR` at a scratch directory. The task stops after stowing, so it skips `mise install` and macOS defaults:
+To try the symlinks without touching your real `$HOME`, point `HOME_DIR` at an empty scratch directory. Links are created there for real; the steps that would change the machine (`mise install`, macOS defaults) are only previewed:
 
 ```sh
 HOME_DIR=$(mktemp -d) mise run bootstrap
