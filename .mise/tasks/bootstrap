@@ -17,21 +17,28 @@ for package in "$dotfiles"/*(/:t); do
     stow --dir="$dotfiles" --target="$HOME_DIR" --adopt --restow "$package"
 done
 
-# Everything below changes the real machine regardless of HOME_DIR,
-# so a test run (HOME_DIR pointed elsewhere) previews it instead.
-if [[ $HOME_DIR != "$HOME" ]]; then
-    mise install --dry-run
-    echo "would set screenshot location: $HOME/Pictures/Screenshots"
-    exit 0
-fi
+# Steps below act on the real machine regardless of HOME_DIR. In a test
+# run (HOME_DIR pointed elsewhere) they're printed instead of executed.
+testing() { [[ $HOME_DIR != "$HOME" ]]; }
+run() { if testing; then echo "would run: $*"; else "$@"; fi; }
 
-# Global tools live in the config stow just linked; mise resolved tools
-# before this task ran, so a fresh process installs them now.
-mise install
+# mise resolved [tools] before this task ran, when the global config
+# wasn't linked yet, so install them from a fresh process now.
+if testing; then mise install --dry-run; else mise install; fi
+
+# ~/dev/.mise.toml governs every project below it; untrusted, mise errors
+# on every prompt there.
+run mise trust "$PROJECT_DIR/.mise.toml"
+
+command -v claude &>/dev/null || run sh -c 'curl -fsSL https://claude.ai/install.sh | bash'
 
 if [[ $OSTYPE == darwin* ]]; then
+    screenshots=$HOME/Pictures/Screenshots
     # Terminal may lack permission to ~/Pictures; skip quietly if so.
-    if mkdir -p "$HOME/Pictures/Screenshots" 2>/dev/null; then
-        defaults write com.apple.screencapture location "$HOME/Pictures/Screenshots"
+    if run mkdir -p "$screenshots" 2>/dev/null; then
+        run defaults write com.apple.screencapture location "$screenshots"
     fi
 fi
+
+[[ -f $HOME/.ssh/id_ed25519 ]] ||
+    echo "Next: gh auth login --git-protocol ssh   # creates an SSH key and adds it to GitHub"
