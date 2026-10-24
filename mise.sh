@@ -1,18 +1,11 @@
 #!/usr/bin/env bash
 # mise.sh — Bootloader for dotfiles
 #
-# Installs prerequisites, clones this repo, then hands off to mise bootstrap.
-# This is the only script you run on a fresh machine:
+# Installs Xcode CLI tools, Homebrew, and mise, then hands off to
+# mise bootstrap which reads .mise.toml from the repo root.
 #
 #   bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
-#
-# Or if already cloned:
-#
-#   ~/.dotfiles/mise.sh
 set -e
-
-DOTFILES_REPO="https://github.com/kulesh/dotfiles.git"
-DOTFILES_DIR="$HOME/.dotfiles"
 
 # --- Xcode CLI tools (provides git, clang on macOS) ---
 if [[ "$(uname)" == "Darwin" ]] && ! xcode-select -p &>/dev/null; then
@@ -28,7 +21,7 @@ fi
 # --- Homebrew (mise skips brew: packages if brew is missing) ---
 if [[ "$(uname)" == "Darwin" ]] && ! command -v brew &>/dev/null; then
     echo "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/tty
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     if [[ $(uname -m) == "arm64" ]]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"
     else
@@ -41,23 +34,8 @@ if ! command -v mise &>/dev/null; then
     echo "Installing mise..."
     curl -fsSL https://mise.run | sh
 fi
-
-# Make mise available in this session
 eval "$(~/.local/bin/mise activate bash)"
 
-# --- Dotfiles repo ---
-if [[ ! -d "$DOTFILES_DIR" ]]; then
-    echo "Cloning dotfiles..."
-    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
-fi
-
-# --- Hand off to mise ---
-# Pre-link mise config so bootstrap can find packages and tasks
-# (stow will adopt this symlink later during the bootstrap task)
-mkdir -p "$HOME/.config"
-ln -snf "$DOTFILES_DIR/mise/.config/mise" "$HOME/.config/mise"
-
-cd "$DOTFILES_DIR"
-mise trust
+# --- Bootstrap from repo ---
 echo "Running mise bootstrap..."
-mise bootstrap
+mise bootstrap --from https://github.com/kulesh/dotfiles.git --yes

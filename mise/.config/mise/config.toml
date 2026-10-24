@@ -1,26 +1,10 @@
-# ~/.config/mise/config.toml — Machine configuration
+# ~/.config/mise/config.toml — Runtime configuration (stowed)
 #
-# Fresh machine:  curl -fsSL .../mise.sh | bash
-# Or if cloned:   cd ~/.dotfiles && mise bootstrap
-#
-# Day 2:
-#   mise bootstrap packages use brew:foo          # add a formula
-#   mise bootstrap packages use brew-cask:bar     # add a cask
-#   mise bootstrap --only packages                # install packages only
-#   mise bootstrap --only task                    # re-run stow only
-#   mise bootstrap status                         # check everything
-#   mise bootstrap --dry-run                      # preview changes
-
-# =============================================================================
-# Tools — dev runtimes managed per-project by mise
-# =============================================================================
+# Bootstrap config (packages, taps, login shell) lives at the repo root
+# in .mise.toml where mise bootstrap --from can find it.
 
 [tools]
 uv = "latest"
-
-# =============================================================================
-# Settings
-# =============================================================================
 
 [settings]
 experimental = true
@@ -34,108 +18,3 @@ not_found_auto_install = true
 paranoid = false
 env_file = '.env'
 status = { missing_tools = "if_other_versions_installed", show_env = false, show_tools = false }
-
-# =============================================================================
-# Bootstrap: Homebrew taps
-# =============================================================================
-
-[bootstrap.brew.taps]
-"kulesh/tap" = "https://github.com/kulesh/homebrew-tap"
-"jnsahaj/lumen" = "https://github.com/jnsahaj/homebrew-lumen"
-
-# =============================================================================
-# Bootstrap: system packages
-# =============================================================================
-
-[bootstrap.packages]
-# Core utilities
-"brew:coreutils" = { os = "macos" }
-"brew:mas" = { os = "macos" }
-"brew:stow" = { os = "macos" }
-
-# Search & navigation
-"brew:fd" = "latest"
-"brew:ripgrep" = "latest"
-"brew:fzf" = "latest"
-"brew:zoxide" = "latest"
-"brew:tree" = "latest"
-
-# Dev tools
-"brew:neovim" = "latest"
-"brew:bat" = "latest"
-"brew:htop" = "latest"
-"brew:highlight" = "latest"
-"brew:aspell" = "latest"
-"brew:pandoc" = "latest"
-"brew:glow" = "latest"
-"brew:mdcat" = "latest"
-
-# Shell prompt
-"brew:starship" = "latest"
-
-# Git
-"brew:git-delta" = "latest"
-"brew:lazygit" = "latest"
-"brew:gh" = "latest"
-
-# Runtime management (mise manages itself)
-"brew:mise" = "latest"
-
-# File manager
-"brew:yazi" = "latest"
-
-# Benchmarking & modern coreutils
-"brew:hyperfine" = "latest"
-"brew:eza" = "latest"
-
-# Containers
-"brew:docker" = { os = "macos" }
-"brew:docker-compose" = { os = "macos" }
-"brew:colima" = { os = "macos" }
-
-# Media & AI
-"brew:yt-dlp" = "latest"
-"brew:ollama" = "latest"
-
-# Custom taps
-"brew:kulesh/tap/tc" = "latest"
-"brew:kulesh/tap/aiobscura" = "latest"
-"brew:kulesh/tap/seatbelt" = "latest"
-"brew:jnsahaj/lumen/lumen" = "latest"
-
-# Testing
-"brew:bats-core" = "latest"
-"brew:tree-sitter-cli" = "latest"
-
-# Network
-"brew:mole" = "latest"
-
-# Languages (system-level, used outside mise-managed projects)
-"brew:node" = "latest"
-"brew:ruby" = "latest"
-
-# Casks (macOS GUI apps)
-"brew-cask:ghostty" = { os = "macos" }
-"brew-cask:mactex" = { os = "macos" }
-"brew-cask:rectangle" = { os = "macos" }
-
-# Nerd Fonts
-"brew-cask:font-fira-code-nerd-font" = { os = "macos" }
-"brew-cask:font-jetbrains-mono-nerd-font" = { os = "macos" }
-"brew-cask:font-hack-nerd-font" = { os = "macos" }
-"brew-cask:font-zed-mono-nerd-font" = { os = "macos" }
-
-# =============================================================================
-# Bootstrap: login shell
-# =============================================================================
-
-[bootstrap.user]
-login_shell = "zsh"
-
-# =============================================================================
-# Bootstrap task: script at tasks/bootstrap (same pattern as mkproject)
-# =============================================================================
-
-[tasks.bootstrap]
-file = "tasks/bootstrap"
-description = "Stow dotfiles, set permissions, configure macOS"

@@ -25,25 +25,24 @@
 ## Bootstrap Flow
 
 ```
-curl https://mise.run | sh          # or: ~/.dotfiles/mise.sh
+bash <(curl -fsSL .../mise.sh)
         │
         ▼
 ┌───────────────────────────────────────────┐
 │ mise.sh (bootloader)                      │
 │   1. Install Xcode CLI tools if needed    │
-│   2. Install mise                         │
-│   3. Clone dotfiles repo                  │
-│   4. mise trust && mise bootstrap         │
+│   2. Install Homebrew if needed           │
+│   3. Install mise if needed               │
+│   4. mise bootstrap --from <repo>         │
 └────────┬──────────────────────────────────┘
          │
          ▼
 ┌───────────────────────────────────────────┐
-│ mise bootstrap (run order)                │
+│ mise bootstrap (reads .mise.toml)         │
 │   1. [bootstrap.packages] → Homebrew      │
 │      installs formulae, casks, fonts      │
-│   2. [tasks.bootstrap] → tasks/bootstrap  │
-│      stow, permissions, macOS defaults    │
-│   3. [tools] → uv, etc.                  │
+│   2. [bootstrap.user] → chsh to zsh       │
+│   3. [tasks.bootstrap] → stow, macOS      │
 └───────────────────────────────────────────┘
 ```
 
@@ -52,7 +51,9 @@ curl https://mise.run | sh          # or: ~/.dotfiles/mise.sh
 ```
 ~/.dotfiles/
 │
-├── mise.sh                    Bootloader: installs mise, clones repo, bootstraps
+├── mise.sh                    Bootloader: installs prerequisites, runs mise bootstrap
+├── .mise.toml                 Bootstrap config: packages, taps, login shell
+├── .mise/tasks/bootstrap      Bootstrap task: stow + permissions + macOS setup
 ├── include/shared_vars.sh     HOME_DIR, PROJECT_DIR, infra exclusions
 │
 ├── lib/                       Shell libraries (sourced at shell startup)
@@ -63,10 +64,8 @@ curl https://mise.run | sh          # or: ~/.dotfiles/mise.sh
 │   └── git_utils.sh           Git introspection utilities
 │
 ├── mise/.config/mise/
-│   ├── config.toml            Machine config: settings, packages, bootstrap task
-│   └── tasks/
-│       ├── bootstrap          Stow + permissions + macOS setup
-│       └── mkproject/         Project templates
+│   ├── config.toml            Runtime config: settings, tools (stowed)
+│   └── tasks/mkproject/       Project templates
 │           ├── _shared/       CLAUDE.md and AGENTS.md headers
 │           ├── base.sh        Git init, README, .gitignore
 │           ├── python.sh      pyproject.toml + uv

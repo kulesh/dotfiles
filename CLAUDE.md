@@ -59,14 +59,14 @@ cdproject                         # cd to current mise project root
 
 ```
 ~/.dotfiles/
-├── mise.sh                   # Bootloader: installs mise, clones repo, bootstraps
+├── mise.sh                   # Bootloader: installs prerequisites, runs mise bootstrap --from
+├── .mise.toml                # Bootstrap config: packages, taps, login shell
+├── .mise/tasks/bootstrap     # Bootstrap task: stow + permissions + macOS setup
 ├── include/shared_vars.sh    # Shared configuration variables
 ├── lib/misewrapper.sh        # Project management functions
 ├── mise/.config/mise/
-│   ├── config.toml           #   Machine config: settings, packages, bootstrap
-│   └── tasks/
-│       ├── bootstrap         #   Stow + permissions + macOS setup
-│       └── mkproject/        #   Project templates
+│   ├── config.toml           #   Runtime config: settings, tools (stowed)
+│   └── tasks/mkproject/      #   Project templates
 ├── sandbox/.config/sandbox/  # macOS sandbox-exec profiles
 ├── <tool>/                   # Per-tool configurations (stowed to $HOME)
 │   └── .config/<tool>/
@@ -81,14 +81,15 @@ cdproject                         # cd to current mise project root
 
 | File | Purpose |
 |------|---------|
-| `mise/.config/mise/config.toml` | `[bootstrap.packages]`, `[tools]`, `[settings]`, `[tasks.bootstrap]` |
-| `mise/.config/mise/tasks/bootstrap` | Stow loop, task permissions, macOS defaults |
+| `.mise.toml` | Bootstrap config: `[bootstrap.packages]`, `[bootstrap.user]`, taps |
+| `.mise/tasks/bootstrap` | Stow loop, task permissions, macOS defaults |
+| `mise/.config/mise/config.toml` | Runtime config: `[settings]`, `[tools]` (stowed) |
 | `include/shared_vars.sh` | `HOME_DIR`, `PROJECT_DIR` (`~/dev`), `_DOTFILES_INFRA` |
 | `lib/misewrapper.sh` | Entrypoint — loads `git_utils.sh`, `sandbox.sh`, `project.sh`, `navigate.sh` |
 
 ### Dependencies
 
-Core tools declared in `[bootstrap.packages]` (config.toml):
+Core tools declared in `[bootstrap.packages]` (.mise.toml):
 
 | Category | Tools |
 |----------|-------|
