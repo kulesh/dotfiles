@@ -14,10 +14,15 @@ mkdir -p "$PROJECT_DIR"
 mkdir -p -m 700 "$HOME_DIR/.ssh"
 
 # Every top-level directory is a stow package unless it's infrastructure.
+# No --adopt: it would move an existing file into the repo over the
+# committed version. A conflict stops the run and changes nothing.
 for package in "$dotfiles"/*(/:t); do
     (( ${_DOTFILES_INFRA[(Ie)$package]} )) && continue
     echo "stow $package"
-    stow --dir="$dotfiles" --target="$HOME_DIR" --adopt --restow "$package"
+    stow --dir="$dotfiles" --target="$HOME_DIR" --restow "$package" || {
+        echo "Stopped: a file above already exists in $HOME_DIR. Move it aside (or merge it into $dotfiles/$package) and re-run." >&2
+        exit 1
+    }
 done
 
 # Steps below act on the real machine regardless of HOME_DIR. In a test
