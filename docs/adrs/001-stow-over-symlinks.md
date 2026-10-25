@@ -25,7 +25,7 @@ zsh/.zshrc                      →  ~/.zshrc
 
 **Benefits:**
 - Adding a new tool = creating a directory with the right structure. No script changes needed.
-- `--adopt` flag handles existing files by pulling them into the repo.
+- Existing files at a target path stop the run instead of being overwritten. (`--adopt` was used originally and dropped 2026-10-25: with `--restow` it aborts anyway, and on its own it replaces the committed file with the machine's copy.)
 - `--restow` is idempotent — safe to run repeatedly.
 - Stow packages are auto-discovered (see Phase 2 refactor), eliminating manual sync.
 
