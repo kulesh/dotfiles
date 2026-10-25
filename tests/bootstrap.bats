@@ -118,3 +118,20 @@ STUB
     [[ "$output" == *"would run: ssh-keygen -t ed25519 -f $TARGET/.ssh/id_ed25519"* ]]
     [[ "$output" == *"would run: gh ssh-key add $TARGET/.ssh/id_ed25519.pub"* ]]
 }
+
+@test "an existing file at a target stops the run and changes nothing" {
+    local repo=$(mktemp -d)
+    cp -a "$DOTFILES_ROOT/." "$repo/"
+    local before=$(git -C "$repo" status --porcelain)
+    echo "local" > "$TARGET/.gitconfig"
+    bootstrap "$repo"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"Stopped: a file above already exists"* ]]
+    [ "$(cat "$TARGET/.gitconfig")" = "local" ]
+    [ "$(git -C "$repo" status --porcelain)" = "$before" ]
+    rm -rf "$repo"
+}
+
+@test "ssh config has no hardcoded home directory" {
+    ! grep -q '/Users/' "$DOTFILES_ROOT/ssh/.ssh/config"
+}
