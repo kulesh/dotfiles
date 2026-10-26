@@ -5,7 +5,7 @@ This is a Python project managed with:
 - **uv** for fast Python package management
 - **pyproject.toml** for project metadata and dependencies
 - **pytest** for testing
-- **ruff** (linting + formatting) and **mypy** for code quality
+- **ruff** (linting + formatting) and **basedpyright** for code quality
 
 ## Key Commands
 
@@ -38,8 +38,8 @@ uv run ruff format src/ tests/
 # Lint with ruff
 uv run ruff check src/ tests/
 
-# Type check with mypy
-uv run mypy src/
+# Type check with basedpyright
+uv run basedpyright
 ```
 
 ### Dependencies

@@ -45,7 +45,7 @@ dev = [
     "httpx",
     "pytest-cov",
     "ruff",
-    "mypy"
+    "basedpyright"
 ]
 
 [project.scripts]
@@ -53,11 +53,14 @@ $PROJECT_NAME = "$MODULE_NAME:main"
 
 [tool.ruff]
 line-length = 88
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 
-[tool.mypy]
-python_version = "$PYTHON_VERSION"
-strict = true
+[tool.basedpyright]
+include = ["src"]
+pythonVersion = "$PYTHON_VERSION"
+typeCheckingMode = "strict"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -277,9 +280,13 @@ sed -i.bak "s/your-project-name/$PROJECT_NAME/" .env.example && rm .env.example.
 
 # Install dependencies and setup
 mise exec -- uv add fastapi "uvicorn[standard]" pydantic pydantic-settings
-mise exec -- uv add --dev pytest pytest-asyncio httpx pytest-cov black ruff mypy
+mise exec -- uv add --dev pytest pytest-asyncio httpx pytest-cov ruff basedpyright
 mise exec -- uv pip install -e .
 mise exec -- uv sync
+
+# Generated code follows the project's own lint and format rules
+mise exec -- uv run ruff check --fix --quiet .
+mise exec -- uv run ruff format --quiet .
 
 echo "FastAPI project setup complete!"
 echo "Try: uv run $PROJECT_NAME              # Start the server"

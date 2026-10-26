@@ -56,11 +56,11 @@ uv run ruff format src/ tests/
 # Lint with ruff
 uv run ruff check src/ tests/
 
-# Type check with mypy
-uv run mypy src/
+# Type check with basedpyright
+uv run basedpyright
 
 # Run all quality checks
-uv run ruff format src/ tests/ && uv run ruff check src/ tests/ && uv run mypy src/
+uv run ruff format src/ tests/ && uv run ruff check src/ tests/ && uv run basedpyright
 ```
 
 ### Dependencies

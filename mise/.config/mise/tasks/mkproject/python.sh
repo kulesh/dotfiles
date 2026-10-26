@@ -38,7 +38,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
-    "mypy"
+    "basedpyright"
 ]
 
 [project.scripts]
@@ -46,11 +46,14 @@ $PROJECT_NAME = "$MODULE_NAME:main"
 
 [tool.ruff]
 line-length = 88
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 
-[tool.mypy]
-python_version = "$PYTHON_VERSION"
-strict = true
+[tool.basedpyright]
+include = ["src"]
+pythonVersion = "$PYTHON_VERSION"
+typeCheckingMode = "strict"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -113,13 +116,17 @@ def test_main(capsys):
 EOF
 
 # Install development dependencies and package in editable mode
-mise exec -- uv add --dev pytest pytest-cov ruff mypy
+mise exec -- uv add --dev pytest pytest-cov ruff basedpyright
 mise exec -- uv pip install -e .
 mise exec -- uv sync
+
+# Generated code follows the project's own lint and format rules
+mise exec -- uv run ruff check --fix --quiet .
+mise exec -- uv run ruff format --quiet .
 
 echo "Python project setup complete!"
 echo "Try: uv run pytest"
 echo "Try: uv run $PROJECT_NAME"
 echo "Try: uv run ruff format src/ tests/"
 echo "Try: uv run ruff check src/ tests/"
-echo "Try: uv run mypy src/"
+echo "Try: uv run basedpyright"
