@@ -16,10 +16,12 @@ local Plugin = {
   },
 }
 
--- A server starts when its binary is on PATH, whoever installed it.
+-- A server starts when its binary is on PATH, whoever installed it. Servers
+-- whose cmd is a function find their own binary and decide in root_dir.
 local servers = {
   'basedpyright', 'ruff',          -- project .venv, else Mason
-  'ts_ls', 'ruby_lsp',             -- Mason; both defer to the project's TypeScript/RuboCop
+  'tsc',                           -- TypeScript 7+: the project's own `tsc --lsp`
+  'ts_ls', 'ruby_lsp',             -- Mason; older TypeScript, the project's RuboCop
   'rust_analyzer', 'sourcekit',    -- Rust toolchain, Xcode; never Mason
   'lua_ls', 'bashls', 'jsonls', 'html', 'clangd',
 }
@@ -58,9 +60,24 @@ local function configure_servers()
     end,
   })
 
+  -- TypeScript 7 drops tsserver, so ts_ls would run a different TypeScript
+  -- than the project; leave those projects to `tsc`.
+  local ts_ls_root = vim.lsp.config.ts_ls.root_dir
+  vim.lsp.config('ts_ls', {
+    root_dir = function(bufnr, on_dir)
+      ts_ls_root(bufnr, function(root)
+        local tsc = vim.fs.joinpath(root, 'node_modules', '.bin', 'tsc')
+        local version = vim.fn.executable(tsc) == 1 and vim.version.parse(vim.system({ tsc, '--version' }, { text = true }):wait().stdout or '')
+        if not (version and version.major >= 7) then
+          on_dir(root)
+        end
+      end)
+    end,
+  })
+
   for _, name in ipairs(servers) do
     local cmd = vim.lsp.config[name] and vim.lsp.config[name].cmd
-    if type(cmd) == 'table' and vim.fn.executable(cmd[1]) == 1 then
+    if type(cmd) == 'function' or (type(cmd) == 'table' and vim.fn.executable(cmd[1]) == 1) then
       vim.lsp.enable(name)
     end
   end
