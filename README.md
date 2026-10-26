@@ -84,6 +84,19 @@ mise bootstrap packages status
 mise bootstrap --only packages
 ```
 
+## Secrets
+
+API keys live in the macOS Keychain, not in files. Projects under `~/dev` get them as environment variables.
+
+```sh
+secret set ANTHROPIC_API_KEY   # prompts for the value
+secret ls                      # names stored on this Mac
+secret get ANTHROPIC_API_KEY
+secret rm ANTHROPIC_API_KEY
+```
+
+Keychain items don't sync between Macs; `mise bootstrap` lists any secret from `include/secrets` that this machine is missing. See [ADR-008](docs/adrs/008-secrets-in-keychain.md) for what this does and doesn't protect.
+
 ## Sandboxing
 
 Projects can run in a macOS sandbox that restricts filesystem access—useful for running AI coding agents safely.
