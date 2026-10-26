@@ -32,7 +32,8 @@ cat > "package.json" << EOF
     "dev:convex": "convex dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "biome check .",
+    "format": "biome format --write .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -46,6 +47,7 @@ cat > "package.json" << EOF
     "tailwind-merge": "latest"
   },
   "devDependencies": {
+    "@biomejs/biome": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
@@ -932,7 +934,8 @@ cat > "package.json.tmp" << EOF
     "dev:convex": "convex dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "biome check .",
+    "format": "biome format --write .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -948,6 +951,7 @@ cat > "package.json.tmp" << EOF
     "tailwind-merge": "latest"
   },
   "devDependencies": {
+    "@biomejs/biome": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
@@ -962,6 +966,17 @@ mv "package.json.tmp" "package.json"
 
 echo "Installing dependencies..."
 mise exec -- bun install
+
+# Biome lints and formats, as in the typescript template; the editor
+# picks it up from biome.json.
+cat > biome.json << 'JSON'
+{
+  "css": { "parser": { "tailwindDirectives": true } },
+  "files": { "includes": ["**", "!convex/_generated"] }
+}
+JSON
+mise exec -- bunx biome migrate --write
+mise exec -- bunx biome check --write .
 
 echo ""
 echo "============================================"

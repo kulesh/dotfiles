@@ -55,6 +55,7 @@ cat > "tsconfig.json" << 'EOF'
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022"],
+    "types": ["bun"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -148,14 +149,14 @@ cat > "packages/core/package.json" << EOF
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.cts",
+        "types": "./dist/index.d.ts",
         "default": "./dist/index.cjs"
       }
     }
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc --noEmit false --emitDeclarationOnly --outDir dist",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit"
   },
@@ -185,7 +186,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm', 'cjs'],
-  dts: true,
+  dts: false, // tsc emits declarations; TypeScript 7 has no API for tsup's dts build
   splitting: false,
   sourcemap: true,
   clean: true,
@@ -414,6 +415,11 @@ EOF
 
 echo "Installing dependencies..."
 mise exec -- bun install
+
+# The biome.json above may predate the installed Biome; bring it up to date,
+# then make the generated code follow it.
+mise exec -- bunx biome migrate --write
+mise exec -- bunx biome check --write .
 
 echo "Building core library..."
 mise exec -- bun run --filter "${PACKAGE_SCOPE}/core" build
