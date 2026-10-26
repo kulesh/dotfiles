@@ -58,6 +58,9 @@ alias_if_exists() {
 # Alias only in interactive shell to avoid tripping Claude Code
 if [[ -o interactive ]]; then
     eval "$(zoxide init zsh --cmd cd)"
+    # Put the SSH key back in the agent after a reboot, passphrase from the
+    # Keychain, so git can sign commits without prompting.
+    if [[ $OSTYPE == darwin* ]]; then /usr/bin/ssh-add --apple-load-keychain -q 2>/dev/null; fi
     alias_if_exists cat bat
     alias_if_exists top htop
     alias_if_exists grep rg

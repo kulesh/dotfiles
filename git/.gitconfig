@@ -1,6 +1,18 @@
 [user]
 	name = Kulesh Shanmugasundaram
 	email = 164083+kulesh@users.noreply.github.com
+	signingkey = ~/.ssh/id_ed25519.pub
+
+# Sign every commit and tag with the SSH key; bootstrap registers it on GitHub
+# for signing and writes allowed_signers for local verification.
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	allowedSignersFile = ~/.config/git/allowed_signers
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
 
 [core]
 	editor = vim

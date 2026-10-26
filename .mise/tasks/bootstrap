@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-#MISE description="Link dotfiles, install tools, log in to GitHub, clone your repos, apply macOS defaults"
+#MISE description="Link dotfiles, install tools, set up GitHub and commit signing, clone your repos"
 #MISE raw=true  # interactive steps (GitHub login, installers) need the terminal
 set -euo pipefail
 
@@ -56,10 +56,40 @@ fi
 # Already logged in but no key (e.g. a reinstall): make one and upload it.
 key=$HOME_DIR/.ssh/id_ed25519
 if ! gh auth status &>/dev/null; then
-    run gh auth login --hostname github.com --git-protocol ssh --web
+    # The extra scope lets the signing step below register the same key.
+    run gh auth login --hostname github.com --git-protocol ssh --web --scopes admin:ssh_signing_key
 elif [[ ! -f $key ]]; then
     run ssh-keygen -t ed25519 -f "$key" -C "$(id -un)@$(hostname -s)"
     run gh ssh-key add "$key.pub" --title "$(hostname -s)"
+fi
+
+# Git signs commits and tags with this key (.gitconfig). ssh-keygen does the
+# signing and only asks the agent, so on macOS keep the passphrase in the
+# Keychain and the key in the agent; .zshrc reloads it after a reboot. Then
+# editors, coding agents, and sandboxed shells can sign without a prompt.
+if [[ $OSTYPE == darwin* && -f $key.pub ]] && ! ssh-add -L 2>/dev/null | grep -qF "$(cut -d' ' -f2 "$key.pub")"; then
+    run /usr/bin/ssh-add --apple-use-keychain "$key"
+fi
+
+# GitHub marks a commit Verified only if the key is registered for signing,
+# which is separate from authentication and needs its own token scope.
+if gh auth status &>/dev/null && [[ -f $key.pub ]]; then
+    signing_keys() { gh api user/ssh_signing_keys --jq '.[].key' 2>/dev/null; }
+    if ! signing_keys >/dev/null; then
+        run gh auth refresh --hostname github.com --scopes admin:ssh_signing_key
+    fi
+    if ! signing_keys | grep -qxF "$(cut -d' ' -f1,2 "$key.pub")"; then
+        run gh ssh-key add "$key.pub" --type signing --title "$(hostname -s) signing"
+    fi
+    # git log --show-signature trusts every key you've registered for
+    # signing, so commits made on your other machines verify here too.
+    allowed=$HOME_DIR/.config/git/allowed_signers
+    if testing; then
+        echo "would write $allowed"
+    else
+        mkdir -p "${allowed:h}"
+        signing_keys | sed "s|^|$(git config --get user.email) namespaces=\"git\" |" > "$allowed"
+    fi
 fi
 
 # Clone your own repos (no forks, no archived) into ~/dev as managed
