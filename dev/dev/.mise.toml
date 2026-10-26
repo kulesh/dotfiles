@@ -1,5 +1,5 @@
 ## PLEASE DO NOT PUT SENSITIVE VALUES IN THIS FILE ##
-redactions = ["SECRET_*", "*_TOKEN", "PASSWORD"]
+redactions = ["SECRET_*", "*_TOKEN", "*_API_KEY", "PASSWORD"]
 
 [tools]
 python = "latest"
@@ -14,7 +14,8 @@ npm = "latest"
 "npm:@earendil-works/pi-coding-agent" = "latest"
 
 [env]
-_.file = { path = ".keys.json", redact = true }
+# Secrets come from the Keychain; add them with `secret set NAME`
+_.source = { path = ".secrets.sh", redact = true }
 
 [hooks]
 # Sandbox entry/exit handled by zsh chpwd hooks, not mise

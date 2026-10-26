@@ -9,8 +9,9 @@ source "$dotfiles/include/shared_vars.sh"
 
 # Create these before stowing. Stow links a whole directory into the repo
 # when it doesn't exist yet, so new projects would land in the dotfiles
-# checkout and SSH keys would be deleted along with it.
-mkdir -p "$PROJECT_DIR"
+# checkout, SSH keys would be deleted along with it, and installers writing
+# to ~/.local/bin (Claude Code, uv) would write into the repo.
+mkdir -p "$PROJECT_DIR" "$HOME_DIR/.local/bin"
 mkdir -p -m 700 "$HOME_DIR/.ssh"
 
 # Every top-level directory is a stow package unless it's infrastructure.
@@ -107,4 +108,14 @@ if gh auth status &>/dev/null; then
     if (( ${#failed} )); then echo "Could not clone: ${failed[*]}"; fi
 else
     echo "would clone your GitHub repos into $PROJECT_DIR"
+fi
+
+# Secrets live in this Mac's Keychain, entered once per machine. Read-only
+# check, so it runs in test runs too.
+if [[ $OSTYPE == darwin* ]]; then
+    missing=()
+    for name in ${(f)"$(grep -v '^#' "$dotfiles/include/secrets" | grep .)"}; do
+        "$dotfiles/bin/.local/bin/secret" get "$name" &>/dev/null || missing+=("$name")
+    done
+    if (( ${#missing} )); then echo "Missing secrets: ${missing[*]}  (add each with: secret set NAME)"; fi
 fi
