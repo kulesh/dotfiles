@@ -19,6 +19,14 @@ The bootstrap task ends by authenticating with GitHub and cloning the user's rep
 | Logged in, no key | `ssh-keygen`, then `gh ssh-key add` |
 | Logged in, key present | Nothing |
 
+### Commit signing
+
+Every commit and tag is signed with the same SSH key (`gpg.format = ssh` in `.gitconfig`). Per machine, bootstrap:
+
+- registers the key on GitHub as a *signing* key (separate from authentication; needs the `admin:ssh_signing_key` scope, requested at login or added with `gh auth refresh`), so GitHub shows commits as Verified
+- writes `~/.config/git/allowed_signers` from all of the account's signing keys, so `git log --show-signature` verifies commits from every machine
+- on macOS, stores the passphrase in the Keychain and loads the key into the agent. `ssh-keygen` signs via the agent and ignores `UseKeychain`; `.zshrc` reloads the key after a reboot so non-interactive tools (editors, coding agents, sandboxed shells) can sign
+
 `StrictHostKeyChecking accept-new` for github.com means the first clone doesn't stop to confirm GitHub's host key; a changed key is still rejected.
 
 ### Repositories
