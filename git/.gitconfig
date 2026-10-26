@@ -27,14 +27,7 @@
 [credential]
         helper = osxkeychain
 [init]
-	templatedir = ~/.git_template
 	defaultBranch = main
-
-[filter "lfs"]
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process
-	required = true
 
 [interactive]
     diffFilter = delta --color-only

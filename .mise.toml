@@ -54,8 +54,6 @@
 "brew:git-delta" = "latest"
 "brew:lazygit" = "latest"
 "brew:gh" = "latest"
-"brew:git-lfs" = "latest"           # .gitconfig requires the lfs filter
-"brew:universal-ctags" = "latest"   # git template hooks build tags
 
 # Runtime management
 "brew:mise" = "latest"

@@ -3,6 +3,5 @@
 *.swp
 *.pyc
 *.bak
-.tags
 mise.local.toml
 mise.*.local.toml
