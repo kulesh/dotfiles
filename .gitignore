@@ -1,6 +1,5 @@
 *-internal
 *keys*
-lazy-lock.json
 
 ssh/.ssh/*
 !ssh/.ssh/config
