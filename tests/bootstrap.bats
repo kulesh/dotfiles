@@ -135,3 +135,50 @@ STUB
 @test "ssh config has no hardcoded home directory" {
     ! grep -q '/Users/' "$DOTFILES_ROOT/ssh/.ssh/config"
 }
+
+signing_gh_stub() {   # logged in; $1 = keys already registered for signing
+    cat > "$STUBS/gh" <<STUB
+#!/bin/sh
+case "\$1 \$2" in
+  "auth status") exit 0;;
+  "api user/ssh_signing_keys") printf '%s\n' "$1";;
+esac
+STUB
+    chmod +x "$STUBS/gh"
+}
+
+@test "previews registering the key for signing when GitHub doesn't have it" {
+    command -v ssh-keygen >/dev/null || skip "ssh-keygen not installed"
+    mkdir -p -m 700 "$TARGET/.ssh"
+    ssh-keygen -q -t ed25519 -N '' -f "$TARGET/.ssh/id_ed25519" -C test
+    signing_gh_stub "ssh-ed25519 AAAAsomeothermachine"
+    bootstrap
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: gh ssh-key add $TARGET/.ssh/id_ed25519.pub --type signing"* ]]
+    [[ "$output" == *"would write $TARGET/.config/git/allowed_signers"* ]]
+}
+
+@test "skips registering a signing key GitHub already has" {
+    command -v ssh-keygen >/dev/null || skip "ssh-keygen not installed"
+    mkdir -p -m 700 "$TARGET/.ssh"
+    ssh-keygen -q -t ed25519 -N '' -f "$TARGET/.ssh/id_ed25519" -C test
+    signing_gh_stub "$(cut -d' ' -f1,2 "$TARGET/.ssh/id_ed25519.pub")"
+    bootstrap
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"--type signing"* ]]
+}
+
+@test "the stowed git config signs commits that verify against allowed_signers" {
+    command -v ssh-keygen >/dev/null || skip "ssh-keygen not installed"
+    mkdir -p -m 700 "$TARGET/.ssh" "$TARGET/.config/git"
+    ssh-keygen -q -t ed25519 -N '' -f "$TARGET/.ssh/id_ed25519" -C test
+    local email=$(git config -f "$DOTFILES_ROOT/git/.gitconfig" user.email)
+    echo "$email namespaces=\"git\" $(cut -d' ' -f1,2 "$TARGET/.ssh/id_ed25519.pub")" > "$TARGET/.config/git/allowed_signers"
+    local repo=$(mktemp -d)
+    git -C "$repo" init -q
+    HOME="$TARGET" GIT_CONFIG_GLOBAL="$DOTFILES_ROOT/git/.gitconfig" git -C "$repo" commit -q --allow-empty -m signed </dev/null
+    run env HOME="$TARGET" GIT_CONFIG_GLOBAL="$DOTFILES_ROOT/git/.gitconfig" git -C "$repo" verify-commit HEAD
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Good \"git\" signature for $email"* ]]
+    rm -rf "$repo"
+}
