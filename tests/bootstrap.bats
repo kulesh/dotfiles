@@ -47,6 +47,14 @@ bootstrap() {
     [ ! -L "$TARGET/dev" ]
 }
 
+@test "creates ~/.local/bin as a real directory so installers don't write into the repo" {
+    bootstrap
+    [ "$status" -eq 0 ]
+    [ -d "$TARGET/.local/bin" ]
+    [ ! -L "$TARGET/.local/bin" ]
+    [ -L "$TARGET/.local/bin/secret" ]
+}
+
 @test "works from a checkout outside ~/.dotfiles" {
     local elsewhere=$(mktemp -d)
     cp -a "$DOTFILES_ROOT/." "$elsewhere/"

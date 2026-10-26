@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Stand-in for macOS `security`: generic passwords in $KC_STORE/<service>/<account>
+store=${KC_STORE:?}; cmd=$1; shift; s= a= w= wset=
+while (($#)); do case $1 in -s) s=$2; shift 2;; -a) a=$2; shift 2;; -w) if (($# > 1)); then w=$2; wset=1; shift 2; else wset=prompt; shift; fi;; -U) shift;; *) shift;; esac; done
+case $cmd in
+  add-generic-password) [[ $wset == prompt ]] && { printf 'password data for new item: ' >&2; IFS= read -r w; }; mkdir -p "$store/$s"; printf '%s' "$w" > "$store/$s/$a";;
+  find-generic-password) [[ -f $store/$s/$a ]] || { echo "security: SecKeychainSearchCopyNext: The specified item could not be found in the keychain." >&2; exit 44; }; cat "$store/$s/$a"; echo;;
+  delete-generic-password) [[ -f $store/$s/$a ]] || exit 44; rm "$store/$s/$a";;
+  dump-keychain) for f in "$store"/*/*; do [[ -e $f ]] || continue; printf 'keychain: "/Users/x/Library/Keychains/login.keychain-db"\nversion: 512\nclass: "genp"\nattributes:\n    0x00000007 <blob>="%s"\n    "acct"<blob>="%s"\n    "svce"<blob>="%s"\n' "$(basename "$(dirname "$f")")" "$(basename "$f")" "$(basename "$(dirname "$f")")"; done
+     printf 'keychain: "/Users/x/Library/Keychains/login.keychain-db"\nclass: "genp"\nattributes:\n    "acct"<blob>=<NULL>\n    "svce"<blob>="dotfiles"\n';;
+esac
