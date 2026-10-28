@@ -52,6 +52,17 @@
 # machines committing to the same branch don't diverge on pull.
 [pull]
 	rebase = true
+[rebase]
+	autoStash = true
+[push]
+	autoSetupRemote = true
+[fetch]
+	prune = true
+
+# Clones over HTTPS (mise.sh clones the dotfiles before GitHub login) push
+# over SSH, with the key bootstrap uploads.
+[url "git@github.com:"]
+	pushInsteadOf = https://github.com/
 
 [merge]
     conflictstyle = zdiff3

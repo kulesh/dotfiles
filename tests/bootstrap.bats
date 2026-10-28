@@ -191,6 +191,16 @@ STUB
     rm -rf "$repo"
 }
 
+@test "the stowed git config pushes HTTPS GitHub clones over SSH, and fetches anonymously" {
+    local repo=$(mktemp -d)
+    git -C "$repo" init -q
+    git -C "$repo" remote add origin https://github.com/kulesh/dotfiles.git
+    export GIT_CONFIG_GLOBAL="$DOTFILES_ROOT/git/.gitconfig"
+    [ "$(git -C "$repo" remote get-url --push origin)" = "git@github.com:kulesh/dotfiles.git" ]
+    [ "$(git -C "$repo" remote get-url origin)" = "https://github.com/kulesh/dotfiles.git" ]
+    rm -rf "$repo"
+}
+
 @test "leaves the ssh config unwritable by others, whatever the checkout's umask" {
     local repo=$(mktemp -d)
     cp -a "$DOTFILES_ROOT/." "$repo/"
