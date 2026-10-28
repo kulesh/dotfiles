@@ -15,7 +15,7 @@ The system does two things:
 bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
 ```
 
-This installs Xcode CLI tools, Homebrew, and mise, clones the repo to `~/.dotfiles`, then runs `mise bootstrap`: system packages, login shell, dotfile symlinks, global tools, and macOS settings. It finishes by logging you in to GitHub in the browser, which creates an SSH key and adds it to your account for pushing and for signing commits, then clones every repo you own (no forks or archived repos) into `~/dev` as a managed project.
+This installs Xcode CLI tools, Homebrew, and mise, clones the repo to `~/.dotfiles`, then runs `mise bootstrap`: system packages, login shell, dotfile symlinks, global tools, Claude Code, and macOS settings. It finishes by logging you in to GitHub in the browser, which creates an SSH key and adds it to your account for pushing and for signing commits, then clones every repo you own (no forks or archived repos) into `~/dev` as a managed project.
 
 To re-run on an existing machine:
 
@@ -24,7 +24,7 @@ cd ~/.dotfiles
 mise bootstrap
 ```
 
-To try the symlinks without touching your real `$HOME`, point `HOME_DIR` at an empty scratch directory. Links are created there for real; the steps that would change the machine (`mise install`, macOS defaults) are only previewed:
+To try the symlinks without touching your real `$HOME`, point `HOME_DIR` at an empty scratch directory. Links are created there for real; everything that would change the machine (tool installs, GitHub login and keys, cloning, macOS defaults) is only printed:
 
 ```sh
 HOME_DIR=$(mktemp -d) mise run bootstrap
@@ -105,20 +105,22 @@ workon myproject       # Subsequent runs auto-enter sandbox
 
 | Access | Allowed | Blocked |
 |--------|---------|---------|
-| **Read** | Everything except secrets | `~/.ssh/*` (private keys), `~/.aws`, keychains |
+| **Read** | Everything except credentials | SSH private keys, `~/.aws`, `~/.netrc`, GPG keys, browser data |
 | **Write** | Project dir, `~/.cache`, `~/.config`, `~/.local`, `/tmp` | System dirs, shell configs, `~/.ssh`, `~/.gitconfig` |
 | **Network** | All outbound | — |
+
+The Keychain stays readable (git's credential helper needs it), so secrets stored with `secret` are reachable from inside the sandbox.
 
 ### Sandbox Status
 
 ```sh
 lsprojects      # Shows 🔒 next to sandboxed projects
-showproject     # Shows "Sandbox: enabled/disabled"
+showproject     # Shows 🔒 Sandboxed for sandboxed projects
 ```
 
 ### Multiple Terminals
 
-Each `workon` spawns an independent sandboxed shell—run as many as you need for the same project (e.g., one for Claude, one for the backend, one for frontend).
+Each `workon` spawns an independent sandboxed shell—run as many as you need for the same project (e.g., one for Pi, one for the backend, one for the frontend).
 
 ## Templates
 
@@ -127,10 +129,15 @@ Each `workon` spawns an independent sandboxed shell—run as many as you need fo
 | Template | Description |
 |----------|-------------|
 | **base** | Git, README, .gitignore, CLAUDE.md, AGENTS.md |
-| **python** | pyproject.toml structure |
-| **fastapi** | Async API with testing setup |
-| **ruby** | Bundler setup |
-| **rails** | Full MVC structure |
+| **python** | uv, pytest, Ruff, basedpyright; `src/` layout |
+| **fastapi** | Async API on the python template, with test client |
+| **typescript** | Bun workspace: core library + Ink CLI; Biome, Vitest, TypeScript 7 |
+| **convex** | Next.js + Convex + Convex Auth, Tailwind 4, shadcn/ui; Biome |
+| **rust** | Cargo workspace (library + binary), rust-analyzer |
+| **ruby** | Bundler, RSpec, RuboCop |
+| **rails** | `rails new` |
+
+Generated projects pass their own linters, and the editor uses each project's own tools ([ADR-007](docs/adrs/007-editor-uses-project-tooling.md)).
 
 Each template includes a `CLAUDE.project.md` with framework-specific guidance for AI assistants. A shared header lives in `mise/.config/mise/tasks/mkproject/_shared/`, and `mkproject` generates `CLAUDE.md` and `AGENTS.md` in the new project.
 
@@ -140,7 +147,7 @@ Each template includes a `CLAUDE.project.md` with framework-specific guidance fo
 mise/.config/mise/tasks/mkproject/
 ├── _shared/
 │   ├── CLAUDE.header.md   # Shared guidance header
-│   └── AGENTS.header.md   # Shared guidance header (Codex)
+│   └── AGENTS.header.md   # Shared guidance header (Pi, Codex, other agents)
 ├── base/
 │   └── CLAUDE.project.md  # Base project guidance
 ├── fastapi/
@@ -169,7 +176,7 @@ When you run `mkproject my-api fastapi`:
    touch mise/.config/mise/tasks/mkproject/mytemplate/files/.gitignore
    touch mise/.config/mise/tasks/mkproject/mytemplate/CLAUDE.project.md
    ```
-   If you want Codex-specific guidance, add `AGENTS.project.md` too. If it's missing, `mkproject` reuses `CLAUDE.project.md`.
+   For guidance specific to agents that read `AGENTS.md` (Pi, Codex), add `AGENTS.project.md` too. If it's missing, `mkproject` reuses `CLAUDE.project.md`.
 
 3. Create the template script:
    ```sh
@@ -191,8 +198,15 @@ When you run `mkproject my-api fastapi`:
 
 ## Toolchain
 
-See `[bootstrap.packages]` in `mise/.config/mise/config.toml` for the full list. Highlights:
-- [Neovim](http://neovim.io/) with [CodeCompanion](https://github.com/olimorris/codecompanion.nvim) - editor and AI
-- [Ghostty](http://ghostty.org/) - terminal
-- [mise](https://mise.jdx.dev/) - version management and task runner
+The full list is `[bootstrap.packages]` in `.mise.toml`. Highlights:
+- [Pi](https://github.com/badlogic/pi-mono) - coding agent, with frontier models; installed for `~/dev` by `~/dev/.mise.toml`
+- [Claude Code](https://claude.com/claude-code) - coding agent
+- [Neovim](https://neovim.io/) - editor, with language servers from each project's own toolchain
+- [Ghostty](https://ghostty.org/) - terminal
+- [mise](https://mise.jdx.dev/) - packages, tool versions, and task runner
 - [starship](https://starship.rs/) - shell prompt
+
+## Documentation
+
+- [Architecture](docs/architecture.md): components and data flows
+- [Decision records](docs/adrs/): why things are the way they are
