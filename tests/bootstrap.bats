@@ -190,3 +190,14 @@ STUB
     [[ "$output" == *"Good \"git\" signature for $email"* ]]
     rm -rf "$repo"
 }
+
+@test "leaves the ssh config unwritable by others, whatever the checkout's umask" {
+    local repo=$(mktemp -d)
+    cp -a "$DOTFILES_ROOT/." "$repo/"
+    chmod 664 "$repo/ssh/.ssh/config"
+    bootstrap "$repo"
+    [ "$status" -eq 0 ]
+    local mode=$(stat -c %a "$repo/ssh/.ssh/config" 2>/dev/null || stat -f %Lp "$repo/ssh/.ssh/config")
+    [ "$mode" = "644" ]
+    rm -rf "$repo"
+}
