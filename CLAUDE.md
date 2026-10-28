@@ -39,9 +39,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh
 # Or if already cloned
 cd ~/.dotfiles && mise bootstrap
 
-# Day 2: add packages
-mise bootstrap packages use brew:foo
-mise bootstrap packages use brew-cask:bar
+# Day 2: packages live in ~/.dotfiles/.mise.toml, read only from the repo
+mise -C ~/.dotfiles bootstrap packages use brew:foo
+mise -C ~/.dotfiles bootstrap packages use brew-cask:bar
+mup                               # upgrade all packages
 
 # Project lifecycle
 mkproject <name> [template]       # Create from template (base, python, fastapi, ruby, rails, etc.)

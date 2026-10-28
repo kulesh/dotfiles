@@ -65,7 +65,8 @@ if [[ -o interactive ]]; then
     alias_if_exists ls eza
     alias_if_exists time hyperfine
     alias_if_exists vim nvim
-    alias mup='mise bootstrap packages upgrade'
+    # Packages are declared in ~/.dotfiles/.mise.toml, which mise reads only there
+    alias mup='mise -C "$DOTFILES" bootstrap packages upgrade'
 
     function y() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd

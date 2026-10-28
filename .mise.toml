@@ -5,12 +5,12 @@
 # Fresh machine:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
 #
-# Day 2:
-#   mise bootstrap packages use brew:foo
-#   mise bootstrap packages use brew-cask:bar
-#   mise bootstrap packages upgrade
-#   mise bootstrap status
-#   mise bootstrap --dry-run
+# Day 2 (mise reads this file only from the repo, hence -C):
+#   mise -C ~/.dotfiles bootstrap packages use brew:foo
+#   mise -C ~/.dotfiles bootstrap packages use brew-cask:bar
+#   mup                                   # upgrade all packages
+#   mise -C ~/.dotfiles bootstrap status
+#   mise -C ~/.dotfiles bootstrap --dry-run
 
 # =============================================================================
 # Homebrew taps

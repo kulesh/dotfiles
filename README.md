@@ -68,20 +68,13 @@ showproject
 
 ## Package Management
 
-System packages are declared in `mise/.config/mise/config.toml` under `[bootstrap.packages]`.
+System packages are declared under `[bootstrap.packages]` in `~/.dotfiles/.mise.toml`. mise reads that file only from inside the repo, so package commands run with `-C ~/.dotfiles` (or from that directory). Without it, `packages use` would add the package to whatever project you're in.
 
 ```sh
-# Add a formula
-mise bootstrap packages use brew:foo
-
-# Add a cask
-mise bootstrap packages use brew-cask:bar
-
-# Check what's installed vs declared
-mise bootstrap packages status
-
-# Install only packages
-mise bootstrap --only packages
+mup                                                   # upgrade all packages, from anywhere
+mise -C ~/.dotfiles bootstrap packages use brew:foo   # add a formula
+mise -C ~/.dotfiles bootstrap packages use brew-cask:bar
+mise -C ~/.dotfiles bootstrap packages status         # installed vs declared
 ```
 
 ## Secrets
