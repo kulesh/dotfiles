@@ -26,6 +26,10 @@ for package in "$dotfiles"/*(/:t); do
     }
 done
 
+# ssh refuses a config that others can write, and it checks the repo file
+# the link points to; a checkout made under a permissive umask is exactly that.
+chmod go-w "$dotfiles/ssh/.ssh/config"
+
 # Steps below act on the real machine regardless of HOME_DIR. In a test
 # run (HOME_DIR pointed elsewhere) they're printed instead of executed.
 testing() { [[ $HOME_DIR != "$HOME" ]]; }

@@ -1,8 +1,6 @@
 export PATH="/opt/homebrew/bin:/opt/homebrew/opt/ruby/bin:$PATH"
 export EDITOR="vim"
 
-# umask for homebrew multiuser
-umask 0002
 export CLICOLOR=YES
 export LSCOLORS="Gxfxcxdxbxegedabagacad"
 
