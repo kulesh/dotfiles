@@ -52,6 +52,20 @@ bash <(curl -fsSL .../mise.sh)
 └───────────────────────────────────────────┘
 ```
 
+## Sync Flow
+
+Each Mac has its own checkout; `dsync` reconciles it with GitHub ([ADR-009](adrs/009-dsync-reconciles-macs.md)).
+
+```
+Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
+  tools write       │   dsync         │
+  through links     ▼                 ▼
+          commit? ─▶ pull --rebase ─▶ conflict? ─▶ lazygit
+                         │
+                         ├─▶ push (if ahead)
+                         └─▶ mise bootstrap (if anything came in)
+```
+
 ## Component Map
 
 ```
@@ -60,6 +74,7 @@ bash <(curl -fsSL .../mise.sh)
 ├── mise.sh                    Bootloader: installs prerequisites, runs mise bootstrap
 ├── .mise.toml                 Bootstrap config: packages, taps, login shell
 ├── .mise/tasks/bootstrap      Bootstrap task: stow + permissions + macOS setup
+├── .mise/tasks/sync           dsync: commit, pull --rebase, push, re-bootstrap
 ├── include/shared_vars.sh     HOME_DIR, PROJECT_DIR, infra exclusions
 │
 ├── lib/                       Shell libraries (sourced at shell startup)

@@ -67,6 +67,22 @@ if [[ -o interactive ]]; then
     alias_if_exists vim nvim
     # Packages are declared in ~/.dotfiles/.mise.toml, which mise reads only there
     alias mup='mise -C "$DOTFILES" bootstrap packages upgrade'
+    alias dsync='mise -C "$DOTFILES" run sync'
+
+    # Say when this Mac's dotfiles differ from GitHub, as of the last fetch;
+    # the fetch is refreshed in the background at most once a day.
+    () {
+        local -a fetched=($DOTFILES/.git/FETCH_HEAD(Nmh-24)) changed state
+        (( $#fetched )) || (GIT_TERMINAL_PROMPT=0 git -C "$DOTFILES" fetch -q &>/dev/null &)
+        local counts
+        counts=$(git -C "$DOTFILES" rev-list --left-right --count '@{upstream}...HEAD' 2>/dev/null) || return 0
+        changed=(${(f)"$(git -C "$DOTFILES" status --porcelain)"})
+        local behind=${counts%%$'\t'*} ahead=${counts##*$'\t'}
+        (( behind )) && state+=("$behind from other Macs")
+        (( ahead )) && state+=("$ahead to share")
+        (( $#changed )) && state+=("$#changed changed here")
+        if (( $#state )); then print "dotfiles: ${(j:, :)state}. Run dsync."; fi
+    }
 
     function y() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd

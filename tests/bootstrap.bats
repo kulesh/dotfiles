@@ -211,3 +211,9 @@ STUB
     [ "$mode" = "644" ]
     rm -rf "$repo"
 }
+
+@test "every repo task is executable, or mise won't list or run it" {
+    for task in "$DOTFILES_ROOT"/.mise/tasks/*; do
+        [ -x "$task" ] || { echo "not executable: $task"; false; }
+    done
+}

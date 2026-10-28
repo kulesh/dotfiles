@@ -77,6 +77,16 @@ mise -C ~/.dotfiles bootstrap packages use brew-cask:bar
 mise -C ~/.dotfiles bootstrap packages status         # installed vs declared
 ```
 
+## Keeping Macs in Sync
+
+Tools write through the links into `~/.dotfiles` (plugin lockfiles, agent settings, `packages use`), so each Mac's checkout drifts. One command reconciles it:
+
+```sh
+dsync
+```
+
+It offers to commit this Mac's changes, rebases them onto GitHub's, pushes, and re-runs `mise bootstrap` if anything came in. If another Mac changed the same lines, it lists the files and opens lazygit. Resolve or abort there; if you leave it unresolved, run `dsync` again later. New shells say when this Mac is out of step (`dotfiles: 2 from other Macs. Run dsync.`). See [ADR-009](docs/adrs/009-dsync-reconciles-macs.md).
+
 ## Secrets
 
 API keys live in the macOS Keychain, not in files. Projects under `~/dev` get them as environment variables.

@@ -43,6 +43,7 @@ cd ~/.dotfiles && mise bootstrap
 mise -C ~/.dotfiles bootstrap packages use brew:foo
 mise -C ~/.dotfiles bootstrap packages use brew-cask:bar
 mup                               # upgrade all packages
+dsync                             # share this Mac's changes, apply other Macs'
 
 # Project lifecycle
 mkproject <name> [template]       # Create from template (base, python, fastapi, ruby, rails, etc.)
@@ -63,6 +64,7 @@ cdproject                         # cd to current mise project root
 ├── mise.sh                   # Bootloader: Xcode CLI tools, Homebrew, mise, clone, mise bootstrap
 ├── .mise.toml                # Bootstrap config: packages, taps, login shell
 ├── .mise/tasks/bootstrap     # Bootstrap task: stow + permissions + macOS setup
+├── .mise/tasks/sync          # dsync: reconcile this Mac with GitHub
 ├── include/shared_vars.sh    # Shared configuration variables
 ├── lib/misewrapper.sh        # Project management functions
 ├── mise/.config/mise/

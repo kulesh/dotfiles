@@ -1,0 +1,70 @@
+#!/usr/bin/env zsh
+#MISE description="Share this Mac's dotfile changes and apply other Macs' changes"
+#MISE raw=true  # asks before committing, and opens lazygit on a conflict
+set -euo pipefail
+
+# This file lives at <repo>/.mise/tasks/sync
+dotfiles=${0:A:h:h:h}
+cd "$dotfiles"
+
+rebasing() { [[ -d $(git rev-parse --git-path rebase-merge) || -d $(git rev-parse --git-path rebase-apply) ]]; }
+
+if rebasing; then
+    resumed=true   # a previous sync stopped at a conflict
+else
+    resumed=false
+    # Changes here are mostly tools writing through the links (lazy-lock.json,
+    # agent settings, `packages use`). Commit them so they reach the other
+    # Macs, or keep them on this Mac for now; the pull goes ahead either way.
+    if [[ -n $(git status --porcelain) ]]; then
+        git status --short
+        print -n "Commit these for your other Macs? [Y/n] " >&2
+        read -r reply || reply=n
+        if [[ $reply != [nN]* ]]; then
+            files=(${(f)"$(git status --porcelain | cut -c4- | sed 's/.* -> //')"})
+            git add --all
+            git commit --quiet -m "$(hostname -s): update ${(j:, :)${(u)${files:t}}}"
+        fi
+    fi
+    before=$(git rev-parse HEAD)
+    git pull --quiet --rebase --autostash || rebasing || exit 1
+fi
+
+# Another Mac changed the same lines. Resolve (or abort) in lazygit; once
+# nothing is left in conflict, the rebase carries on from here.
+conflicts() { git diff --name-only --diff-filter=U; }
+while rebasing; do
+    if [[ -n $(conflicts) ]]; then
+        echo "These files changed here and on another Mac:" >&2
+        conflicts | sed 's/^/  /' >&2
+        command -v lazygit >/dev/null && lazygit
+    fi
+    if rebasing && [[ -n $(conflicts) ]]; then
+        echo "Sync paused. Resolve the files above (in lazygit, or edit and git add them) and run dsync again." >&2
+        exit 1
+    fi
+    # Continuing either finishes, or stops at the next commit's conflicts.
+    if rebasing && ! GIT_EDITOR=true git rebase --continue >/dev/null && [[ -z $(conflicts) ]]; then
+        echo "Sync paused: the rebase couldn't continue. Open lazygit to finish it, then run dsync again." >&2
+        exit 1
+    fi
+done
+
+# Aborting the rebase leaves this Mac behind GitHub; a push would be refused.
+if ! git merge-base --is-ancestor '@{upstream}' HEAD; then
+    echo "Sync stopped: this Mac doesn't have GitHub's changes yet, so nothing was pushed." >&2
+    exit 1
+fi
+
+if (( $(git rev-list --count '@{upstream}..HEAD') )); then
+    git push --quiet
+    echo "Pushed this Mac's changes."
+fi
+
+# Bootstrap applies what came in: new links, packages, tools, repos.
+if $resumed || (( $(git rev-list --count "$before..@{upstream}") )); then
+    $resumed || git log --oneline "$before..@{upstream}"
+    mise bootstrap
+else
+    echo "Already up to date with your other Macs."
+fi
