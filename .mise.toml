@@ -1,6 +1,7 @@
-# Bootstrap configuration — lives at the repo root so mise can find it
-# before stow runs. Runtime settings and tools stay in the stow package
-# at mise/.config/mise/config.toml.
+# Bootstrap configuration: packages, dotfile links, login shell. It lives at
+# the repo root so mise can read it before anything is linked. Runtime
+# settings and tools are in mise/.config/mise/config.toml, linked to
+# ~/.config/mise.
 #
 # Fresh machine:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
@@ -11,6 +12,8 @@
 #   mup                                   # upgrade all packages and global tools
 #   mise -C ~/.dotfiles bootstrap status
 #   mise -C ~/.dotfiles bootstrap --dry-run
+#   mise -C ~/.dotfiles dot status        # are the links in place?
+#   mise -C ~/.dotfiles run preview       # link into a scratch home, print the rest
 
 # =============================================================================
 # Homebrew taps
@@ -28,7 +31,6 @@
 # Core utilities
 "brew:coreutils" = { os = "macos" }
 "brew:mas" = { os = "macos" }
-"brew:stow" = { os = "macos" }
 
 # Search & navigation
 "brew:fd" = "latest"
@@ -101,6 +103,63 @@
 "brew-cask:font-jetbrains-mono-nerd-font" = { os = "macos" }
 "brew-cask:font-hack-nerd-font" = { os = "macos" }
 "brew-cask:font-zed-mono-nerd-font" = { os = "macos" }
+
+# =============================================================================
+# Dotfiles (ADR-010)
+# =============================================================================
+# Each directory below mirrors $HOME and is linked into it file by file, so
+# directories like ~/dev, ~/.ssh and ~/.claude are always real directories and
+# what apps write there stays out of the repo.
+
+[settings]
+dotfiles.root = "{{config_root}}"   # this checkout, wherever it is
+
+[bootstrap]
+dotfile_groups = ["bin", "claude", "dev", "ghostty", "git", "mise", "nvim", "pi", "sandbox", "starship", "yazi", "zsh"]
+
+# Our ssh settings are a marked block in a real ~/.ssh/config. Tools that add
+# their own lines (an Include for OrbStack, say) keep them; a link or a copy
+# would put those lines in the repo or overwrite them on the next run.
+[dotfiles]
+"~/.ssh/config/dotfiles" = { source = "ssh/.ssh/config", template = "tera" }
+
+# One link for the whole directory, so lazy-lock.json and other files nvim
+# writes land in the repo.
+[dotfile_groups.nvim]
+root = "nvim"
+[dotfile_groups.nvim.entries]
+"~/.config/nvim" = { mode = "symlink" }
+
+# Before mise links anything:
+# 1. Stop if ~/.ssh or ~/dev resolves into the repo: keys or projects would be
+#    inside the checkout, and moving them is a decision for a person.
+# 2. Remove links GNU Stow made on Macs set up before ADR-010. Stow's dry run
+#    lists only its own links, so this is silent once a Mac has moved over.
+# 3. Create ~/.ssh, private, for the config block below and for keys.
+[bootstrap.hooks.pre-dotfiles]
+description = "Prepare the home for linking"
+run = """
+cd "{{config_root}}"
+inside_repo() { [ -L "$HOME/$1" ] && [ "$(cd -P "$HOME/$1" && pwd)" = "$(cd -P "$2" && pwd)" ]; }
+if inside_repo .ssh ssh/.ssh; then
+    echo "~/.ssh is a link into the repo, so your SSH keys live inside the checkout. Replace it with a real ~/.ssh (mode 700), move the keys there, and run bootstrap again." >&2
+    exit 1
+fi
+if inside_repo dev dev/dev; then
+    echo "~/dev is a link into the repo, so your projects live inside the checkout. Replace it with a real ~/dev, move the projects there, and run bootstrap again." >&2
+    exit 1
+fi
+if command -v stow >/dev/null; then
+    set --
+    for package in */; do set -- "$@" "${package%/}"; done
+    if stow --simulate --verbose --delete --dir=. --target="$HOME" "$@" 2>&1 | grep -q '^UNLINK:'; then
+        echo "unstow: removing links made by GNU Stow"
+        stow --delete --dir=. --target="$HOME" "$@"
+    fi
+fi
+mkdir -p "$HOME/.ssh"
+chmod 700 "$HOME/.ssh"
+"""
 
 # =============================================================================
 # Login shell

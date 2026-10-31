@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-#MISE description="Link dotfiles, install tools, set up GitHub and commit signing, clone your repos"
+#MISE description="Set up GitHub and commit signing, install Claude Code, clone your repos"
 #MISE raw=true  # interactive steps (GitHub login, installers) need the terminal
 set -euo pipefail
 
@@ -7,37 +7,15 @@ set -euo pipefail
 dotfiles=${0:A:h:h:h}
 source "$dotfiles/include/shared_vars.sh"
 
-# Create these before stowing. Stow links a whole directory into the repo
-# when it doesn't exist yet, so new projects would land in the dotfiles
-# checkout, SSH keys would be deleted along with it, and installers writing
-# to ~/.local/bin (Claude Code, uv) would write into the repo.
-mkdir -p "$PROJECT_DIR" "$HOME_DIR/.local/bin"
-mkdir -p -m 700 "$HOME_DIR/.ssh"
+# mise has already linked the dotfiles (.mise.toml, ADR-010). The steps
+# below act on the machine. Run against a HOME other than this account's
+# (mise run preview), they're printed instead of executed.
+previewing() { [[ $HOME != ${~:-"~$(id -un)"} ]]; }
+run() { if previewing; then echo "would run: $*"; else "$@"; fi; }
 
-# Every top-level directory is a stow package unless it's infrastructure.
-# No --adopt: it would move an existing file into the repo over the
-# committed version. A conflict stops the run and changes nothing.
-for package in "$dotfiles"/*(/:t); do
-    (( ${_DOTFILES_INFRA[(Ie)$package]} )) && continue
-    echo "stow $package"
-    stow --dir="$dotfiles" --target="$HOME_DIR" --restow "$package" || {
-        echo "Stopped: a file above already exists in $HOME_DIR. Move it aside (or merge it into $dotfiles/$package) and re-run." >&2
-        exit 1
-    }
-done
-
-# ssh refuses a config that others can write, and it checks the repo file
-# the link points to; a checkout made under a permissive umask is exactly that.
-chmod go-w "$dotfiles/ssh/.ssh/config"
-
-# Steps below act on the real machine regardless of HOME_DIR. In a test
-# run (HOME_DIR pointed elsewhere) they're printed instead of executed.
-testing() { [[ $HOME_DIR != "$HOME" ]]; }
-run() { if testing; then echo "would run: $*"; else "$@"; fi; }
-
-# mise resolved [tools] before this task ran, when the global config
-# wasn't linked yet, so install them from a fresh process now.
-if testing; then mise install --dry-run; else mise install; fi
+# mise resolved [tools] before linking ~/.config/mise, so a fresh Mac
+# installs the global tools from a fresh process now.
+run mise install
 
 # Check the install path too: mise.sh runs in bash, where ~/.local/bin
 # isn't on PATH, so command -v alone would reinstall on every run.
@@ -55,7 +33,7 @@ fi
 # A developer machine should be ready to push. gh's login flow generates
 # ~/.ssh/id_ed25519 if it's missing, uploads it, and sets git to use SSH.
 # Already logged in but no key (e.g. a reinstall): make one and upload it.
-key=$HOME_DIR/.ssh/id_ed25519
+key=$HOME/.ssh/id_ed25519
 if ! gh auth status &>/dev/null; then
     # The extra scope lets the signing step below register the same key.
     run gh auth login --hostname github.com --git-protocol ssh --web --scopes admin:ssh_signing_key
@@ -84,8 +62,8 @@ if gh auth status &>/dev/null && [[ -f $key.pub ]]; then
     fi
     # git log --show-signature trusts every key you've registered for
     # signing, so commits made on your other machines verify here too.
-    allowed=$HOME_DIR/.config/git/allowed_signers
-    if testing; then
+    allowed=$HOME/.config/git/allowed_signers
+    if previewing; then
         echo "would write $allowed"
     else
         mkdir -p "${allowed:h}"
@@ -101,7 +79,7 @@ if gh auth status &>/dev/null; then
     for repo in ${(f)"$(gh repo list --source --no-archived --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner')"}; do
         [[ ${self%.git} == *[:/]$repo ]] && continue   # already at ~/.dotfiles
         [[ -d $PROJECT_DIR/${repo#*/} ]] && continue
-        if testing; then echo "would clone $repo"; continue; fi
+        if previewing; then echo "would clone $repo"; continue; fi
         zsh -c 'source "$1/lib/misewrapper.sh" && cloneproject gh "$2"' _ "$dotfiles" "$repo" ||
             failed+=("$repo")
     done

@@ -1,24 +1,18 @@
 # Architecture
 
-## Two Pillars
+## One Framework
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        ~/.dotfiles/                             │
+│                     ~/.dotfiles/  (mise)                        │
 │                                                                 │
-│  ┌──────────────────────────┐  ┌──────────────────────────┐    │
-│  │      mise-en-place        │  │       GNU Stow            │    │
-│  │                           │  │                           │    │
-│  │  System packages (brew)   │  │  Symlinks tool configs    │    │
-│  │  Dev tools & runtimes     │  │  to $HOME                 │    │
-│  │  Bootstrap orchestration  │  │                           │    │
-│  │  Project task runner      │  │                           │    │
-│  └────────────┬─────────────┘  └────────────┬──────────────┘    │
-│               │                              │                   │
-│               ▼                              ▼                   │
-│  brew install ...                 ~/.config/tool/                │
-│  mise bootstrap                   ~/.zshrc                       │
-│  ~/dev/project/.mise.toml         ~/.gitconfig                   │
+│  System packages (brew:)     Dotfile groups, linked into $HOME  │
+│  Dev tools & runtimes        Bootstrap orchestration            │
+│  Project task runner         Our task: GitHub, signing, clones  │
+│               │                              │                  │
+│               ▼                              ▼                  │
+│  /opt/homebrew                    ~/.zshrc → zsh/.zshrc         │
+│  ~/dev/project/.mise.toml         ~/.config/nvim → nvim/…       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -42,10 +36,14 @@ bash <(curl -fsSL .../mise.sh)
 │ mise bootstrap (reads .mise.toml)         │
 │   1. [bootstrap.packages] → formulae,     │
 │      casks, fonts                         │
-│   2. [bootstrap.user] → chsh to zsh       │
-│   3. .mise/tasks/bootstrap                │
-│      mkdir ~/dev → stow → mise install    │
-│      → trust ~/dev → Claude Code          │
+│   2. pre-dotfiles hook: refuse keys or    │
+│      projects inside the repo, remove     │
+│      Stow's links, mkdir ~/.ssh (700)     │
+│   3. dotfile groups → links into $HOME;   │
+│      ~/.ssh/config gets a marked block    │
+│   4. [bootstrap.user] → chsh to zsh       │
+│   5. .mise/tasks/bootstrap                │
+│      mise install → Claude Code           │
 │      → macOS defaults                     │
 │      → gh auth login (SSH key → GitHub)   │
 │      → cloneproject each own repo → ~/dev │
@@ -72,10 +70,11 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 ~/.dotfiles/
 │
 ├── mise.sh                    Bootloader: installs prerequisites, runs mise bootstrap
-├── .mise.toml                 Bootstrap config: packages, taps, login shell
-├── .mise/tasks/bootstrap      Bootstrap task: stow + permissions + macOS setup
+├── .mise.toml                 Bootstrap config: packages, dotfile groups, login shell
+├── .mise/tasks/bootstrap      Bootstrap task: GitHub, signing, Claude Code, clones
+├── .mise/tasks/preview        Link into a scratch home, print the machine-level steps
 ├── .mise/tasks/sync           dsync: commit, pull --rebase, push, re-bootstrap
-├── include/shared_vars.sh     HOME_DIR, PROJECT_DIR, infra exclusions
+├── include/shared_vars.sh     PROJECT_DIR
 │
 ├── lib/                       Shell libraries (sourced at shell startup)
 │   ├── misewrapper.sh         Entrypoint — loads sub-modules
@@ -85,7 +84,7 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 │   └── git_utils.sh           Git introspection utilities
 │
 ├── mise/.config/mise/
-│   ├── config.toml            Runtime config: settings, tools (stowed)
+│   ├── config.toml            Runtime config: settings, tools (linked)
 │   └── tasks/mkproject/       Project templates
 │           ├── _shared/       CLAUDE.md and AGENTS.md headers
 │           ├── base.sh        Git init, README, .gitignore
@@ -98,8 +97,8 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 │           ├── convex.sh      Next.js + Convex
 │           └── tools/         Tool installation tasks (python, rust, etc.)
 │
-├── <tool>/                    Stow packages (auto-discovered)
-│   └── .config/<tool>/        Symlinked to ~/.config/<tool>/
+├── <tool>/                    Dotfile groups, listed in .mise.toml
+│   └── .config/<tool>/        Linked file by file into ~/.config/<tool>/
 │
 ├── sandbox/.config/sandbox/
 │   └── profiles/default.sb    macOS sandbox-exec profile

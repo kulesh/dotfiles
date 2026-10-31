@@ -1,6 +1,6 @@
 # ADR-001: GNU Stow for Dotfile Management
 
-**Status:** Accepted  
+**Status:** Superseded by [ADR-010](010-mise-links-dotfiles.md)  
 **Date:** 2024 (retroactive)
 
 ## Context

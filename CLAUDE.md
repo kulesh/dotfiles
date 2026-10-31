@@ -23,10 +23,7 @@ To put this philosophy to practice:
 
 ## Project Overview
 
-macOS dotfiles management system built on two pillars:
-
-- **mise-en-place** — system packages, dev environments, bootstrap orchestration, and task runner
-- **GNU Stow** — dotfile symlink management (convention-based, zero-config)
+macOS dotfiles management system built on mise-en-place: system packages, dev environments, dotfile linking (groups, ADR-010), bootstrap orchestration, and task runner.
 
 Designed to be evolving, grokable, and contained to the project directory.
 
@@ -62,21 +59,22 @@ cdproject                         # cd to current mise project root
 ```
 ~/.dotfiles/
 ├── mise.sh                   # Bootloader: Xcode CLI tools, Homebrew, mise, clone, mise bootstrap
-├── .mise.toml                # Bootstrap config: packages, taps, login shell
-├── .mise/tasks/bootstrap     # Bootstrap task: stow + permissions + macOS setup
+├── .mise.toml                # Bootstrap config: packages, dotfile groups, login shell
+├── .mise/tasks/bootstrap     # Bootstrap task: GitHub, signing, Claude Code, clones
+├── .mise/tasks/preview       # Link into a scratch home; print machine-level steps
 ├── .mise/tasks/sync          # dsync: reconcile this Mac with GitHub
 ├── include/shared_vars.sh    # Shared configuration variables
 ├── lib/misewrapper.sh        # Project management functions
 ├── mise/.config/mise/
-│   ├── config.toml           #   Runtime config: settings, tools (stowed)
+│   ├── config.toml           #   Runtime config: settings, tools (linked)
 │   └── tasks/mkproject/      #   Project templates
 ├── sandbox/.config/sandbox/  # macOS sandbox-exec profiles
-├── <tool>/                   # Per-tool configurations (stowed to $HOME)
+├── <tool>/                   # Per-tool configurations (linked into $HOME)
 │   └── .config/<tool>/
 └── dev/                      # Dev directory structure template
 ```
 
-**Stow packages:** zsh, git, ghostty, ssh, mise, nvim, starship, dev, claude, sandbox, pi, yazi
+**Dotfile groups** (`[bootstrap] dotfile_groups` in `.mise.toml`): bin, claude, dev, ghostty, git, mise, nvim, pi, sandbox, starship, yazi, zsh. `ssh/.ssh/config` is a marked block in `~/.ssh/config`.
 
 **Project templates** (`mise/.config/mise/tasks/mkproject/`): base, python, fastapi, ruby, rails, rust, typescript, convex
 
@@ -84,10 +82,10 @@ cdproject                         # cd to current mise project root
 
 | File | Purpose |
 |------|---------|
-| `.mise.toml` | Bootstrap config: `[bootstrap.packages]`, `[bootstrap.user]`, taps |
-| `.mise/tasks/bootstrap` | Stow loop, task permissions, macOS defaults |
-| `mise/.config/mise/config.toml` | Runtime config: `[settings]`, `[tools]` (stowed) |
-| `include/shared_vars.sh` | `HOME_DIR`, `PROJECT_DIR` (`~/dev`), `_DOTFILES_INFRA` |
+| `.mise.toml` | Bootstrap config: `[bootstrap.packages]`, dotfile groups, pre-dotfiles hook, `[bootstrap.user]`, taps |
+| `.mise/tasks/bootstrap` | GitHub login and keys, signing, Claude Code, clones, missing secrets |
+| `mise/.config/mise/config.toml` | Runtime config: `[settings]`, `[tools]` (linked) |
+| `include/shared_vars.sh` | `PROJECT_DIR` (`~/dev`) |
 | `lib/misewrapper.sh` | Entrypoint — loads `git_utils.sh`, `sandbox.sh`, `project.sh`, `navigate.sh` |
 
 ### Dependencies
@@ -97,7 +95,6 @@ Core tools declared in `[bootstrap.packages]` (.mise.toml):
 | Category | Tools |
 |----------|-------|
 | Runtime management | mise |
-| Symlink management | stow |
 | Search & navigation | fd, ripgrep, fzf, zoxide |
 | Dev environment | neovim, ghostty |
 | Git tooling | git-delta, lazygit, gh |

@@ -8,7 +8,7 @@ function cdproject() {
 
     if [[ -z "$mise_dir" ]]; then
         echo "Not in a mise project"
-        safe_cd "$HOME_DIR"
+        safe_cd "$HOME"
         return 1
     fi
 

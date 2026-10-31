@@ -5,9 +5,7 @@ A simple macOS specific dotfiles management system for making my developer exper
 2. Grokable -- I understand how everything works
 3. Contained -- changes are local to `$PROJECT_DIR`
 
-The system does two things:
-- Uses [mise-en-place](https://mise.jdx.dev/) for system packages, development environments, and bootstrap orchestration
-- Uses [GNU Stow](https://www.gnu.org/software/stow/) for managing dotfiles
+Everything runs on [mise-en-place](https://mise.jdx.dev/): system packages, development environments, linking the dotfiles into `$HOME`, and bootstrap orchestration.
 
 ## Installation
 
@@ -24,11 +22,13 @@ cd ~/.dotfiles
 mise bootstrap
 ```
 
-To try the symlinks without touching your real `$HOME`, point `HOME_DIR` at an empty scratch directory. Links are created there for real; everything that would change the machine (tool installs, GitHub login and keys, cloning, macOS defaults) is only printed:
+To see what bootstrap would do without touching your real home, preview it. The links are made for real in a scratch directory, with mise's own state kept there too; everything that would change the machine (tool installs, GitHub login and keys, cloning, macOS defaults) is only printed:
 
 ```sh
-HOME_DIR=$(mktemp -d) mise run bootstrap
+mise -C ~/.dotfiles run preview
 ```
+
+Each top-level directory (`zsh/`, `git/`, `nvim/`…) mirrors `$HOME` and is linked into it file by file, so `~/dev`, `~/.ssh` and `~/.claude` are always real directories. A Mac set up with GNU Stow moves over on its next bootstrap. See [ADR-010](docs/adrs/010-mise-links-dotfiles.md), and `mise -C ~/.dotfiles dot status` to check the links.
 
 ## Quick Start
 
@@ -220,4 +220,4 @@ The full list is `[bootstrap.packages]` in `.mise.toml`. Highlights:
 
 - [Architecture](docs/architecture.md): components and data flows
 - [Decision records](docs/adrs/): why things are the way they are
-- [Clean sheet on mise](docs/mise-native.md): proposal to replace Stow and most hand-written setup with mise features
+- [Clean sheet on mise](docs/mise-native.md): the plan for moving hand-written setup onto mise features

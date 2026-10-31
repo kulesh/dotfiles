@@ -1,0 +1,23 @@
+#!/usr/bin/env zsh
+#MISE description="Link the dotfiles into a scratch home and print what bootstrap would do to this Mac"
+#USAGE arg "[home]" help="Scratch home to link into (default: a new temporary directory)"
+set -euo pipefail
+
+# This file lives at <repo>/.mise/tasks/preview
+dotfiles=${0:A:h:h:h}
+scratch=${usage_home:-${1:-$(mktemp -d)}}
+scratch=${scratch:A}
+
+# Everything mise reads and records moves into the scratch home: links are
+# made there for real, and mise's state about them never mixes with this
+# Mac's. Packages and tools are machine-wide, so only the dotfiles and the
+# bootstrap task run; the task prints its machine-level steps because HOME
+# isn't this account's home.
+unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME
+export HOME=$scratch
+export MISE_CONFIG_DIR=$HOME/.config/mise MISE_STATE_DIR=$HOME/.local/state/mise
+export MISE_DATA_DIR=$HOME/.local/share/mise MISE_CACHE_DIR=$HOME/.cache/mise
+export MISE_TRUSTED_CONFIG_PATHS=$dotfiles MISE_YES=1
+
+echo "Previewing into $scratch"
+mise -C "$dotfiles" bootstrap --only dotfiles,task

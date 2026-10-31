@@ -58,7 +58,7 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 | Link 13 packages | Stow loop, infra exclusions | `[bootstrap] dotfile_groups = [...]`, same directories | Full | Tested: file-by-file links, real directories |
 | Directory folding into the repo | Pre-create dirs; agent state still lands in the repo | Gone: groups link file by file | Full | Tested (`~/.claude`, `~/.pi`, `~/dev` stay real) |
 | `lazy-lock.json` flows back | Folded `~/.config/nvim` | Group entry `"~/.config/nvim" = { mode = "symlink" }` | Full | Tested |
-| ssh config permissions | `chmod go-w` on the repo file | `"~/.ssh/config" = { mode = "copy", permissions = "0600" }` | Full; a copy, so edits go to the repo | Tested |
+| ssh config permissions | `chmod go-w` on the repo file | A marked block in a real `~/.ssh/config` (`"~/.ssh/config/dotfiles"`); a copy was rejected because mise overwrote lines other tools add | Full | Done in phase 2 |
 | App-written settings (Claude, Pi) | Whole file linked; app writes into the repo | `merge = true` edit: we own our keys, the app keeps its own | Full | Tested |
 | Removed package | Unlink by hand | Reported as orphaned; `mise dot apply --prune` | Full | Tested |
 | Conflict with an existing file | Stow aborts | Whole run aborts before writing | Full | Tested |
@@ -127,7 +127,8 @@ Each phase ships on its own and leaves a working system.
 |---|---|---|---|
 | 0. Mac spike | `bash tests/spike/mise-native.sh` on one Mac (scratch mise, scratch homes, previews only) | Nothing | `brew:` without Homebrew; groups from a fresh home and from Stow; Pi merge; `~` in macOS defaults |
 | 1. Trust and upgrades (done) | `trusted_config_paths`; `mup` upgrades packages and tools | Four `mise trust` calls | `tests/bootstrap.bats`, `tests/project.bats` |
-| 2. Groups replace Stow | `dotfile_groups`, `~/.ssh` 0700, ssh copy entry, nvim whole-dir entry, Claude/Pi merge edits; existing Macs unstow, then apply; ADR-010 supersedes ADR-001 | `stow` package, stow loop, mkdirs, chmod, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` on `HOME=` |
+| 2. Groups replace Stow (done) | `dotfile_groups`, nvim whole-dir entry, ssh config block; a pre-dotfiles hook unstows existing Macs and creates `~/.ssh`; `mise run preview`; ADR-010 supersedes ADR-001 | `stow` package, stow loop, mkdirs, chmod, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` through `preview` |
+| 2b. Merged app settings | Claude Code and Pi settings as `merge = true` edits | App state in git (`lastChangelogVersion`, `model`) | Next |
 | 3. Projects as tasks | `#USAGE` and completion on every command; `[shell_alias]`; global `[hooks]` | Most of `lib/` (keep the `cd` shim); ADR-003 superseded | `tests/project.bats` against `mise run` |
 | 4. Bootloader | Drop Homebrew from `mise.sh` if phase 0 confirms it | Homebrew installer call | Fresh-Mac run on shadow |
 | 5. Secrets | Decide fnox from phase 0 findings (the sandbox stays ours) | Possibly `secret env` | Mac tests |

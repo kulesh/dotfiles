@@ -1,6 +1,6 @@
 # ADR-004: Mise Bootstrap Replaces install.sh and Brewfile
 
-**Status:** Accepted
+**Status:** Accepted; linking and the `HOME_DIR` seam superseded by [ADR-010](010-mise-links-dotfiles.md)
 **Date:** 2026-10-17 (revised 2026-10-24 after fresh-machine testing)
 
 ## Context

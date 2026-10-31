@@ -28,7 +28,7 @@ eval "$("$brew" shellenv)"
 # 3. mise, via Homebrew so `mup` upgrades it along with everything else.
 command -v mise &>/dev/null || "$brew" install mise
 
-# 4. The repo lives at a fixed path because stow's symlinks point into it.
+# 4. The repo lives at ~/.dotfiles, where .zshenv and dsync expect it.
 [[ -d $dotfiles ]] || git clone "$repo" "$dotfiles"
 
 # 5. Hand off: mise reads .mise.toml and runs .mise/tasks/bootstrap.
