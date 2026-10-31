@@ -107,16 +107,16 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 
 ## Phase 0 results
 
-The first run was on macOS 27.2 (arm64) with mise 2026.10.24. It used a checkout that predated `bin/` and the bootstrap packages, so sections 2 and 5 are partial.
+Run on macOS 27.2 (arm64) with mise 2026.10.24, against GitHub's main.
 
 | Question | Result |
 |---|---|
 | Does `brew:` need Homebrew? | **No.** With `brew` off PATH, the preview read `pour sl/5.02`: mise pours the bottle itself. `/opt/homebrew` already existed, so creating the prefix on a fresh Mac is still untested. |
-| Groups on a fresh home | **Works.** Real directories; `~/.ssh` 700 and its config 600; nvim linked as a whole directory; second apply a no-op; nothing written into the repo. |
+| Groups on a fresh home | **Works.** Real directories (`~/dev`, `~/.local/bin`, `~/.claude`, `~/.pi`); `~/.ssh` 700 and its config 600; nvim linked as a whole directory; second apply a no-op; `dot status --missing` clean; nothing written into the repo. |
 | Pi merge | **Works.** Pi's `lastChangelogVersion` kept, our `defaultModel` restored. |
 | Applying over Stow's links | **Unsafe**, the same as on Linux: it deleted `ssh/.ssh/config` from the repo. Unstowing first gave a clean result. |
 | `~` in macOS defaults | **Probably expanded.** mise reported the screenshot location "already set", but the existing value was written as an absolute path. |
-| Bootstrap plan | Not tested yet: the stale checkout had no packages. The script now clones GitHub's main instead. |
+| Bootstrap plan | **Blocked by one cask.** An interrupted Homebrew upgrade left two `mactex` Caskroom versions, and mise refuses to plan any package until Homebrew's metadata is repaired. mise is strict where `brew` tolerates leftovers: expect to clean Homebrew state when an existing Mac switches. |
 
 ## Plan
 
