@@ -4,6 +4,9 @@ export EDITOR="vim"
 export CLICOLOR=YES
 export LSCOLORS="Gxfxcxdxbxegedabagacad"
 
+# Treat # as a comment at the prompt too, so pasted commands with notes work
+setopt interactive_comments
+
 # history
 setopt EXTENDED_HISTORY
 setopt inc_append_history_time
