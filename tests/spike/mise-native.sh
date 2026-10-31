@@ -2,14 +2,15 @@
 # Phase 0 of docs/mise-native.md: check, on a real Mac, what the clean-sheet
 # design assumes. Changes nothing outside one scratch directory:
 #   - downloads a current mise into it (your installed mise is untouched)
-#   - applies dotfiles only into scratch homes, from scratch clones of the repo
+#   - applies dotfiles only into scratch homes, from fresh clones of GitHub's main
 #   - runs packages and macOS defaults as previews (--dry-run)
-# Usage: bash tests/spike/mise-native.sh [dotfiles-checkout]   (default ~/.dotfiles)
+# Usage: bash tests/spike/mise-native.sh [repo]   (default: GitHub main, not your checkout)
 # Then send back the report it names at the end.
 set -uo pipefail
 
-dotfiles=${1:-$HOME/.dotfiles}
-spike=$(mktemp -d "${TMPDIR:-/tmp}/mise-spike.XXXXXX")
+dotfiles=${1:-https://github.com/kulesh/dotfiles.git}
+tmp=${TMPDIR:-/tmp}
+spike=$(mktemp -d "${tmp%/}/mise-spike.XXXXXX")
 real_home=$HOME
 exec > >(tee "$spike/report.txt") 2>&1
 
