@@ -105,6 +105,19 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 - **Switching an existing Mac requires unstowing first.** Tested: applying over Stow's links, as `groups.md:251` says you can, failed partway. mise copied the ssh config through Stow's `~/.ssh` link onto itself, which **deleted `ssh/.ssh/config` from the repo**, then stopped. Running `stow -D` on every package first gives a result identical to a fresh Mac. The migration must unstow, then apply.
 - **Unattended upgrades.** A launchd job running `mise bootstrap --upgrade` would stall on casks that need sudo.
 
+## Phase 0 results
+
+The first run was on macOS 27.2 (arm64) with mise 2026.10.24. It used a checkout that predated `bin/` and the bootstrap packages, so sections 2 and 5 are partial.
+
+| Question | Result |
+|---|---|
+| Does `brew:` need Homebrew? | **No.** With `brew` off PATH, the preview read `pour sl/5.02`: mise pours the bottle itself. `/opt/homebrew` already existed, so creating the prefix on a fresh Mac is still untested. |
+| Groups on a fresh home | **Works.** Real directories; `~/.ssh` 700 and its config 600; nvim linked as a whole directory; second apply a no-op; nothing written into the repo. |
+| Pi merge | **Works.** Pi's `lastChangelogVersion` kept, our `defaultModel` restored. |
+| Applying over Stow's links | **Unsafe**, the same as on Linux: it deleted `ssh/.ssh/config` from the repo. Unstowing first gave a clean result. |
+| `~` in macOS defaults | **Probably expanded.** mise reported the screenshot location "already set", but the existing value was written as an absolute path. |
+| Bootstrap plan | Not tested yet: the stale checkout had no packages. The script now clones GitHub's main instead. |
+
 ## Plan
 
 Each phase ships on its own and leaves a working system.
