@@ -17,7 +17,13 @@ unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME
 export HOME=$scratch
 export MISE_CONFIG_DIR=$HOME/.config/mise MISE_STATE_DIR=$HOME/.local/state/mise
 export MISE_DATA_DIR=$HOME/.local/share/mise MISE_CACHE_DIR=$HOME/.cache/mise
-export MISE_TRUSTED_CONFIG_PATHS=$dotfiles MISE_YES=1
+export MISE_TRUSTED_CONFIG_PATHS=$dotfiles
+# mise reads config in every directory above the one it runs in. Above the
+# checkout is usually the real home, whose ~/.config/mise would load as
+# project config; stop the search at the checkout.
+export MISE_CEILING_PATHS=${dotfiles:h}
 
 echo "Previewing into $scratch"
-mise -C "$dotfiles" bootstrap --only dotfiles,task
+# --yes: linking asks before replacing anything, and a task has no terminal
+# to answer from. In a scratch home there's nothing of yours to replace.
+mise -C "$dotfiles" bootstrap --only dotfiles,task --yes
