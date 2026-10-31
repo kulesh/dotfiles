@@ -59,6 +59,7 @@
       "WebFetch(domain:*)"
     ]
   },
+  "model": "fable[1m]",
   "hooks": {},
   "statusLine": {
     "type": "command",
