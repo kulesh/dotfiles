@@ -1,0 +1,125 @@
+# Clean Sheet: Dotfiles on mise Alone
+
+**Status:** Proposed, 2026-10-31. Researched against mise 2026.10.25 docs (main branch) and binary.
+
+This document asks what this repo would look like if we designed it today, on mise alone. It keeps every feature we rely on and drops any of our implementations that mise now provides. Each claim below is marked **Tested** (run against the 2026.10.25 binary on Linux), **Docs** (read, not run), or **Mac** (needs a test on macOS before we depend on it).
+
+## The short answer
+
+mise now covers most of what this repo builds by hand: linking, directories and permissions, macOS defaults, trust, tool and package upgrades, aliases, directory hooks and task arguments. Four things stay ours, because mise has no concept for them:
+
+1. **GitHub identity:** login, SSH key, signing key, `allowed_signers`
+2. **Cloning every repo you own** into `~/dev`
+3. **Projects as a concept:** list, switch (`cd`), show, archive
+4. **Sharing this Mac's changes** (`dsync`): mise's own sync covers its history repo, never your checkout
+
+The result is one framework instead of two. Stow goes, most of the bootstrap task becomes declarations, and the project layer shrinks from zsh libraries to mise tasks with a thin `cd` shim.
+
+```
+                    today                                   clean sheet
+┌────────────────────────────────────────┐   ┌────────────────────────────────────────┐
+│ mise.sh: CLT, Homebrew, mise, clone    │   │ mise.sh: CLT, mise, clone              │
+│ .mise.toml: packages, shell            │   │ mise.toml: packages, shell, dirs,      │
+│ .mise/tasks/bootstrap (zsh, 125 lines) │   │   defaults, trust, groups, aliases     │
+│   mkdir · stow loop · chmod · trust    │   │                                        │
+│   claude curl · defaults · GitHub      │   │ .mise/tasks/bootstrap (ours, smaller)  │
+│   clone loop · missing secrets         │   │   GitHub identity · clone loop         │
+│ GNU Stow (13 packages)                 │   │ dotfile_groups (same 13 directories)   │
+│ lib/*.sh (1,550 lines of zsh)          │   │ global tasks with #USAGE + cd shim     │
+│ .zshrc aliases, chpwd hook             │   │ [shell_alias], [hooks]                 │
+└────────────────────────────────────────┘   └────────────────────────────────────────┘
+```
+
+## Feature map
+
+### Machine setup
+
+| Feature | Today | Clean sheet | Fit | Evidence |
+|---|---|---|---|---|
+| Install Homebrew | `mise.sh` runs Homebrew's installer | Nothing. The `brew:` manager installs bottles into `/opt/homebrew` itself, creating the prefix with sudo | Full, Apple Silicon only | Docs `bootstrap/packages/brew.md:7-10,37,44-50`. **Mac:** on 2026.9.x shadow skipped every `brew:` package until Homebrew existed |
+| Install mise | `brew install mise` | `curl https://mise.run \| sh` (`~/.local/bin`) | Full | Docs `bootstrap/setup.md:260` |
+| Clone and hand over | `git clone` then `mise bootstrap` | Same, or `mise bootstrap --from <url> --from-dir ~/.dotfiles` | Full | Docs `from-repository.md:184-232`. **Mac:** the CLT `git` stub |
+| Formulae, casks, fonts | `[bootstrap.packages]` | Same; taps as qualified names (`brew:owner/tap/f`); `mas:` for App Store | Full | Docs `brew.md:98-126`, `mas.md` |
+| Upgrade everything | `mup` = `bootstrap packages upgrade` | `mise bootstrap --upgrade`: packages and tools in one run | Full | Docs `packages/index.md:310-331` |
+| Login shell | `[bootstrap.user] login_shell` | Same | Full | Tested (dry run) |
+| `~/dev`, `~/.local/bin`, `~/.ssh` 0700 | `mkdir` before stow | `[bootstrap.directories]` | Full | Tested: idempotent, right modes |
+| Global tools | `mise install` in task | Bootstrap step 16 | Full | Docs `bootstrap.md:152` |
+| Trust `~/dev` projects | `mise trust` in bootstrap, mkproject, cloneproject | `trusted_config_paths = ["~/dev"]` (global) | Full | Docs `settings.toml:4597` |
+| Claude Code | `curl claude.ai/install.sh` | `[tools] claude = { version = "latest", auto_update = true }` | Full | Registry entry `aqua:anthropics/claude-code` checked; install untested |
+| Screenshot folder | `defaults write` in task | `[bootstrap.macos.defaults]` plus a `[bootstrap.directories]` entry | Partial: values aren't templated, so the path is absolute | Docs `macos-defaults.md:37-39`, `bootstrap.md:392` |
+| GitHub login, SSH key, signing | Task | Task (unchanged) | None | No bootstrap section covers it |
+| Clone every repo you own | `gh repo list` loop → `cloneproject` | Task (unchanged). `[bootstrap.repos]` needs each path declared, can't list a user's repos | None | Docs `repos.md:43-128` |
+| Preview without touching `$HOME` | `HOME_DIR` seam, our own previews | `HOME=<scratch>`, `--dry-run`, `mise bootstrap plan --detailed-exitcode` | Full | Tested |
+
+### Dotfiles
+
+| Feature | Today | Clean sheet | Fit | Evidence |
+|---|---|---|---|---|
+| Link 13 packages | Stow loop, infra exclusions | `[bootstrap] dotfile_groups = [...]`, same directories | Full | Tested: file-by-file links, real directories |
+| Directory folding into the repo | Pre-create dirs; agent state still lands in the repo | Gone: groups link file by file | Full | Tested (`~/.claude`, `~/.pi`, `~/dev` stay real) |
+| `lazy-lock.json` flows back | Folded `~/.config/nvim` | Group entry `"~/.config/nvim" = { mode = "symlink" }` | Full | Tested |
+| ssh config permissions | `chmod go-w` on the repo file | `"~/.ssh/config" = { mode = "copy", permissions = "0600" }` | Full; a copy, so edits go to the repo | Tested |
+| App-written settings (Claude, Pi) | Whole file linked; app writes into the repo | `merge = true` edit: we own our keys, the app keeps its own | Full | Tested |
+| Removed package | Unlink by hand | Reported as orphaned; `mise dot apply --prune` | Full | Tested |
+| Conflict with an existing file | Stow aborts | Whole run aborts before writing | Full | Tested |
+| Drift check | None | `mise dot status --missing` (exit 1) | Full | Docs `reference.md:243` |
+
+### Projects
+
+| Feature | Today | Clean sheet | Fit | Evidence |
+|---|---|---|---|---|
+| `mkproject <name> [template]` | zsh wrapper → `mkproject:<t>` tasks | The template tasks themselves, with `#USAGE arg "<name>"`, flags, completion; `depends=["mkproject:base {{usage.name}}"]` | Full | Tested (`mise run mkproject:python demo --py 3.13`) |
+| Template engine | Shell scripts copy and write files | Same: mise has no project scaffolder; tasks use `MISE_TASK_DIR` | n/a | Docs `mise-cookbook/presets.md` |
+| `workon`, `cdproject` | zsh functions | zsh functions (about 20 lines): a task can't `cd` your shell | None | Docs |
+| `lsprojects`, `showproject`, `updateproject`, `rmproject` | zsh (`navigate.sh`, `project.sh`) | Global tasks with completion (`complete "name" run="ls ~/dev"`); `confirm` on `--delete` | Full | Docs `task-arguments.md:114-142` |
+| Shared `~/dev` tools and env | `~/dev/.mise.toml` | Same (parent config inheritance) | Full | Unchanged |
+| Directory hook | zsh `chpwd` (ADR-003) | Global `[hooks] cd` with `{ shell = "zsh", script = ... }` | Full | Tested (`hook-env`) |
+| Aliases (`mup`, `dsync`) | `.zshrc` | `[shell_alias]` in global config | Full | Tested |
+| Sandbox (`workon -s`) | Own Seatbelt profile: read all but credentials, write project + caches | mise sandbox (Seatbelt on macOS): `deny_read` then `allow_read` (reads are allowlist only); `deny_net` all or nothing | Partial | Docs `sandboxing.md`. **Mac:** whether an interactive shell works in it |
+
+### Secrets and sync
+
+| Feature | Today | Clean sheet | Fit | Evidence |
+|---|---|---|---|---|
+| Keys in the Keychain | `secret` CLI | Keep `secret`. mise's secrets come from env vars or fnox; mise docs name no Keychain provider | Partial | Docs `bootstrap/secrets.md`, `secrets/fnox.md` |
+| Scope a key to one tool | Not possible: all keys reach every `~/dev` project | fnox `secrets = [...]` per task, redacted, never in the shell (experimental, mise ≥ 2026.10.4) | Partial: tasks only, not interactive tools | Docs `fnox.md:7-48,176-226` |
+| Report missing secrets | `include/secrets` loop | `[env] KEY = { required = "..." }`, or `mise bootstrap secrets status --missing` | Partial | Docs |
+| Sync the dotfiles checkout | `dsync` | `dsync` (unchanged). mise: "keep that checkout in sync with Git yourself" | None | Docs `dotfiles/sync.md:101-107` |
+| Tool lockfile | None (everything `latest`) | `lockfile = true`, `mise lock --global`, `mise lock --bump` | Full; brew packages unlocked | Docs `mise-lock.md` |
+
+## What we'd adopt, and what we'd decline
+
+**Adopt.** `dotfile_groups`, `[bootstrap.directories]`, `[bootstrap.macos.defaults]`, `trusted_config_paths`, the `claude` tool, `mise bootstrap --upgrade`, `[shell_alias]`, global `[hooks]`, `#USAGE` on every project command, `lockfile = true`, and `HOME=` plus `plan` and `status --missing` as test seams.
+
+**Decline for now:**
+- **History tracking and `mise dot origin`.** It's a second repo of auto-saved edits; ADR-009 chose deliberate commits.
+- **Monorepo mode for `~/dev`.** It renames every project's tasks to `//name:task`, trusts everything under the root, and needs a stub task in each project before `//...:pull` reaches it. A plain loop task does `updateproject` with less ceremony.
+- **`[bootstrap.repos]`** for owned repos. It needs every path declared by hand.
+- **The mise sandbox as a direct replacement.** Its allowlist-only reads are stricter than our credentials blocklist; tools that read `~/.gitconfig`, `~/.npmrc` and the like need each one listed. It's a better fit for running an agent as a task than for an interactive shell. Evaluate it on a Mac.
+- **fnox.** Per-task scoping is the real win, but it doesn't cover interactive tools (Pi), and we haven't confirmed a Keychain backend.
+
+## Risks
+
+- **Version floor.** Groups need a recent mise; the 2026.9.8 binary rejected `dotfile_groups`. Every Mac must run 2026.10.x or later before the groups change lands.
+- **A mise bug in groups.** A permissions-only entry for a directory inside a group cuts it out of the walk. mise then removes the links beneath it immediately, without `--prune`, and deletes the emptied directory. Both behaviors contradict the docs (`groups.md:184-186`, `managed.md:305`). The documented pattern above avoids it; worth reporting upstream.
+- **Intel Macs.** `brew:` is skipped on Intel (`brew-cask:` still works). If any Mac is Intel, the bootloader keeps installing Homebrew.
+- **Unattended upgrades.** A launchd job running `mise bootstrap --upgrade` would stall on casks that need sudo.
+
+## Plan
+
+Each phase ships on its own and leaves a working system.
+
+| Phase | Change | Removes | Proves first |
+|---|---|---|---|
+| 0. Mac spike | Run `mise bootstrap plan` and `mise dot apply --dry-run` with a test config on one Mac | Nothing | `brew:` without Homebrew; Stow → groups on a live machine; screenshot default; sandboxed shell |
+| 1. Declarative setup | Directories, defaults, `trusted_config_paths`, `claude` tool, `--upgrade` alias | mkdirs, chmod, trust calls, Claude curl, `defaults write`, `mup` body | Bootstrap task down to GitHub, clone loop, secrets |
+| 2. Groups replace Stow | `dotfile_groups`, ssh copy entry, nvim whole-dir entry, Claude/Pi merge edits; ADR-010 supersedes ADR-001 | `stow` package, stow loop, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` on `HOME=` |
+| 3. Projects as tasks | `#USAGE` and completion on every command; `[shell_alias]`; global `[hooks]` | Most of `lib/` (keep the `cd` shim); ADR-003 superseded | `tests/project.bats` against `mise run` |
+| 4. Bootloader | Drop Homebrew from `mise.sh` if phase 0 confirms it | Homebrew installer call | Fresh-Mac run on shadow |
+| 5. Secrets and sandbox | Decide fnox and mise sandbox from phase 0 findings | Possibly `secret env` and the custom profile | Mac tests |
+
+## Open questions for Kulesh
+
+1. Is every Mac Apple Silicon? If so, phase 4 can drop Homebrew's installer.
+2. For agents, would you rather keep today's "read everything except credentials" sandbox, or take mise's stricter "read only what's allowed"?
+3. Should Claude Code and Pi settings become merged keys? We'd own the keys we care about, and each app would keep its own local state out of the repo.

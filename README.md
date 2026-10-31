@@ -220,3 +220,4 @@ The full list is `[bootstrap.packages]` in `.mise.toml`. Highlights:
 
 - [Architecture](docs/architecture.md): components and data flows
 - [Decision records](docs/adrs/): why things are the way they are
+- [Clean sheet on mise](docs/mise-native.md): proposal to replace Stow and most hand-written setup with mise features
