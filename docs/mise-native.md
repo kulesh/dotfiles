@@ -46,7 +46,7 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 | Global tools | `mise install` in task | Bootstrap step 16 | Full | Docs `bootstrap.md:152` |
 | Trust `~/dev` projects | `mise trust` in bootstrap, mkproject, cloneproject | `trusted_config_paths = ["~/dev"]` (global) | Full | Docs `settings.toml:4597` |
 | Claude Code | `curl claude.ai/install.sh` | `[tools] claude = { version = "latest", auto_update = true }` | Full | Registry entry `aqua:anthropics/claude-code` checked; install untested |
-| Screenshot folder | `defaults write` in task | `[bootstrap.macos.defaults]` plus a `[bootstrap.directories]` entry | Partial: values aren't templated, so the path is absolute | Docs `macos-defaults.md:37-39`, `bootstrap.md:392` |
+| Screenshot folder | `defaults write` in task | Task (unchanged): `[bootstrap.macos.defaults]` stores values as written, so `~` would need the username spelled out | None | Mac: `~` stored literally (`bootstrap.md:392`) |
 | GitHub login, SSH key, signing | Task | Task (unchanged) | None | No bootstrap section covers it |
 | Clone every repo you own | `gh repo list` loop → `cloneproject` | Task (unchanged). `[bootstrap.repos]` needs each path declared, can't list a user's repos | None | Docs `repos.md:43-128` |
 | Preview without touching `$HOME` | `HOME_DIR` seam, our own previews | `HOME=<scratch>`, `--dry-run`, `mise bootstrap plan --detailed-exitcode` | Full | Tested |
@@ -89,7 +89,7 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 
 ## What we'd adopt, and what we'd decline
 
-**Adopt.** `dotfile_groups`, `[bootstrap.directories]`, `[bootstrap.macos.defaults]`, `trusted_config_paths`, the `claude` tool, `mise bootstrap --upgrade`, `[shell_alias]`, global `[hooks]`, `#USAGE` on every project command, `lockfile = true`, and `HOME=` plus `plan` and `status --missing` as test seams.
+**Adopt.** `dotfile_groups`, `[bootstrap.directories]`, `[bootstrap.macos.defaults]` for values that don't depend on the home directory, `trusted_config_paths`, the `claude` tool, `mise bootstrap --upgrade`, `[shell_alias]`, global `[hooks]`, `#USAGE` on every project command, `lockfile = true`, and `HOME=` plus `plan` and `status --missing` as test seams.
 
 **Decline for now:**
 - **History tracking and `mise dot origin`.** It's a second repo of auto-saved edits; ADR-009 chose deliberate commits.
@@ -115,7 +115,7 @@ Run on macOS 27.2 (arm64) with mise 2026.10.24, against GitHub's main.
 | Groups on a fresh home | **Works.** Real directories (`~/dev`, `~/.local/bin`, `~/.claude`, `~/.pi`); `~/.ssh` 700 and its config 600; nvim linked as a whole directory; second apply a no-op; `dot status --missing` clean; nothing written into the repo. |
 | Pi merge | **Works.** Pi's `lastChangelogVersion` kept, our `defaultModel` restored. |
 | Applying over Stow's links | **Unsafe**, the same as on Linux: it deleted `ssh/.ssh/config` from the repo. Unstowing first gave a clean result. |
-| `~` in macOS defaults | **Probably expanded.** mise reported the screenshot location "already set", but the existing value was written as an absolute path. |
+| `~` in macOS defaults | **Not expanded.** This Mac's stored value is the literal `~/Pictures/Screenshots` (written by the old installer), and mise called the same literal "already set". Paths under the home directory stay in our task, which writes `$HOME/...`. |
 | Bootstrap plan | **Blocked by one cask.** An interrupted Homebrew upgrade left two `mactex` Caskroom versions, and mise refuses to plan any package until Homebrew's metadata is repaired. mise is strict where `brew` tolerates leftovers: expect to clean Homebrew state when an existing Mac switches. |
 
 ## Plan
@@ -125,7 +125,7 @@ Each phase ships on its own and leaves a working system.
 | Phase | Change | Removes | Proves first |
 |---|---|---|---|
 | 0. Mac spike | `bash tests/spike/mise-native.sh` on one Mac (scratch mise, scratch homes, previews only) | Nothing | `brew:` without Homebrew; groups from a fresh home and from Stow; Pi merge; `~` in macOS defaults |
-| 1. Declarative setup | Directories, defaults, `trusted_config_paths`, `claude` tool, `--upgrade` alias | mkdirs, chmod, trust calls, Claude curl, `defaults write`, `mup` body | Bootstrap task down to GitHub, clone loop, secrets |
+| 1. Declarative setup | Directories, `trusted_config_paths`, `claude` tool, `--upgrade` alias | mkdirs, chmod, trust calls, Claude curl, `mup` body | Bootstrap task down to GitHub, clone loop, secrets |
 | 2. Groups replace Stow | `dotfile_groups`, ssh copy entry, nvim whole-dir entry, Claude/Pi merge edits; existing Macs unstow, then apply; ADR-010 supersedes ADR-001 | `stow` package, stow loop, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` on `HOME=` |
 | 3. Projects as tasks | `#USAGE` and completion on every command; `[shell_alias]`; global `[hooks]` | Most of `lib/` (keep the `cd` shim); ADR-003 superseded | `tests/project.bats` against `mise run` |
 | 4. Bootloader | Drop Homebrew from `mise.sh` if phase 0 confirms it | Homebrew installer call | Fresh-Mac run on shadow |
