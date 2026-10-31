@@ -102,7 +102,7 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 
 - **Version floor.** Groups need a recent mise; the 2026.9.8 binary rejected `dotfile_groups`. Every Mac must run 2026.10.x or later before the groups change lands.
 - **A mise bug in groups.** A permissions-only entry for a directory inside a group cuts it out of the walk. mise then removes the links beneath it immediately, without `--prune`, and deletes the emptied directory. Both behaviors contradict the docs (`groups.md:184-186`, `managed.md:305`). The documented pattern above avoids it; worth reporting upstream.
-- **Intel Macs.** `brew:` is skipped on Intel (`brew-cask:` still works). If any Mac is Intel, the bootloader keeps installing Homebrew.
+- **Switching an existing Mac requires unstowing first.** Tested: applying over Stow's links, as `groups.md:251` says you can, failed partway. mise copied the ssh config through Stow's `~/.ssh` link onto itself, which **deleted `ssh/.ssh/config` from the repo**, then stopped. Running `stow -D` on every package first gives a result identical to a fresh Mac. The migration must unstow, then apply.
 - **Unattended upgrades.** A launchd job running `mise bootstrap --upgrade` would stall on casks that need sudo.
 
 ## Plan
@@ -111,9 +111,9 @@ Each phase ships on its own and leaves a working system.
 
 | Phase | Change | Removes | Proves first |
 |---|---|---|---|
-| 0. Mac spike | Run `mise bootstrap plan` and `mise dot apply --dry-run` with a test config on one Mac | Nothing | `brew:` without Homebrew; Stow → groups on a live machine; screenshot default; sandboxed shell |
+| 0. Mac spike | `bash tests/spike/mise-native.sh` on one Mac (scratch mise, scratch homes, previews only) | Nothing | `brew:` without Homebrew; groups from a fresh home and from Stow; Pi merge; `~` in macOS defaults |
 | 1. Declarative setup | Directories, defaults, `trusted_config_paths`, `claude` tool, `--upgrade` alias | mkdirs, chmod, trust calls, Claude curl, `defaults write`, `mup` body | Bootstrap task down to GitHub, clone loop, secrets |
-| 2. Groups replace Stow | `dotfile_groups`, ssh copy entry, nvim whole-dir entry, Claude/Pi merge edits; ADR-010 supersedes ADR-001 | `stow` package, stow loop, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` on `HOME=` |
+| 2. Groups replace Stow | `dotfile_groups`, ssh copy entry, nvim whole-dir entry, Claude/Pi merge edits; existing Macs unstow, then apply; ADR-010 supersedes ADR-001 | `stow` package, stow loop, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` on `HOME=` |
 | 3. Projects as tasks | `#USAGE` and completion on every command; `[shell_alias]`; global `[hooks]` | Most of `lib/` (keep the `cd` shim); ADR-003 superseded | `tests/project.bats` against `mise run` |
 | 4. Bootloader | Drop Homebrew from `mise.sh` if phase 0 confirms it | Homebrew installer call | Fresh-Mac run on shadow |
 | 5. Secrets | Decide fnox from phase 0 findings (the sandbox stays ours) | Possibly `secret env` | Mac tests |
