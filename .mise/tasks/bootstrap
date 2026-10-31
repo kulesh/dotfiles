@@ -39,10 +39,6 @@ run() { if testing; then echo "would run: $*"; else "$@"; fi; }
 # wasn't linked yet, so install them from a fresh process now.
 if testing; then mise install --dry-run; else mise install; fi
 
-# ~/dev/.mise.toml governs every project below it; untrusted, mise errors
-# on every prompt there.
-run mise trust "$PROJECT_DIR/.mise.toml"
-
 # Check the install path too: mise.sh runs in bash, where ~/.local/bin
 # isn't on PATH, so command -v alone would reinstall on every run.
 command -v claude &>/dev/null || [[ -x $HOME/.local/bin/claude ]] ||

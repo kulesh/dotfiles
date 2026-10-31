@@ -277,7 +277,7 @@ mkproject() {
         echo ""
         echo "Would:"
         echo "  - create $project_path"
-        echo "  - create and trust .mise.toml"
+        echo "  - create .mise.toml"
         echo "  - run: mise run --cd \"$project_path\" \"mkproject:$project_type\""
         echo "  - generate CLAUDE.md and AGENTS.md"
         return 0
@@ -288,7 +288,6 @@ mkproject() {
 
     # Create basic .mise.toml in the project directory
     echo "" > "$project_path/.mise.toml"
-    mise trust "$project_path/.mise.toml"
 
     # Run the project setup task in the project directory
     if mise run --cd "$project_path" "mkproject:$project_type"; then
@@ -357,7 +356,6 @@ cloneproject() {
 
     # A mise config is what makes a directory a project (workon, lsprojects).
     [[ -e .mise.toml || -e .tool-versions ]] || touch .mise.toml
-    [[ -e .mise.toml ]] && mise trust .mise.toml
 
     echo "✅ Project '$repo_name' cloned to $project_path"
 }
@@ -494,14 +492,6 @@ updateproject() {
         # Show summary of what was pulled
         echo "📋 Summary:"
         git log --oneline -n 3 "$local_commit.." | sed 's/^/   /'
-
-        # Trust mise config if it changed
-        if git diff --name-only "$local_commit.." | grep -q "\.mise\.toml"; then
-            echo ""
-            echo "🔧 Mise configuration changed, trusting new config..."
-            mise trust .mise.toml
-        fi
-
     else
         echo "❌ Error: Failed to pull changes"
         echo "   You may need to resolve conflicts manually"

@@ -40,12 +40,12 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 | Install mise | `brew install mise` | `curl https://mise.run \| sh` (`~/.local/bin`) | Full | Docs `bootstrap/setup.md:260` |
 | Clone and hand over | `git clone` then `mise bootstrap` | Same, or `mise bootstrap --from <url> --from-dir ~/.dotfiles` | Full | Docs `from-repository.md:184-232`. **Mac:** the CLT `git` stub |
 | Formulae, casks, fonts | `[bootstrap.packages]` | Same; taps as qualified names (`brew:owner/tap/f`); `mas:` for App Store | Full | Docs `brew.md:98-126`, `mas.md` |
-| Upgrade everything | `mup` = `bootstrap packages upgrade` | `mise bootstrap --upgrade`: packages and tools in one run | Full | Docs `packages/index.md:310-331` |
+| Upgrade everything | `mup` = `bootstrap packages upgrade` | `mup` = `mise bootstrap --only packages,tools --upgrade`: packages and global tools in one run | Full | Done in phase 1 |
 | Login shell | `[bootstrap.user] login_shell` | Same | Full | Tested (dry run) |
-| `~/dev`, `~/.local/bin`, `~/.ssh` 0700 | `mkdir` before stow | `[bootstrap.directories]` | Full | Tested: idempotent, right modes |
+| `~/dev`, `~/.local/bin`, `~/.ssh` 0700 | `mkdir` before stow | Phase 2: groups make the first two unnecessary; `~/.ssh` 0700 moves with the linking | Full | Tested |
 | Global tools | `mise install` in task | Bootstrap step 16 | Full | Docs `bootstrap.md:152` |
-| Trust `~/dev` projects | `mise trust` in bootstrap, mkproject, cloneproject | `trusted_config_paths = ["~/dev"]` (global) | Full | Docs `settings.toml:4597` |
-| Claude Code | `curl claude.ai/install.sh` | `[tools] claude = { version = "latest", auto_update = true }` | Full | Registry entry `aqua:anthropics/claude-code` checked; install untested |
+| Trust `~/dev` projects | `mise trust` in bootstrap, mkproject, cloneproject, updateproject | `trusted_config_paths = ["~/dev"]` (global) | Full | Done in phase 1; tested: `~/dev` and below load, elsewhere still asks |
+| Claude Code | `curl claude.ai/install.sh` | Native installer (unchanged). Claude Code updates itself, which mise warns fights its installs (`self-updating-tools.md:12-16`); mise tools are on PATH only in activated shells, while `~/.local/bin` is on PATH everywhere | None by choice | Docs |
 | Screenshot folder | `defaults write` in task | Task (unchanged): `[bootstrap.macos.defaults]` stores values as written, so `~` would need the username spelled out | None | Mac: `~` stored literally (`bootstrap.md:392`) |
 | GitHub login, SSH key, signing | Task | Task (unchanged) | None | No bootstrap section covers it |
 | Clone every repo you own | `gh repo list` loop → `cloneproject` | Task (unchanged). `[bootstrap.repos]` needs each path declared, can't list a user's repos | None | Docs `repos.md:43-128` |
@@ -89,12 +89,13 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 
 ## What we'd adopt, and what we'd decline
 
-**Adopt.** `dotfile_groups`, `[bootstrap.directories]`, `[bootstrap.macos.defaults]` for values that don't depend on the home directory, `trusted_config_paths`, the `claude` tool, `mise bootstrap --upgrade`, `[shell_alias]`, global `[hooks]`, `#USAGE` on every project command, `lockfile = true`, and `HOME=` plus `plan` and `status --missing` as test seams.
+**Adopt.** `dotfile_groups`, `[bootstrap.directories]`, `[bootstrap.macos.defaults]` for values that don't depend on the home directory, `trusted_config_paths`, `mise bootstrap --upgrade`, `[shell_alias]`, global `[hooks]`, `#USAGE` on every project command, `lockfile = true`, and `HOME=` plus `plan` and `status --missing` as test seams.
 
 **Decline for now:**
 - **History tracking and `mise dot origin`.** It's a second repo of auto-saved edits; ADR-009 chose deliberate commits.
 - **Monorepo mode for `~/dev`.** It renames every project's tasks to `//name:task`, trusts everything under the root, and needs a stub task in each project before `//...:pull` reaches it. A plain loop task does `updateproject` with less ceremony.
 - **`[bootstrap.repos]`** for owned repos. It needs every path declared by hand.
+- **Claude Code as a mise tool.** It updates itself, and mise's docs warn that a self-updating tool either writes into mise's install directory or installs a second copy. A mise tool is also on PATH only in activated shells, while the native install in `~/.local/bin` is reachable from editors and GUI apps too.
 - **The mise sandbox as a direct replacement.** Its allowlist-only reads are stricter than our credentials blocklist; tools that read `~/.gitconfig`, `~/.npmrc` and the like need each one listed. It's a better fit for running an agent as a task than for an interactive shell. Evaluate it on a Mac.
 - **fnox.** Per-task scoping is the real win, but it doesn't cover interactive tools (Pi), and we haven't confirmed a Keychain backend.
 
@@ -125,8 +126,8 @@ Each phase ships on its own and leaves a working system.
 | Phase | Change | Removes | Proves first |
 |---|---|---|---|
 | 0. Mac spike | `bash tests/spike/mise-native.sh` on one Mac (scratch mise, scratch homes, previews only) | Nothing | `brew:` without Homebrew; groups from a fresh home and from Stow; Pi merge; `~` in macOS defaults |
-| 1. Declarative setup | Directories, `trusted_config_paths`, `claude` tool, `--upgrade` alias | mkdirs, chmod, trust calls, Claude curl, `mup` body | Bootstrap task down to GitHub, clone loop, secrets |
-| 2. Groups replace Stow | `dotfile_groups`, ssh copy entry, nvim whole-dir entry, Claude/Pi merge edits; existing Macs unstow, then apply; ADR-010 supersedes ADR-001 | `stow` package, stow loop, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` on `HOME=` |
+| 1. Trust and upgrades (done) | `trusted_config_paths`; `mup` upgrades packages and tools | Four `mise trust` calls | `tests/bootstrap.bats`, `tests/project.bats` |
+| 2. Groups replace Stow | `dotfile_groups`, `~/.ssh` 0700, ssh copy entry, nvim whole-dir entry, Claude/Pi merge edits; existing Macs unstow, then apply; ADR-010 supersedes ADR-001 | `stow` package, stow loop, mkdirs, chmod, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` on `HOME=` |
 | 3. Projects as tasks | `#USAGE` and completion on every command; `[shell_alias]`; global `[hooks]` | Most of `lib/` (keep the `cd` shim); ADR-003 superseded | `tests/project.bats` against `mise run` |
 | 4. Bootloader | Drop Homebrew from `mise.sh` if phase 0 confirms it | Homebrew installer call | Fresh-Mac run on shadow |
 | 5. Secrets | Decide fnox from phase 0 findings (the sandbox stays ours) | Possibly `secret env` | Mac tests |

@@ -7,6 +7,10 @@
 uv = "latest"
 
 [settings]
+# Every project under ~/dev is yours, created or cloned there by the project
+# commands, so its config loads without a trust prompt. Configs elsewhere
+# still ask.
+trusted_config_paths = ["~/dev"]
 experimental = true
 idiomatic_version_file_enable_tools = []
 always_keep_download = false

@@ -71,7 +71,7 @@ showproject
 System packages are declared under `[bootstrap.packages]` in `~/.dotfiles/.mise.toml`. mise reads that file only from inside the repo, so package commands run with `-C ~/.dotfiles` (or from that directory). Without it, `packages use` would add the package to whatever project you're in.
 
 ```sh
-mup                                                   # upgrade all packages, from anywhere
+mup                                                   # upgrade all packages and global tools, from anywhere
 mise -C ~/.dotfiles bootstrap packages use brew:foo   # add a formula
 mise -C ~/.dotfiles bootstrap packages use brew-cask:bar
 mise -C ~/.dotfiles bootstrap packages status         # installed vs declared

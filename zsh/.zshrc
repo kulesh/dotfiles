@@ -68,8 +68,9 @@ if [[ -o interactive ]]; then
     alias_if_exists ls eza
     alias_if_exists time hyperfine
     alias_if_exists vim nvim
-    # Packages are declared in ~/.dotfiles/.mise.toml, which mise reads only there
-    alias mup='mise -C "$DOTFILES" bootstrap packages upgrade'
+    # Upgrade packages (~/.dotfiles/.mise.toml, read only from there) and
+    # global tools in one run
+    alias mup='mise -C "$DOTFILES" bootstrap --only packages,tools --upgrade'
     alias dsync='mise -C "$DOTFILES" run sync'
 
     # Say when this Mac's dotfiles differ from GitHub, as of the last fetch;

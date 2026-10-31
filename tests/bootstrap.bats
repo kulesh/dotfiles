@@ -68,8 +68,31 @@ bootstrap() {
     bootstrap
     [ "$status" -eq 0 ]
     [[ "$output" == *"mise install --dry-run"* ]]
-    [[ "$output" == *"would run: mise trust"* ]]
-    [[ "$output" != *$'\nmise trust'* ]]
+}
+
+@test "never records trust; ~/dev is trusted by path instead" {
+    bootstrap
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"mise trust"* ]]
+}
+
+@test "projects under ~/dev load without a trust prompt; configs elsewhere still need one" {
+    local mise
+    mise=$(command -v mise) || skip "mise not installed"
+    bootstrap
+    [ "$status" -eq 0 ]
+    mkdir -p "$TARGET/dev/alpha" "$TARGET/elsewhere"
+    printf '[env]\nALPHA = "loaded"\n' > "$TARGET/dev/alpha/.mise.toml"
+    printf '[env]\nELSEWHERE = "loaded"\n' > "$TARGET/elsewhere/.mise.toml"
+    in_target() {
+        ( cd "$1" && HOME="$TARGET" MISE_CONFIG_DIR="$TARGET/.config/mise" \
+          MISE_STATE_DIR="$TARGET/.state" MISE_DATA_DIR="$TARGET/.data" MISE_CACHE_DIR="$TARGET/.cache" \
+          MISE_OFFLINE=1 MISE_VERSION_CHECK=0 "$mise" env 2>&1 )
+    }
+    run in_target "$TARGET/dev/alpha"
+    [[ "$output" == *"ALPHA=loaded"* ]]
+    run in_target "$TARGET/elsewhere"
+    [[ "$output" == *"not trusted"* ]]
 }
 
 @test "previews GitHub login over SSH when not authenticated" {

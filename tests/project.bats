@@ -138,7 +138,8 @@ setup_clone() {
     mkdir -p "$CLONE_ROOT/remote" "$CLONE_ROOT/dev" "$CLONE_ROOT/bin"
     git clone -q --bare "$CLONE_ROOT/seed" "$CLONE_ROOT/remote/alpha.git"
     printf '[url "%s/remote/"]\n\tinsteadOf = git@github.com:kulesh/\n' "$CLONE_ROOT" > "$CLONE_ROOT/gitconfig"
-    printf '#!/bin/sh\n' > "$CLONE_ROOT/bin/mise"; chmod +x "$CLONE_ROOT/bin/mise"
+    printf '#!/bin/sh\necho "mise $*" >> "%s/mise-calls"\n' "$CLONE_ROOT" > "$CLONE_ROOT/bin/mise"
+    chmod +x "$CLONE_ROOT/bin/mise"
 }
 
 run_cloneproject() {
@@ -163,5 +164,13 @@ run_cloneproject() {
     [ "$status" -ne 0 ]
     [[ "$output" == *"Could not read from remote repository"* || "$output" == *"does not appear to be a git repository"* ]]
     [ ! -e "$CLONE_ROOT/dev/missing" ]
+    rm -rf "$CLONE_ROOT"
+}
+
+@test "cloneproject: leaves trust to the ~/dev path rule instead of recording it" {
+    setup_clone
+    run_cloneproject kulesh/alpha
+    [ "$status" -eq 0 ]
+    [ -z "$(grep trust "$CLONE_ROOT/mise-calls" 2>/dev/null)" ]
     rm -rf "$CLONE_ROOT"
 }

@@ -42,7 +42,7 @@ cd ~/.dotfiles && mise bootstrap
 # Day 2: packages live in ~/.dotfiles/.mise.toml, read only from the repo
 mise -C ~/.dotfiles bootstrap packages use brew:foo
 mise -C ~/.dotfiles bootstrap packages use brew-cask:bar
-mup                               # upgrade all packages
+mup                               # upgrade all packages and global tools
 dsync                             # share this Mac's changes, apply other Macs'
 
 # Project lifecycle
