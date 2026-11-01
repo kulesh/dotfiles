@@ -10,6 +10,9 @@ setup() {
     command -v zsh >/dev/null || skip "zsh not installed"
     export HOME=$(scratch)
     ln -s "$DOTFILES_ROOT" "$HOME/.dotfiles"
+    # Linked into the scratch home as bootstrap links them, so zsh writes its
+    # caches (.zcompdump) there and never into the repo.
+    ln -s "$DOTFILES_ROOT/zsh/.zshrc" "$DOTFILES_ROOT/zsh/.zshenv" "$HOME/"
     mkdir "$HOME/stubs"
     for tool in fzf starship zoxide; do
         printf '#!/bin/sh\n' > "$HOME/stubs/$tool"
@@ -22,7 +25,7 @@ setup() {
 }
 
 interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
-    run env ZDOTDIR="$DOTFILES_ROOT/zsh" zsh -i -c "$1"
+    run zsh -i -c "$1"
 }
 
 # The project commands are aliases for mise tasks. zsh completes an alias as
