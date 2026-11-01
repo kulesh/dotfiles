@@ -151,7 +151,7 @@ Each `workon` spawns an independent sandboxed shell—run as many as you need fo
 
 | Template | Description |
 |----------|-------------|
-| **base** | Git, README, .gitignore, CLAUDE.md, AGENTS.md |
+| **base** | Git, README, .gitignore, AGENTS.md |
 | **python** | uv, pytest, Ruff, basedpyright; `src/` layout |
 | **fastapi** | Async API on the python template, with test client |
 | **typescript** | Bun workspace: core library + Ink CLI; Biome, Vitest, TypeScript 7 |
@@ -162,19 +162,18 @@ Each `workon` spawns an independent sandboxed shell—run as many as you need fo
 
 Generated projects pass their own linters, and the editor uses each project's own tools ([ADR-007](docs/adrs/007-editor-uses-project-tooling.md)).
 
-Each template includes a `CLAUDE.project.md` with framework-specific guidance for AI assistants. A shared header lives in `mise/.config/mise/tasks/mkproject/_shared/`, and `mkproject` generates `CLAUDE.md` and `AGENTS.md` in the new project.
+Each template includes an `AGENTS.project.md` with framework-specific guidance for coding agents. A shared header lives in `mise/.config/mise/tasks/mkproject/_shared/`, and `mkproject` generates one `AGENTS.md` in the new project. Every agent reads it, Claude Code included: it reads `AGENTS.md` when a project has no `CLAUDE.md` (v2.1.277 and later).
 
 ### Template Architecture
 
 ```
 mise/.config/mise/tasks/mkproject/
 ├── _shared/
-│   ├── CLAUDE.header.md   # Shared guidance header
-│   └── AGENTS.header.md   # Shared guidance header (Pi, Codex, other agents)
+│   └── AGENTS.header.md   # Shared guidance header
 ├── base/
-│   └── CLAUDE.project.md  # Base project guidance
+│   └── AGENTS.project.md  # Base project guidance
 ├── fastapi/
-│   ├── CLAUDE.project.md  # FastAPI-specific guidance
+│   ├── AGENTS.project.md  # FastAPI-specific guidance
 │   └── files/
 │       └── .env.example   # Configuration template
 └── fastapi.sh             # Generates project structure
@@ -183,7 +182,7 @@ mise/.config/mise/tasks/mkproject/
 When you run `mkproject my-api fastapi`:
 1. Static files are copied from the template `files/` directory
 2. The template script generates framework-specific code
-3. `CLAUDE.md` + `AGENTS.md` are generated from shared + template-specific docs
+3. `AGENTS.md` is generated from the shared header + the template's guidance
 4. Dependencies are installed via mise and package managers
 
 ### Adding Custom Templates
@@ -197,9 +196,9 @@ When you run `mkproject my-api fastapi`:
    ```sh
    mkdir mise/.config/mise/tasks/mkproject/mytemplate/files
    touch mise/.config/mise/tasks/mkproject/mytemplate/files/.gitignore
-   touch mise/.config/mise/tasks/mkproject/mytemplate/CLAUDE.project.md
+   touch mise/.config/mise/tasks/mkproject/mytemplate/AGENTS.project.md
    ```
-   For guidance specific to agents that read `AGENTS.md` (Pi, Codex), add `AGENTS.project.md` too. If it's missing, `mkproject` reuses `CLAUDE.project.md`.
+   Without an `AGENTS.project.md`, `mkproject` uses base's.
 
 3. Create the template script:
    ```sh

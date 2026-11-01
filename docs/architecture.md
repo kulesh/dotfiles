@@ -105,7 +105,7 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 │   ├── tasks/project/         Project commands: new, clone, list, show, update,
 │   │                          remove, workon, root, types; _lib.zsh helpers
 │   └── tasks/mkproject/       Project templates
-│           ├── _shared/       CLAUDE.md and AGENTS.md headers
+│           ├── _shared/       AGENTS.md header
 │           ├── base.sh        Git init, README, .gitignore
 │           ├── python.sh      pyproject.toml + uv
 │           ├── fastapi.sh     Async API scaffold
@@ -152,10 +152,10 @@ mkproject "api" "fastapi"
          │
          ▼
 ┌─────────────────────────────────────────┐
-│ _mkproject_generate_docs                │
-│   _shared/CLAUDE.header.md              │
-│   + fastapi/CLAUDE.project.md           │
-│   → CLAUDE.md, AGENTS.md               │
+│ write_agent_docs                        │
+│   _shared/AGENTS.header.md              │
+│   + fastapi/AGENTS.project.md           │
+│   → AGENTS.md (every agent reads it)    │
 └─────────────────────────────────────────┘
 ```
 

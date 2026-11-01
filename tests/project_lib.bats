@@ -80,7 +80,7 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
 }
 
 # =============================================================================
-# Agent docs: CLAUDE.md and AGENTS.md from a shared header plus the template's part
+# Agent docs: AGENTS.md from a shared header plus the template's part
 # =============================================================================
 
 @test "escape_sed: escapes ampersands and backslashes, passes the rest" {
@@ -105,15 +105,15 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
     [ "$status" -eq 0 ]
 }
 
-@test "write_agent_docs: every template gets both files, with placeholders filled" {
+@test "write_agent_docs: every template gets AGENTS.md alone, with placeholders filled" {
     for template in base python fastapi ruby rails rust typescript convex; do
         local tmp=$(scratch)
         lib write_agent_docs "$tmp" "$template" "test-project"
         [ "$status" -eq 0 ]
-        [ -f "$tmp/CLAUDE.md" ]
         [ -f "$tmp/AGENTS.md" ]
-        grep -q "Assistant's Role" "$tmp/CLAUDE.md"
-        [ -z "$(grep '<project-name>' "$tmp/CLAUDE.md")" ]
+        [ ! -e "$tmp/CLAUDE.md" ]
+        grep -q "Assistant's Role" "$tmp/AGENTS.md"
+        [ -z "$(grep '<project-name>' "$tmp/AGENTS.md")" ]
     done
 }
 
@@ -121,11 +121,9 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
     for template in base python fastapi ruby rails rust typescript convex; do
         local tmp=$(scratch)
         lib write_agent_docs "$tmp" "$template" "test-project"
-        for doc in CLAUDE.md AGENTS.md; do
-            grep -q "secret get" "$tmp/$doc"
-            ! grep -qi "api keys)" "$tmp/$doc"
-            ! grep -q "Use \`.env\` file for local development" "$tmp/$doc"
-        done
+        grep -q "secret get" "$tmp/AGENTS.md"
+        ! grep -qi "api keys)" "$tmp/AGENTS.md"
+        ! grep -q "Use \`.env\` file for local development" "$tmp/AGENTS.md"
     done
 }
 

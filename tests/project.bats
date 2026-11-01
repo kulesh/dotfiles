@@ -54,8 +54,10 @@ completions() {   # the candidates zsh would offer for a command line
     [ -d "$DEV/demo/.git" ]
     [ "$(cat "$DEV/demo/README.md")" = "# demo" ]
     [ -f "$DEV/demo/.mise.toml" ]
-    [ -f "$DEV/demo/CLAUDE.md" ]
+    # One instructions file for every agent; Claude Code reads AGENTS.md
+    # when there's no CLAUDE.md.
     [ -f "$DEV/demo/AGENTS.md" ]
+    [ ! -e "$DEV/demo/CLAUDE.md" ]
     [ "$(followed)" = "$DEV/demo" ]
 }
 

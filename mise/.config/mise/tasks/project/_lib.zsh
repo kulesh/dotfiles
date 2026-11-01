@@ -132,14 +132,14 @@ apply_placeholders() {   # apply_placeholders <file> <project name>
         -e "s|<module_name>|$module|g" "$1" && rm -f "$1.bak"
 }
 
+# AGENTS.md for a new project: the shared header, then the template's part
+# (base's when the template has none). Claude Code reads AGENTS.md when a
+# project has no CLAUDE.md, so one file serves every agent.
 write_agent_docs() {   # write_agent_docs <project dir> <template> <project name>
-    local shared=$templates_dir/_shared own=$templates_dir/$2 base=$templates_dir/base
-    local claude=$own/CLAUDE.project.md agents=$own/AGENTS.project.md
-    [[ -f $claude ]] || claude=$base/CLAUDE.project.md
-    [[ -f $agents ]] || agents=$claude
-    [[ -f $shared/CLAUDE.header.md && -f $claude ]] || return 1
-    cat "$shared/CLAUDE.header.md" "$claude" > "$1/CLAUDE.md" &&
-        cat "$shared/AGENTS.header.md" "$agents" > "$1/AGENTS.md" || return 1
-    apply_placeholders "$1/CLAUDE.md" "$3"
+    local header=$templates_dir/_shared/AGENTS.header.md
+    local part=$templates_dir/$2/AGENTS.project.md
+    [[ -f $part ]] || part=$templates_dir/base/AGENTS.project.md
+    [[ -f $header && -f $part ]] || return 1
+    cat "$header" "$part" > "$1/AGENTS.md" || return 1
     apply_placeholders "$1/AGENTS.md" "$3"
 }
