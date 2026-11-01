@@ -116,3 +116,15 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
         [ -z "$(grep '<project-name>' "$tmp/CLAUDE.md")" ]
     done
 }
+
+# =============================================================================
+# copy_template_files (mkproject/_shared/template_helpers.sh)
+# =============================================================================
+
+@test "copy_template_files copies a template's files into the project, hidden ones too" {
+    local project=$(scratch)
+    run zsh -c 'cd "$1" && source "$2" && copy_template_files fastapi' _ "$project" \
+        "$DOTFILES_ROOT/mise/.config/mise/tasks/mkproject/_shared/template_helpers.sh"
+    [ "$status" -eq 0 ]
+    [ -f "$project/.env.example" ]
+}

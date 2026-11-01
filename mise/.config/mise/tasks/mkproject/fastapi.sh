@@ -32,8 +32,7 @@ version = "0.1.0"
 description = "A FastAPI project"
 requires-python = ">= $PYTHON_VERSION"
 dependencies = [
-    "fastapi",
-    "uvicorn[standard]",
+    "fastapi[standard]",
     "pydantic",
     "pydantic-settings"
 ]
@@ -279,7 +278,7 @@ EOF
 sed -i.bak "s/your-project-name/$PROJECT_NAME/" .env.example && rm .env.example.bak
 
 # Install dependencies and setup
-mise exec -- uv add fastapi "uvicorn[standard]" pydantic pydantic-settings
+mise exec -- uv add "fastapi[standard]" pydantic pydantic-settings
 mise exec -- uv add --dev pytest pytest-asyncio httpx pytest-cov ruff basedpyright
 mise exec -- uv pip install -e .
 mise exec -- uv sync
@@ -290,7 +289,7 @@ mise exec -- uv run ruff format --quiet .
 
 echo "FastAPI project setup complete!"
 echo "Try: uv run $PROJECT_NAME              # Start the server"
-echo "Try: uv run uvicorn $MODULE_NAME.main:app --reload"
+echo "Try: uv run fastapi dev src/$MODULE_NAME/main.py"
 echo "Try: uv run pytest                    # Run tests"
 echo "Try: curl http://localhost:8000       # Test the API"
 echo "Try: curl http://localhost:8000/api/v1/items"
