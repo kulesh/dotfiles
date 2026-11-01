@@ -45,6 +45,9 @@ export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 
 
 eval "$(mise activate zsh)"
+# Completion for mise, and so for the project aliases (workon, mkproject, ...),
+# which zsh completes as the mise command they expand to.
+source <(mise completion zsh)
 eval "$(starship init zsh)"
 
 # Project commands (mkproject, workon, ...) are mise tasks with shell aliases
