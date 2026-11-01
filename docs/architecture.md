@@ -50,6 +50,25 @@ bash <(curl -fsSL .../mise.sh)
 └───────────────────────────────────────────┘
 ```
 
+## Project Commands
+
+Each command is a mise task with a short alias; the tasks live in `~/.config/mise/tasks/project` ([ADR-011](adrs/011-project-commands-as-mise-tasks.md)).
+
+```
+workon demo<Tab>                     alias → mise -C / run project:workon demo
+      │                              completion: mise lists projects (usage spec)
+      ▼
+project:workon (a child process)     checks ~/dev/demo is a project
+      │                              writes ~/dev/demo to $DOTFILES_FOLLOW
+      ▼
+before the next prompt               lib/follow.zsh: cd ~/dev/demo
+      │
+      ▼
+chpwd                                lib/sandbox.sh: .sandbox marker? enter the sandbox
+```
+
+`-C /` keeps the current project's config from loading, or being trusted, on the way. Commands that need to know where you are (`showproject`, `cdproject`, `updateproject`, `rmproject`) receive it as a hidden `--from "$PWD"`.
+
 ## Sync Flow
 
 Each Mac has its own checkout; `dsync` reconciles it with GitHub ([ADR-009](adrs/009-dsync-reconciles-macs.md)).
@@ -76,15 +95,14 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 ├── .mise/tasks/sync           dsync: commit, pull --rebase, push, re-bootstrap
 ├── include/shared_vars.sh     PROJECT_DIR
 │
-├── lib/                       Shell libraries (sourced at shell startup)
-│   ├── misewrapper.sh         Entrypoint — loads sub-modules
-│   ├── project.sh             mkproject, cloneproject, rmproject, updateproject
-│   ├── navigate.sh            workon, cdproject, lsprojects, showproject
-│   ├── sandbox.sh             macOS sandbox-exec lifecycle and hooks
-│   └── git_utils.sh           Git introspection utilities
+├── lib/                       The parts that must run inside your shell
+│   ├── follow.zsh             Go where a command says, before the next prompt
+│   └── sandbox.sh             macOS sandbox-exec lifecycle and chpwd hooks
 │
 ├── mise/.config/mise/
-│   ├── config.toml            Runtime config: settings, tools (linked)
+│   ├── config.toml            Runtime config: settings, tools, [shell_alias] (linked)
+│   ├── tasks/project/         Project commands: new, clone, list, show, update,
+│   │                          remove, workon, root, types; _lib.zsh helpers
 │   └── tasks/mkproject/       Project templates
 │           ├── _shared/       CLAUDE.md and AGENTS.md headers
 │           ├── base.sh        Git init, README, .gitignore

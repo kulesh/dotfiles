@@ -70,10 +70,10 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 |---|---|---|---|---|
 | `mkproject <name> [template]` | zsh wrapper → `mkproject:<t>` tasks | The template tasks themselves, with `#USAGE arg "<name>"`, flags, completion; `depends=["mkproject:base {{usage.name}}"]` | Full | Tested (`mise run mkproject:python demo --py 3.13`) |
 | Template engine | Shell scripts copy and write files | Same: mise has no project scaffolder; tasks use `MISE_TASK_DIR` | n/a | Docs `mise-cookbook/presets.md` |
-| `workon`, `cdproject` | zsh functions | zsh functions (about 20 lines): a task can't `cd` your shell | None | Docs |
-| `lsprojects`, `showproject`, `updateproject`, `rmproject` | zsh (`navigate.sh`, `project.sh`) | Global tasks with completion (`complete "name" run="ls ~/dev"`); `confirm` on `--delete` | Full | Docs `task-arguments.md:114-142` |
+| `workon`, `cdproject` | zsh functions | Tasks too: a task can't `cd` your shell, so it leaves the destination and a prompt hook goes there (`lib/follow.zsh`) | Full | Done in phase 3 |
+| `lsprojects`, `showproject`, `updateproject`, `rmproject` | zsh functions | Global tasks with completion (`complete "name" run="ls ~/dev"`); `confirm` on `--delete` | Full | Docs `task-arguments.md:114-142` |
 | Shared `~/dev` tools and env | `~/dev/.mise.toml` | Same (parent config inheritance) | Full | Unchanged |
-| Directory hook | zsh `chpwd` (ADR-003) | Global `[hooks] cd` with `{ shell = "zsh", script = ... }` | Full | Tested (`hook-env`) |
+| Directory hook | zsh `chpwd` (ADR-003) | Unchanged: mise hooks run at the prompt, but the sandbox must spawn its shell the moment you arrive | None by choice | ADR-011 |
 | Aliases (`mup`, `dsync`) | `.zshrc` | `[shell_alias]` in global config | Full | Tested |
 | Sandbox (`workon -s`) | Own Seatbelt profile: read all but credentials, write project + caches | mise sandbox (Seatbelt on macOS): `deny_read` then `allow_read` (reads are allowlist only); `deny_net` all or nothing | Partial | Docs `sandboxing.md`. **Mac:** whether an interactive shell works in it |
 
@@ -128,7 +128,7 @@ Each phase ships on its own and leaves a working system.
 | 0. Mac spike | `bash tests/spike/mise-native.sh` on one Mac (scratch mise, scratch homes, previews only) | Nothing | `brew:` without Homebrew; groups from a fresh home and from Stow; Pi merge; `~` in macOS defaults |
 | 1. Trust and upgrades (done) | `trusted_config_paths`; `mup` upgrades packages and tools | Four `mise trust` calls | `tests/bootstrap.bats`, `tests/project.bats` |
 | 2. Groups replace Stow (done) | `dotfile_groups`, nvim whole-dir entry, ssh config block; a pre-dotfiles hook unstows existing Macs and creates `~/.ssh`; `mise run preview`; ADR-010 supersedes ADR-001 | `stow` package, stow loop, mkdirs, chmod, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` through `preview` |
-| 3. Projects as tasks | `#USAGE` and completion on every command; `[shell_alias]`; global `[hooks]` | Most of `lib/` (keep the `cd` shim); ADR-003 superseded | `tests/project.bats` against `mise run` |
+| 3. Projects as tasks (done) | Every project command a task with `#USAGE`, completion and `--help`; `[shell_alias]`; a prompt hook follows commands that move you ([ADR-011](adrs/011-project-commands-as-mise-tasks.md)) | `lib/` down to `follow.zsh` and `sandbox.sh`; ADR-003 stands (the sandbox needs `chpwd`) | `tests/project.bats` through `mise run` |
 | 4. Bootloader | Drop Homebrew from `mise.sh` if phase 0 confirms it | Homebrew installer call | Fresh-Mac run on shadow |
 | 5. Secrets | Decide fnox from phase 0 findings (the sandbox stays ours) | Possibly `secret env` | Mac tests |
 

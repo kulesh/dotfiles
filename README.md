@@ -34,7 +34,7 @@ Each top-level directory (`zsh/`, `git/`, `nvim/`…) mirrors `$HOME` and is lin
 
 ```sh
 # Clone a GitHub project
-cloneproject gh kulesh/example
+cloneproject kulesh/example
 
 # Or create a new project from template
 mkproject my-api fastapi
@@ -51,13 +51,17 @@ showproject
 
 ## Commands
 
+Each command is a mise task (`mise tasks ls`), so `<command> --help` explains it and Tab completes project names, templates and flags. Commands that move you (`mkproject`, `cloneproject`, `workon`, `cdproject`, and `rmproject` from inside the project) take effect at the next prompt. See [ADR-011](docs/adrs/011-project-commands-as-mise-tasks.md).
+
 | Command | Description |
 |---------|-------------|
 | `mkproject <name> [template]` | Create new project (default: base template) |
-| `cloneproject gh <user>/<repo>` | Clone and setup GitHub project |
+| `mkproject <name> [template] -n` | Describe the project without creating it |
+| `cloneproject <user>/<repo>` | Clone a GitHub repo into `~/dev` (a URL works too) |
 | `workon <project>` | Switch to project (with tab completion) |
 | `workon <project> -s` | Switch to project in sandbox mode |
 | `lsprojects` | List all projects with metadata |
+| `lsprojects --type cloned` | Only cloned (or `created`) projects |
 | `lsprojects --tools` | List projects with mise tools |
 | `showproject` | Show current project details |
 | `cdproject` | Jump to current project root |

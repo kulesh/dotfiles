@@ -44,7 +44,7 @@ dsync                             # share this Mac's changes, apply other Macs'
 
 # Project lifecycle
 mkproject <name> [template]       # Create from template (base, python, fastapi, ruby, rails, etc.)
-cloneproject gh <user>/<repo>     # Clone GitHub repo into managed structure
+cloneproject <user>/<repo>        # Clone GitHub repo into ~/dev
 workon <name>                     # Switch to project
 showproject                       # Current project status and git info
 updateproject [name]              # Pull latest for cloned projects
@@ -64,10 +64,11 @@ cdproject                         # cd to current mise project root
 ├── .mise/tasks/preview       # Link into a scratch home; print machine-level steps
 ├── .mise/tasks/sync          # dsync: reconcile this Mac with GitHub
 ├── include/shared_vars.sh    # Shared configuration variables
-├── lib/misewrapper.sh        # Project management functions
+├── lib/follow.zsh            # Shell follows a command to a new directory
+├── lib/sandbox.sh            # Per-project macOS sandbox (chpwd)
 ├── mise/.config/mise/
 │   ├── config.toml           #   Runtime config: settings, tools (linked)
-│   └── tasks/mkproject/      #   Project templates
+│   └── tasks/                #   project:* commands, mkproject:* templates
 ├── sandbox/.config/sandbox/  # macOS sandbox-exec profiles
 ├── <tool>/                   # Per-tool configurations (linked into $HOME)
 │   └── .config/<tool>/
@@ -86,7 +87,8 @@ cdproject                         # cd to current mise project root
 | `.mise/tasks/bootstrap` | GitHub login and keys, signing, Claude Code, clones, missing secrets |
 | `mise/.config/mise/config.toml` | Runtime config: `[settings]`, `[tools]` (linked) |
 | `include/shared_vars.sh` | `PROJECT_DIR` (`~/dev`) |
-| `lib/misewrapper.sh` | Entrypoint — loads `git_utils.sh`, `sandbox.sh`, `project.sh`, `navigate.sh` |
+| `mise/.config/mise/tasks/project/` | Project commands as tasks; `_lib.zsh` holds shared helpers |
+| `mise/.config/mise/config.toml` `[shell_alias]` | Short names for the tasks (`mkproject`, `workon`, …), plus `mup` and `dsync` |
 
 ### Dependencies
 
