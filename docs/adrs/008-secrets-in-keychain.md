@@ -1,6 +1,6 @@
 # ADR-008: Secrets in the macOS Keychain
 
-**Status:** Accepted
+**Status:** Accepted. Delivery and `include/secrets` superseded by [ADR-012](012-projects-name-their-secrets.md): projects name the keys they use, and `~/dev` exports none.
 **Date:** 2026-10-26
 
 ## Context

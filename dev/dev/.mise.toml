@@ -13,9 +13,10 @@ npm = "latest"
 "npm:playwright" = "latest"
 "npm:@earendil-works/pi-coding-agent" = "latest"
 
-[env]
-# Secrets come from the Keychain; add them with `secret set NAME`
-_.source = { path = ".secrets.sh", redact = true }
+# No secrets here: every project would get every key. A project that calls a
+# model API names the keys it uses in its own .mise.toml:
+#   [env]
+#   ANTHROPIC_API_KEY = "{{ exec(command='secret get ANTHROPIC_API_KEY') }}"
 
 [hooks]
 # Sandbox entry/exit handled by zsh chpwd hooks, not mise

@@ -95,7 +95,7 @@ It offers to commit this Mac's changes, rebases them onto GitHub's, pushes, and 
 
 ## Secrets
 
-API keys live in the macOS Keychain, not in files. Projects under `~/dev` get them as environment variables.
+API keys live in the macOS Keychain, not in files.
 
 ```sh
 secret set ANTHROPIC_API_KEY   # prompts for the value
@@ -104,7 +104,14 @@ secret get ANTHROPIC_API_KEY
 secret rm ANTHROPIC_API_KEY
 ```
 
-Keychain items don't sync between Macs; `mise bootstrap` lists any secret from `include/secrets` that this machine is missing. See [ADR-008](docs/adrs/008-secrets-in-keychain.md) for what this does and doesn't protect.
+A project that calls a model API names each key it uses in its own `.mise.toml`, and gets only those:
+
+```toml
+[env]
+ANTHROPIC_API_KEY = "{{ exec(command='secret get ANTHROPIC_API_KEY') }}"
+```
+
+Every other project gets no keys. That matters because Claude Code bills an `ANTHROPIC_API_KEY` it finds in the environment instead of your subscription. Keychain items don't sync between Macs; `mise bootstrap` lists any key a project names that this Mac is missing. See [ADR-012](docs/adrs/012-projects-name-their-secrets.md), and [ADR-008](docs/adrs/008-secrets-in-keychain.md) for what the Keychain does and doesn't protect.
 
 ## Sandboxing
 

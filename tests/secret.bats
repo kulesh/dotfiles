@@ -39,15 +39,44 @@ setup() {
     [ "$output" = "ANTHROPIC_API_KEY" ]
 }
 
-@test "env output reproduces values exactly when evaluated" {
-    printf "it's \$HOME and \"quotes\"\n" | "$SECRET" set TRICKY_API_KEY
-    run bash -c "eval \"\$('$SECRET' env)\"; printf '%s' \"\$TRICKY_API_KEY\""
-    [ "$output" = "it's \$HOME and \"quotes\"" ]
-}
-
 @test "rm deletes, and get on a missing secret fails" {
     printf 'v\n' | "$SECRET" set GONE_API_KEY
     "$SECRET" rm GONE_API_KEY
     run "$SECRET" get GONE_API_KEY
     [ "$status" -ne 0 ]
+}
+
+# =============================================================================
+# Delivery: a project names the secrets it uses in its own .mise.toml
+# =============================================================================
+
+@test "a project gets exactly the secrets it names, and other projects get none" {
+    command -v mise >/dev/null || skip "mise not installed"
+    export HOME=$(scratch)
+    export PATH="$DOTFILES_ROOT/bin/.local/bin:$PATH"
+    export MISE_CONFIG_DIR=$HOME/.config/mise MISE_STATE_DIR=$HOME/.state
+    export MISE_DATA_DIR=$HOME/.data MISE_CACHE_DIR=$HOME/.cache
+    export MISE_OFFLINE=1 MISE_AUTO_INSTALL=0 MISE_TRUSTED_CONFIG_PATHS=$HOME/dev
+    printf 'anthropic-key\n' | secret set ANTHROPIC_API_KEY
+    printf 'openai-key\n' | secret set OPENAI_API_KEY
+    mkdir -p "$HOME/dev/agent" "$HOME/dev/site"
+    # ~/dev's shared files, linked as bootstrap links them.
+    local file
+    for file in "$DOTFILES_ROOT"/dev/dev/.[!.]*; do ln -s "$file" "$HOME/dev/"; done
+    mkdir -p "$HOME/.local/bin"
+    ln -s "$DOTFILES_ROOT/bin/.local/bin/secret" "$HOME/.local/bin/secret"
+    cat > "$HOME/dev/agent/.mise.toml" <<'EOF'
+[env]
+ANTHROPIC_API_KEY = "{{ exec(command='secret get ANTHROPIC_API_KEY') }}"
+EOF
+    : > "$HOME/dev/site/.mise.toml"
+
+    run mise -C "$HOME/dev/agent" env -s bash
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ANTHROPIC_API_KEY=anthropic-key"* ]]
+    [[ "$output" != *"OPENAI_API_KEY"* ]]
+
+    run mise -C "$HOME/dev/site" env -s bash
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"_API_KEY"* ]]
 }

@@ -146,6 +146,22 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
     [[ "$output" == *"not trusted"* ]]
 }
 
+@test "reports a secret a project names that this Mac's Keychain lacks" {
+    export KC_STORE=$(scratch)
+    export PATH="$DOTFILES_ROOT/tests/fixtures:$PATH"
+    printf 'v\n' | "$DOTFILES_ROOT/bin/.local/bin/secret" set HAVE_API_KEY
+    mkdir -p "$TARGET/dev/agent"
+    cat > "$TARGET/dev/agent/.mise.toml" <<'EOF'
+[env]
+HAVE_API_KEY = "{{ exec(command='secret get HAVE_API_KEY') }}"
+NEED_API_KEY = "{{ exec(command='secret get NEED_API_KEY') }}"
+EOF
+    preview
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Missing secrets: NEED_API_KEY"* ]]
+    [[ "$output" != *"Missing secrets:"*"HAVE_API_KEY"* ]]
+}
+
 @test "previews GitHub login over SSH when not authenticated" {
     preview
     [ "$status" -eq 0 ]

@@ -88,11 +88,14 @@ else
     echo "would clone your GitHub repos into $PROJECT_DIR"
 fi
 
-# Secrets live in this Mac's Keychain, entered once per machine. Read-only
-# check, so it runs in test runs too.
-if [[ $OSTYPE == darwin* ]]; then
+# Secrets live in this Mac's Keychain, entered once per machine. The ones
+# needed are the ones projects name (secret get NAME in their .mise.toml).
+# Read-only check, so it runs in test runs too.
+if command -v security >/dev/null; then
+    needed=(${(u)${(f)"$(cat $PROJECT_DIR/*/{,.}mise{,.local}.toml(N.) /dev/null |
+        grep -o 'secret get [A-Z_][A-Z0-9_]*' | cut -d' ' -f3)"}})
     missing=()
-    for name in ${(f)"$(grep -v '^#' "$dotfiles/include/secrets" | grep .)"}; do
+    for name in $needed; do
         "$dotfiles/bin/.local/bin/secret" get "$name" &>/dev/null || missing+=("$name")
     done
     if (( ${#missing} )); then echo "Missing secrets: ${missing[*]}  (add each with: secret set NAME)"; fi

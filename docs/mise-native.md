@@ -130,7 +130,7 @@ Each phase ships on its own and leaves a working system.
 | 2. Groups replace Stow (done) | `dotfile_groups`, nvim whole-dir entry, ssh config block; a pre-dotfiles hook unstows existing Macs and creates `~/.ssh`; `mise run preview`; ADR-010 supersedes ADR-001 | `stow` package, stow loop, mkdirs, chmod, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` through `preview` |
 | 3. Projects as tasks (done) | Every project command a task with `#USAGE`, completion and `--help`; `[shell_alias]`; a prompt hook follows commands that move you ([ADR-011](adrs/011-project-commands-as-mise-tasks.md)) | `lib/` down to `follow.zsh` and `sandbox.sh`; ADR-003 stands (the sandbox needs `chpwd`) | `tests/project.bats` through `mise run` |
 | 4. Bootloader | Drop Homebrew from `mise.sh` if phase 0 confirms it | Homebrew installer call | Fresh-Mac run on shadow |
-| 5. Secrets | Decide fnox from phase 0 findings (the sandbox stays ours) | Possibly `secret env` | Mac tests |
+| 5. Secrets (delivery done) | Projects name the keys they use ([ADR-012](adrs/012-projects-name-their-secrets.md)); fnox only if a key must be narrowed to one task | `secret env`, `.secrets.sh`, `include/secrets` | `tests/secret.bats`, `tests/bootstrap.bats` |
 
 ## Decisions
 
