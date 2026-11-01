@@ -67,6 +67,19 @@ Use Domain Driven Development methods to **create a ubiquitous language** that d
 - Always update the dependencies to latest versions
 - Choose open source dependencies over proprietary or commercial dependencies
 
+### API Keys
+
+API keys live in the macOS Keychain, never in files or code. The project names each key it uses in `.mise.toml`, and mise reads it when the environment loads:
+
+```toml
+[env]
+ANTHROPIC_API_KEY = "{{ exec(command='secret get ANTHROPIC_API_KEY') }}"
+```
+
+- Add a key the code needs this way; Kulesh stores the value with `secret set NAME`
+- Never put a key in `.env`, `.env.example`, code, tests, or logs
+- Coding agents log in with subscriptions; a project names a key only when its own code calls a model API
+
 ### Commits and History
 
 - Commit history tells the story of the software
@@ -80,7 +93,7 @@ IMPORTANT: For project specific information prefer retrieval-led reasoning over 
 Keep the project directory clean and organized at all times so it is easier to find and retrieve relevant information and resources quickly. Follow these conventions:
 
 - `README.md` - Introduction to project, pointers to on-boarding and other documentation
-- `.gitignore` - Files to exclude from git (e.g. API keys)
+- `.gitignore` - Files to exclude from git (e.g. `.env`, build output)
 - `.mise.toml` - Development environment configuration
 - `tmp/` - For scratchpads and other temporary files; Don't litter in project directory
 - `docs/` - All documentation and specifications, along with any index to help with retrieval

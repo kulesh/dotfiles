@@ -117,6 +117,18 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
     done
 }
 
+@test "write_agent_docs: every project tells its agents keys come from the Keychain, not .env" {
+    for template in base python fastapi ruby rails rust typescript convex; do
+        local tmp=$(scratch)
+        lib write_agent_docs "$tmp" "$template" "test-project"
+        for doc in CLAUDE.md AGENTS.md; do
+            grep -q "secret get" "$tmp/$doc"
+            ! grep -qi "api keys)" "$tmp/$doc"
+            ! grep -q "Use \`.env\` file for local development" "$tmp/$doc"
+        done
+    done
+}
+
 # =============================================================================
 # copy_template_files (mkproject/_shared/template_helpers.sh)
 # =============================================================================

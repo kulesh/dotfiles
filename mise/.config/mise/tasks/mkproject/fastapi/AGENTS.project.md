@@ -125,9 +125,8 @@ pyproject.toml            # Project metadata and dependencies
 ### Configuration
 
 - Use Pydantic Settings for configuration management
-- Store secrets in environment variables (never in code)
-- Use `.env` file for local development (add to .gitignore)
-- Provide `.env.example` with all required variables
+- App settings (host, port, debug) come from `.env` locally (gitignored); `.env.example` lists them
+- API keys come from the Keychain through `.mise.toml` (see API Keys), never `.env`; Pydantic Settings reads them from the environment either way
 
 ### Testing
 
