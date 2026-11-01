@@ -45,7 +45,7 @@ dsync                             # share this Mac's changes, apply other Macs'
 # Project lifecycle
 mkproject <name> [template]       # Create from template (base, python, fastapi, ruby, rails, etc.)
 cloneproject <user>/<repo>        # Clone GitHub repo into ~/dev
-workon <name>                     # Switch to project
+workon [name]                     # Switch to project; no name opens an fzf picker
 showproject                       # Current project status and git info
 updateproject [name]              # Pull latest for cloned projects
 rmproject <name> [--delete]       # Archive (default) or delete

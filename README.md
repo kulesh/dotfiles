@@ -59,6 +59,7 @@ Each command is a mise task (`mise tasks ls`), so `<command> --help` explains it
 | `mkproject <name> [template] -n` | Describe the project without creating it |
 | `cloneproject <user>/<repo>` | Clone a GitHub repo into `~/dev` (a URL works too) |
 | `workon <project>` | Switch to project (with tab completion) |
+| `workon` | Pick a project with fzf |
 | `workon <project> -s` | Switch to project in sandbox mode |
 | `lsprojects` | List all projects with metadata |
 | `lsprojects --type cloned` | Only cloned (or `created`) projects |
