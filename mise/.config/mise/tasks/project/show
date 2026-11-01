@@ -15,7 +15,7 @@ print
 
 print -r -- "${c[bold]}Tools${c[reset]}"
 tools=$(mise ls --current 2>/dev/null || true)
-print -r -- "${${tools:-${c[dim]}(none)${c[reset]}}//$'\n'/$'\n'  }" | sed '1s/^/  /'
+print -r -- "${tools:-${c[dim]}(none)${c[reset]}}" | sed 's/^/  /'
 print
 
 if [[ ! -d .git ]]; then

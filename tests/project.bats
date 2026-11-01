@@ -166,6 +166,15 @@ completions() {   # the candidates zsh would offer for a command line
     [[ "$output" == *"main"* ]]
 }
 
+@test "showproject lists each of the project's tools on its own line" {
+    mkdir -p "$DEV/tooled"
+    printf '[tools]\nnode = "20.1.0"\npython = "3.11.1"\n' > "$DEV/tooled/.mise.toml"
+    MISE_TRUSTED_CONFIG_PATHS=$DEV/tooled project show --from "$DEV/tooled"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *$'\n  node '*$'\n  python '* ]]
+    [[ "$output" != *"\$'"* ]]
+}
+
 @test "showproject outside a project says so" {
     project show --from "$HOME"
     [ "$status" -ne 0 ]
