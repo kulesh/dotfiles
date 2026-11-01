@@ -6,12 +6,11 @@
 load test_helper
 
 setup() {
-    export KC_STORE=$(mktemp -d)
+    export KC_STORE=$(scratch)
     export PATH="$DOTFILES_ROOT/tests/fixtures:$PATH"
     SECRET="$DOTFILES_ROOT/bin/.local/bin/secret"
 }
 
-teardown() { rm -rf "$KC_STORE"; }
 
 @test "set reads the value from the prompt, get returns it" {
     run sh -c "printf 'sk-123\n' | '$SECRET' set OPENAI_API_KEY"

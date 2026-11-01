@@ -8,16 +8,13 @@ load test_helper
 setup() {
     command -v mise >/dev/null || skip "mise not installed"
     export MISE_OFFLINE=1 MISE_VERSION_CHECK=0
-    TARGET=$(mktemp -d)
-    STUBS=$(mktemp -d)
+    TARGET=$(scratch)
+    STUBS=$(scratch)
     # gh reports "not logged in" so the login step is always exercised.
     printf '#!/bin/sh\n[ "$1 $2" = "auth status" ] && exit 1\necho "gh $*"\n' > "$STUBS/gh"
     chmod +x "$STUBS/gh"
 }
 
-teardown() {
-    rm -rf "$TARGET" "$STUBS"
-}
 
 preview() {
     local repo=${1:-$DOTFILES_ROOT}
@@ -25,7 +22,7 @@ preview() {
 }
 
 repo_copy() {
-    local repo=$(mktemp -d)
+    local repo=$(scratch)
     cp -a "$DOTFILES_ROOT/." "$repo/"
     echo "$repo"
 }
@@ -58,14 +55,13 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
 }
 
 @test "a preview ignores mise config in directories above the checkout" {
-    local parent=$(mktemp -d)
+    local parent=$(scratch)
     mkdir -p "$parent/.config/mise"
     printf '[settings]\nparanoid = true\n' > "$parent/.config/mise/config.toml"
     cp -a "$DOTFILES_ROOT/." "$parent/.dotfiles/"
     preview "$parent/.dotfiles"
     [ "$status" -eq 0 ]
     [[ "$output" != *"$parent/.config/mise/config.toml"* ]]
-    rm -rf "$parent"
 }
 
 @test "links every package into the home" {
@@ -119,7 +115,6 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
     preview "$elsewhere"
     [ "$status" -eq 0 ]
     [ "$(readlink -f "$TARGET/.zshrc")" = "$(readlink -f "$elsewhere/zsh/.zshrc")" ]
-    rm -rf "$elsewhere"
 }
 
 @test "previews machine-level steps instead of running them" {
@@ -176,7 +171,6 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
     [ ! -e "$TARGET/.zshrc" ]
     [[ "$output" != *"would run: mise install"* ]]
     [ "$(git -C "$repo" status --porcelain)" = "$before" ]
-    rm -rf "$repo"
 }
 
 @test "previews cloning own repos, skipping dotfiles and existing projects" {
@@ -267,23 +261,21 @@ STUB
     ssh-keygen -q -t ed25519 -N '' -f "$TARGET/.ssh/id_ed25519" -C test
     local email=$(git config -f "$DOTFILES_ROOT/git/.gitconfig" user.email)
     echo "$email namespaces=\"git\" $(cut -d' ' -f1,2 "$TARGET/.ssh/id_ed25519.pub")" > "$TARGET/.config/git/allowed_signers"
-    local repo=$(mktemp -d)
+    local repo=$(scratch)
     git -C "$repo" init -q
     HOME="$TARGET" GIT_CONFIG_GLOBAL="$DOTFILES_ROOT/git/.gitconfig" git -C "$repo" commit -q --allow-empty -m signed </dev/null
     run env HOME="$TARGET" GIT_CONFIG_GLOBAL="$DOTFILES_ROOT/git/.gitconfig" git -C "$repo" verify-commit HEAD
     [ "$status" -eq 0 ]
     [[ "$output" == *"Good \"git\" signature for $email"* ]]
-    rm -rf "$repo"
 }
 
 @test "the stowed git config pushes HTTPS GitHub clones over SSH, and fetches anonymously" {
-    local repo=$(mktemp -d)
+    local repo=$(scratch)
     git -C "$repo" init -q
     git -C "$repo" remote add origin https://github.com/kulesh/dotfiles.git
     export GIT_CONFIG_GLOBAL="$DOTFILES_ROOT/git/.gitconfig"
     [ "$(git -C "$repo" remote get-url --push origin)" = "git@github.com:kulesh/dotfiles.git" ]
     [ "$(git -C "$repo" remote get-url origin)" = "https://github.com/kulesh/dotfiles.git" ]
-    rm -rf "$repo"
 }
 
 @test "every repo task is executable, or mise won't list or run it" {
@@ -305,7 +297,6 @@ STUB
     [ ! -L "$TARGET/.ssh/config" ]
     grep -q "Include ~/.config/colima/ssh_config" "$TARGET/.ssh/config"
     [ "$(git -C "$repo" status --porcelain)" = "$before" ]
-    rm -rf "$repo"
 }
 
 @test "a migrated home is left alone by the Stow cleanup" {
@@ -316,7 +307,6 @@ STUB
     preview "$repo"
     [ "$status" -eq 0 ]
     [[ "$output" != *"unstow"* ]]
-    rm -rf "$repo"
 }
 
 @test "refuses to migrate when ~/.ssh is a link into the repo, and changes nothing" {
@@ -332,5 +322,4 @@ STUB
     [ -L "$TARGET/.zshrc" ]
     [ -f "$repo/ssh/.ssh/config" ]
     [ "$(git -C "$repo" status --porcelain)" = "$before" ]
-    rm -rf "$repo"
 }

@@ -62,7 +62,7 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
 # =============================================================================
 
 @test "project_root: finds the config in the directory itself or any parent" {
-    local tmp=$(mktemp -d)
+    local tmp=$(scratch)
     local real=$(cd "$tmp" && pwd -P)
     touch "$tmp/.mise.toml"
     mkdir -p "$tmp/sub/deep"
@@ -71,14 +71,12 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
     lib project_root "$tmp/sub/deep"
     [ "$status" -eq 0 ]
     [ "$output" = "$real" ]
-    rm -rf "$tmp"
 }
 
 @test "project_root: fails outside any project" {
-    local tmp=$(mktemp -d)
+    local tmp=$(scratch)
     lib project_root "$tmp"
     [ "$status" -eq 1 ]
-    rm -rf "$tmp"
 }
 
 # =============================================================================
@@ -95,12 +93,11 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
 }
 
 @test "apply_placeholders: fills in the project and module names" {
-    local tmp=$(mktemp -d)
+    local tmp=$(scratch)
     printf 'Welcome to <project-name>!\nimport <module_name>\n' > "$tmp/test.md"
     lib apply_placeholders "$tmp/test.md" "my-cool-api"
     [ "$status" -eq 0 ]
     [ "$(cat "$tmp/test.md")" = $'Welcome to my-cool-api!\nimport my_cool_api' ]
-    rm -rf "$tmp"
 }
 
 @test "apply_placeholders: a missing file is not an error" {
@@ -110,13 +107,12 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
 
 @test "write_agent_docs: every template gets both files, with placeholders filled" {
     for template in base python fastapi ruby rails rust typescript convex; do
-        local tmp=$(mktemp -d)
+        local tmp=$(scratch)
         lib write_agent_docs "$tmp" "$template" "test-project"
         [ "$status" -eq 0 ]
         [ -f "$tmp/CLAUDE.md" ]
         [ -f "$tmp/AGENTS.md" ]
         grep -q "Assistant's Role" "$tmp/CLAUDE.md"
         [ -z "$(grep '<project-name>' "$tmp/CLAUDE.md")" ]
-        rm -rf "$tmp"
     done
 }

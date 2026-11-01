@@ -5,7 +5,7 @@
 load test_helper
 
 setup() {
-    WORK=$(mktemp -d)
+    WORK=$(scratch)
     STUBS="$WORK/stubs"; mkdir "$STUBS"
     export GIT_CONFIG_GLOBAL="$WORK/gitconfig"
     git config --global user.name Test
@@ -29,9 +29,6 @@ setup() {
     git clone -q "$WORK/github.git" "$WORK/other"
 }
 
-teardown() {
-    rm -rf "$WORK"
-}
 
 sync() {   # $1 = answer to the commit prompt
     PATH="$STUBS:$PATH" run zsh "$WORK/this/.mise/tasks/sync" <<< "${1:-}"

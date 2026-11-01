@@ -123,6 +123,7 @@ Use Domain Driven Development methods to **create a ubiquitous language** that d
 - Write tests to **verify the intent of the code under test**
 - Using Behavior Driven Development methods, write useful acceptance tests
 - Changes to implementation and changes to tests MUST BE separated by a test suite run
+- Tests get scratch directories from `scratch` (tests/test_helper.bash), inside `$BATS_TEST_TMPDIR`, which bats removes itself. Tests never delete anything they didn't just create: a cleanup that ran after a skipped `setup` once removed the real `$HOME`. `tests/safety.bats` guards it.
 - Test coverage is not a measure of success
 
 ### Bugs and Fixes

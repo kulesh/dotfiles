@@ -8,6 +8,13 @@
 # Path to the dotfiles root
 export DOTFILES_ROOT="${BATS_TEST_DIRNAME}/.."
 
+# A fresh directory for this test. It lives in $BATS_TEST_TMPDIR, which bats
+# removes after the test, skipped or not, so tests never delete anything
+# themselves: no cleanup can point at the wrong directory.
+scratch() {
+    mktemp -d "$BATS_TEST_TMPDIR/XXXXXX"
+}
+
 # Run a zsh function from our library and capture output.
 # Usage: run_zsh_fn <function_name> [args...]
 run_zsh_fn() {
