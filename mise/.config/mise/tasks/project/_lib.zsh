@@ -20,12 +20,14 @@ need() {   # need <value> <usage>
     [[ -n $1 ]] || die "Usage: $2"
 }
 
-# A project picked with fzf, for a command run without a name. Outside a
-# terminal, or without fzf, explains the usage instead. Prints nothing if
-# the picker is cancelled.
+# A project picked with fzf, showproject beside the highlighted one, for a
+# command run without a name. Outside a terminal, or without fzf, explains
+# the usage instead. Prints nothing if the picker is cancelled.
 pick_project() {   # pick_project <usage>
     [[ -t 0 ]] && (( $+commands[fzf] )) || die "Usage: $1   (lsprojects lists them)"
-    project_names | fzf --height=40% --reverse --prompt="${1%% *}> " || true
+    project_names | fzf --height=60% --reverse --prompt="${1%% *}> " \
+        --preview="mise -C / run project:show --from ${(q)projects_dir}/{}" \
+        --preview-window=right,60% || true
 }
 
 is_project() { [[ -e $1/.mise.toml || -e $1/.tool-versions ]]; }

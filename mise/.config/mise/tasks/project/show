@@ -14,8 +14,21 @@ print -r -- "${c[dim]}$root · modified $(last_modified "$root" "%b %d %Y")${c[r
 print
 
 print -r -- "${c[bold]}Tools${c[reset]}"
-tools=$(mise ls --current 2>/dev/null || true)
-print -r -- "${tools:-${c[dim]}(none)${c[reset]}}" | sed 's/^/  /'
+# The project's own tools by name and version; the ones every project
+# inherits from ~/dev and the global config only as a count.
+own=$(mise ls --project --no-header 2>/dev/null || true)
+all=$(mise ls --current --no-header 2>/dev/null || true)
+inherited=$(( ${#${(f)all}} - ${#${(f)own}} ))
+if [[ -n $own ]]; then
+    # Columns: name, version (maybe "(missing)"), source, request.
+    print -r -- "$own" | awk '{
+        v = $2; for (i = 3; i <= NF && $i !~ /^[~\/]/; i++) v = v " " $i
+        name[NR] = $1; ver[NR] = v; if (length($1) > w) w = length($1)
+    } END { for (i = 1; i <= NR; i++) printf "  %-" w "s  %s\n", name[i], ver[i] }'
+else
+    print -r -- "  ${c[dim]}(none of its own)${c[reset]}"
+fi
+(( inherited > 0 )) && print -r -- "  ${c[dim]}+ $inherited inherited${c[reset]}"
 print
 
 if [[ ! -d .git ]]; then

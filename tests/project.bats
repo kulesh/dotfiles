@@ -180,13 +180,18 @@ completions() {   # the candidates zsh would offer for a command line
     [[ "$output" == *"main"* ]]
 }
 
-@test "showproject lists each of the project's tools on its own line" {
+@test "showproject lists the project's own tools, one per line, and counts the inherited ones" {
+    printf '[tools]\nuv = "0.5.0"\n' > "$DEV/.mise.toml"
     mkdir -p "$DEV/tooled"
     printf '[tools]\nnode = "20.1.0"\npython = "3.11.1"\n' > "$DEV/tooled/.mise.toml"
-    MISE_TRUSTED_CONFIG_PATHS=$DEV/tooled project show --from "$DEV/tooled"
+    MISE_TRUSTED_CONFIG_PATHS=$DEV project show --from "$DEV/tooled"
     [ "$status" -eq 0 ]
-    [[ "$output" == *$'\n  node '*$'\n  python '* ]]
-    [[ "$output" != *"\$'"* ]]
+    local node=$'\n  node +20\.1\.0' python=$'\n  python +3\.11\.1'
+    [[ "$output" =~ $node ]]
+    [[ "$output" =~ $python ]]
+    [[ "$output" != *"uv "* ]]
+    [[ "$output" != *".mise.toml"* ]]
+    [[ "$output" =~ \+\ [0-9]+\ inherited ]]
 }
 
 @test "showproject in ~/dev or ~ says you're not in a project, though both hold mise config" {
@@ -255,6 +260,29 @@ completions() {   # the candidates zsh would offer for a command line
     [[ "$output" == *"Usage: workon <name>"* ]]
     [[ "$output" != *"mise ERROR"* ]]
     [ -z "$(followed)" ]
+}
+
+@test "the project picker (workon, rmproject) previews each project with showproject" {
+    project new demo
+    # A stand-in fzf: runs the preview it was given for the first project,
+    # as fzf would on the highlighted line, then picks that project.
+    mkdir "$HOME/stubs"
+    cat > "$HOME/stubs/fzf" <<'EOF'
+#!/bin/sh
+first=$(head -n 1)
+while [ $# -gt 0 ]; do
+    case $1 in --preview) preview=$2; shift ;; --preview=*) preview=${1#--preview=} ;; esac
+    shift
+done
+[ -n "$preview" ] && sh -c "$(printf '%s' "$preview" | sed "s|{}|'$first'|g")" > "$HOME/preview" 2>&1
+echo "$first"
+EOF
+    chmod +x "$HOME/stubs/fzf"
+    # The pickers open only in a terminal.
+    PATH=$HOME/stubs:$PATH run python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' \
+        mise -C / run project:workon </dev/null
+    [ "$(followed)" = "$DEV/demo" ]
+    [[ "$(cat "$HOME/preview")" == *"demo"*"Git"* ]]
 }
 
 @test "workon completes project names, and only projects" {

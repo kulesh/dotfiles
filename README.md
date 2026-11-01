@@ -59,7 +59,7 @@ Each command is a mise task (`mise tasks ls`), so `<command> --help` explains it
 | `mkproject <name> [template] -n` | Describe the project without creating it |
 | `cloneproject <user>/<repo>` | Clone a GitHub repo into `~/dev` (a URL works too) |
 | `workon <project>` | Switch to project (with tab completion) |
-| `workon` | Pick a project with fzf |
+| `workon` | Pick a project with fzf, `showproject` beside it |
 | `workon <project> -s` | Switch to project in sandbox mode |
 | `lsprojects` | List all projects with metadata |
 | `lsprojects --type cloned` | Only cloned (or `created`) projects |
@@ -69,7 +69,7 @@ Each command is a mise task (`mise tasks ls`), so `<command> --help` explains it
 | `updateproject [name]` | Pull latest changes (cloned projects) |
 | `rmproject <name>` | Archive project (safe removal) |
 | `rmproject <name> --delete` | Permanently delete project |
-| `rmproject` | Pick the project to archive with fzf |
+| `rmproject` | Pick the project to archive with fzf, `showproject` beside it |
 | `list_project_types` | Show available templates |
 
 ## Package Management
