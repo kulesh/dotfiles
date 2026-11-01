@@ -81,6 +81,13 @@ completions() {   # the candidates zsh would offer for a command line
     [ ! -e "$DEV/demo" ]
 }
 
+@test "mkproject without a name shows how to use it" {
+    project new
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"Usage: mkproject <name> [template]"* ]]
+    [[ "$output" != *"mise ERROR"* ]]
+}
+
 @test "mkproject completes template names" {
     [[ "$(completions 'mise -C / run project:new demo ')" == *python* ]]
 }
@@ -129,6 +136,13 @@ completions() {   # the candidates zsh would offer for a command line
 # lsprojects (project:list)
 # =============================================================================
 
+@test "cloneproject without a repo shows how to use it" {
+    project clone
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"Usage: cloneproject <user>/<repo>"* ]]
+    [[ "$output" != *"mise ERROR"* ]]
+}
+
 @test "lsprojects lists cloned and created projects, and nothing else" {
     github_repo alpha
     project clone kulesh/alpha
@@ -173,6 +187,19 @@ completions() {   # the candidates zsh would offer for a command line
     [ "$status" -eq 0 ]
     [[ "$output" == *$'\n  node '*$'\n  python '* ]]
     [[ "$output" != *"\$'"* ]]
+}
+
+@test "showproject in ~/dev or ~ says you're not in a project, though both hold mise config" {
+    project new demo
+    printf '[tools]\n' > "$DEV/.mise.toml"
+    printf '[tools]\n' > "$HOME/.mise.toml"
+    for dir in "$DEV" "$HOME"; do
+        project show --from "$dir"
+        [ "$status" -ne 0 ]
+        [[ "$output" == *"Not in a project"* ]]
+    done
+    project show --from "$DEV/demo"
+    [ "$status" -eq 0 ]
 }
 
 @test "showproject outside a project says so" {
@@ -300,6 +327,15 @@ completions() {   # the candidates zsh would offer for a command line
     project remove demo --from "$DEV/demo"
     [ "$status" -eq 0 ]
     [ "$(followed)" = "$DEV" ]
+}
+
+@test "rmproject without a name, outside a terminal, shows how to use it and removes nothing" {
+    project new demo
+    project remove
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"Usage: rmproject <name> [--delete]"* ]]
+    [[ "$output" != *"mise ERROR"* ]]
+    [ -d "$DEV/demo" ]
 }
 
 @test "rmproject an unknown project says so and changes nothing" {

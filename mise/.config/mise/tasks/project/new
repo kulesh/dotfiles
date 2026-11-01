@@ -2,13 +2,14 @@
 #MISE description="Create a project in ~/dev from a template (mkproject)"
 #MISE quiet=true
 #MISE raw=true
-#USAGE arg "<name>" help="Directory name in ~/dev"
+#USAGE arg "[name]" help="Directory name in ~/dev"
 #USAGE arg "[template]" default="base" help="Template to start from (list_project_types)"
 #USAGE complete "template" run="mise tasks ls --no-header 2>/dev/null | awk '/^mkproject:/ {sub(/^mkproject:/, \"\", $1); print $1}'"
 #USAGE flag "-n --dry-run" help="Describe the project without creating it"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
+need "${usage_name:-}" "mkproject <name> [template]   (list_project_types lists templates)"
 name=$usage_name template=${usage_template:-base}
 dir=$projects_dir/$name
 

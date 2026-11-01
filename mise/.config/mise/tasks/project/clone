@@ -2,10 +2,11 @@
 #MISE description="Clone a GitHub repo into ~/dev as a project (cloneproject)"
 #MISE quiet=true
 #MISE raw=true
-#USAGE arg "<repo>" var=#true var_max=2 help="user/repo, or a GitHub URL (gh user/repo also works)"
+#USAGE arg "[repo]" var=#true var_max=2 help="user/repo, or a GitHub URL (gh user/repo also works)"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
+need "${usage_repo:-}" "cloneproject <user>/<repo>   (or a GitHub URL)"
 parsed=$(parse_github_repo ${(z)usage_repo}) ||
     die "Not a GitHub repo: $usage_repo (use user/repo, or a GitHub URL)"
 url=${parsed%|*} name=${parsed#*|}

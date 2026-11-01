@@ -14,15 +14,31 @@ typeset -gA c=(cyan $'\e[36m' green $'\e[32m' yellow $'\e[33m' magenta $'\e[35m'
 
 die() { print -r -- "$*" >&2; exit 1; }
 
+# A required argument, or how to use the command. mise's own check would
+# print four lines of ERROR instead.
+need() {   # need <value> <usage>
+    [[ -n $1 ]] || die "Usage: $2"
+}
+
+# A project picked with fzf, for a command run without a name. Outside a
+# terminal, or without fzf, explains the usage instead. Prints nothing if
+# the picker is cancelled.
+pick_project() {   # pick_project <usage>
+    [[ -t 0 ]] && (( $+commands[fzf] )) || die "Usage: $1   (lsprojects lists them)"
+    project_names | fzf --height=40% --reverse --prompt="${1%% *}> " || true
+}
+
 is_project() { [[ -e $1/.mise.toml || -e $1/.tool-versions ]]; }
 
-# The nearest directory at or above $1 with a mise config.
+# The nearest directory at or above $1 with a mise config. ~/dev and ~ don't
+# count: their configs are layers every project inherits, not projects.
 project_root() {
     local dir=${1:A}
     until is_project "$dir"; do
         [[ $dir == / ]] && return 1
         dir=${dir:h}
     done
+    [[ $dir != ${projects_dir:A} && $dir != ${HOME:A} ]] || return 1
     print -r -- "$dir"
 }
 

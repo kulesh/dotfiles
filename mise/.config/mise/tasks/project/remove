@@ -2,15 +2,17 @@
 #MISE description="Archive a project to ~/dev/.archive, or delete it (rmproject)"
 #MISE quiet=true
 #MISE raw=true
-#USAGE arg "<name>" help="Project in ~/dev"
+#USAGE arg "[name]" help="Project in ~/dev; without one, pick it with fzf"
 #USAGE complete "name" run="mise run project:list --names"
 #USAGE flag "--delete" help="Delete permanently instead of archiving"
 #USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
-dir=$(project_dir "$usage_name") || exit 1
-name=$usage_name
+name=${usage_name:-}
+[[ -n $name ]] || name=$(pick_project "rmproject <name> [--delete]")
+[[ -n $name ]] || exit 0   # the picker was cancelled
+dir=$(project_dir "$name") || exit 1
 
 # What would be lost with a delete, or kept in the archive.
 if [[ -d $dir/.git ]]; then

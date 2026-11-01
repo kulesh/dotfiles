@@ -8,11 +8,8 @@ set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
 name=${usage_name:-}
-if [[ -z $name ]]; then
-    [[ -t 0 ]] && (( $+commands[fzf] )) || die "Usage: workon <name> [-s]   (lsprojects lists them)"
-    # Escape or Ctrl-C in the picker goes nowhere, quietly.
-    name=$(project_names | fzf --height=40% --reverse --prompt="workon> ") || exit 0
-fi
+[[ -n $name ]] || name=$(pick_project "workon <name> [-s]")
+[[ -n $name ]] || exit 0   # the picker was cancelled
 dir=$(project_dir "$name") || exit 1
 # The marker is permanent: the shell enters the sandbox whenever it arrives
 # in this project (lib/sandbox.sh), not only through workon.

@@ -69,6 +69,7 @@ Each command is a mise task (`mise tasks ls`), so `<command> --help` explains it
 | `updateproject [name]` | Pull latest changes (cloned projects) |
 | `rmproject <name>` | Archive project (safe removal) |
 | `rmproject <name> --delete` | Permanently delete project |
+| `rmproject` | Pick the project to archive with fzf |
 | `list_project_types` | Show available templates |
 
 ## Package Management
