@@ -59,7 +59,7 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 | Directory folding into the repo | Pre-create dirs; agent state still lands in the repo | Gone: groups link file by file | Full | Tested (`~/.claude`, `~/.pi`, `~/dev` stay real) |
 | `lazy-lock.json` flows back | Folded `~/.config/nvim` | Group entry `"~/.config/nvim" = { mode = "symlink" }` | Full | Tested |
 | ssh config permissions | `chmod go-w` on the repo file | A marked block in a real `~/.ssh/config` (`"~/.ssh/config/dotfiles"`); a copy was rejected because mise overwrote lines other tools add | Full | Done in phase 2 |
-| App-written settings (Claude, Pi) | Whole file linked; app writes into the repo | `merge = true` edit: we own our keys, the app keeps its own | Full | Tested |
+| App-written settings (Claude, Pi) | Whole file linked; app writes into the repo | Unchanged: every Mac does the same work, so a change made in the app (model, effort, plugins) should reach them all | n/a | Decision 3 |
 | Removed package | Unlink by hand | Reported as orphaned; `mise dot apply --prune` | Full | Tested |
 | Conflict with an existing file | Stow aborts | Whole run aborts before writing | Full | Tested |
 | Drift check | None | `mise dot status --missing` (exit 1) | Full | Docs `reference.md:243` |
@@ -128,7 +128,6 @@ Each phase ships on its own and leaves a working system.
 | 0. Mac spike | `bash tests/spike/mise-native.sh` on one Mac (scratch mise, scratch homes, previews only) | Nothing | `brew:` without Homebrew; groups from a fresh home and from Stow; Pi merge; `~` in macOS defaults |
 | 1. Trust and upgrades (done) | `trusted_config_paths`; `mup` upgrades packages and tools | Four `mise trust` calls | `tests/bootstrap.bats`, `tests/project.bats` |
 | 2. Groups replace Stow (done) | `dotfile_groups`, nvim whole-dir entry, ssh config block; a pre-dotfiles hook unstows existing Macs and creates `~/.ssh`; `mise run preview`; ADR-010 supersedes ADR-001 | `stow` package, stow loop, mkdirs, chmod, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` through `preview` |
-| 2b. Merged app settings | Claude Code and Pi settings as `merge = true` edits | App state in git (`lastChangelogVersion`, `model`) | Next |
 | 3. Projects as tasks | `#USAGE` and completion on every command; `[shell_alias]`; global `[hooks]` | Most of `lib/` (keep the `cd` shim); ADR-003 superseded | `tests/project.bats` against `mise run` |
 | 4. Bootloader | Drop Homebrew from `mise.sh` if phase 0 confirms it | Homebrew installer call | Fresh-Mac run on shadow |
 | 5. Secrets | Decide fnox from phase 0 findings (the sandbox stays ours) | Possibly `secret env` | Mac tests |
@@ -137,46 +136,5 @@ Each phase ships on its own and leaves a working system.
 
 1. **Every Mac is Apple Silicon.** `brew:` runs everywhere, so phase 4 drops Homebrew's installer once phase 0 confirms it on a fresh Mac.
 2. **The sandbox stays a deny-list.** Agents increasingly need the whole machine: toolchains, caches, other repos, Docker. A deny-list grants that and blocks known secrets. An allowlist breaks each time an agent reaches somewhere new. The tradeoff is that a deny-list fails open: a credential stored somewhere new is readable until the profile names it, and the Keychain is already readable. We keep our Seatbelt profile for `workon -s`. mise's sandbox stays an option for narrow, scripted runs where the reads are known in advance.
-3. **App settings become merged keys**, as below.
+3. **App settings stay linked into the repo.** Every Mac works on the same repos, so the model, effort level and plugins should be the same everywhere. A link already does that: a change made inside Claude Code or Pi lands in the repo, and `dsync` takes it to the other Macs. Merged keys were considered and dropped. They would keep in-app changes on one Mac, and the next bootstrap would quietly undo changes to shared keys. The one app-only key, Pi's `lastChangelogVersion`, costs an occasional commit, which is not worth a mechanism.
 
-### Merged settings: an example
-
-Today `~/.pi/agents/settings.json` is a link into the repo, so every write Pi makes lands in git. That includes `lastChangelogVersion`, which changes on every Pi update and has nothing to do with configuration:
-
-```
-~/.pi/agents/settings.json  →  ~/.dotfiles/pi/.pi/agents/settings.json   (one file, shared)
-
-{
-  "lastChangelogVersion": "0.67.1",      ← Pi writes this; it shows up in dsync
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.4",
-  "packages": [ ... ]
-}
-```
-
-With a merge, the repo holds only the keys we decide on. The live file becomes a regular file that Pi owns, and `mise dot apply` writes our keys into it:
-
-```toml
-# .mise.toml
-[dotfile_groups.pi.entries]
-"~/.pi/agents/settings.json/ours" = { merge = true }
-```
-
-```
-repo: pi/.pi/agents/settings.json        live: ~/.pi/agents/settings.json (regular file)
-{                                        {
-  "defaultProvider": "openai-codex",       "lastChangelogVersion": "0.68.0",   ← Pi's, stays local
-  "defaultModel": "gpt-5.4",        ──▶    "defaultProvider": "openai-codex",  ← ours, enforced
-  "packages": [ ... ]                      "defaultModel": "gpt-5.4",          ← ours, enforced
-}                                          "packages": [ ... ]                 ← ours, enforced
-                                         }
-```
-
-- **Pi changes a key we own** (you switch models in Pi): the next `mise dot apply` puts ours back. Make the change in the repo instead, and `dsync` takes it to every Mac.
-- **Pi adds a key we don't own:** it stays on this Mac and never reaches git.
-- **Arrays are replaced, not merged.** `packages` is ours as a whole list.
-- **Removing a key from the repo doesn't remove it from the live file** (`edits.md:121-124`). To retire a key everywhere, set it to its default rather than deleting it.
-
-Claude Code works the same way. The repo keeps `permissions`, `env`, `sandbox`, `hooks`, `statusLine` and `defaultMode`. Claude keeps what it writes: `enabledPlugins` (from `/plugin`), `effortLevel` (from `/effort`) and the announcement state. One caution: `permissions.allow` is an array we own, so an "always allow" rule Claude saves to the user file is replaced on the next apply. Claude normally saves those to the project's `.claude/settings.local.json`, which this doesn't touch.
-
-A key can also be a default rather than enforced: `merge = "missing"` writes it only when the live file doesn't have it, and the app may change it afterwards. That fits `defaultModel` if you'd rather switch models on one Mac without the next apply reverting it. Using one enforced edit and one default edit on the same file is documented but untested.
