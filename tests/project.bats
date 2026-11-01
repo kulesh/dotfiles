@@ -222,6 +222,14 @@ completions() {   # the candidates zsh would offer for a command line
     [ -z "$(followed)" ]
 }
 
+@test "workon without a name, outside a terminal, shows how to use it and goes nowhere" {
+    project workon
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"Usage: workon <name>"* ]]
+    [[ "$output" != *"mise ERROR"* ]]
+    [ -z "$(followed)" ]
+}
+
 @test "workon completes project names, and only projects" {
     project new demo
     mkdir -p "$DEV/not-a-project"
