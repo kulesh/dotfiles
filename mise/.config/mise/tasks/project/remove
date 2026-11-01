@@ -1,0 +1,42 @@
+#!/usr/bin/env zsh
+#MISE description="Archive a project to ~/dev/.archive, or delete it (rmproject)"
+#MISE quiet=true
+#MISE raw=true
+#USAGE arg "<name>" help="Project in ~/dev"
+#USAGE complete "name" run="mise run project:list --names"
+#USAGE flag "--delete" help="Delete permanently instead of archiving"
+#USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
+set -euo pipefail
+source "${0:A:h}/_lib.zsh"
+
+dir=$(project_dir "$usage_name") || exit 1
+name=$usage_name
+
+# What would be lost with a delete, or kept in the archive.
+if [[ -d $dir/.git ]]; then
+    changes=$(git -C "$dir" status --porcelain)
+    [[ -n $changes ]] && print -r -- "⚠️  $(wc -l <<< "$changes" | tr -d ' ') uncommitted change(s)"
+    branch=$(git -C "$dir" branch --show-current)
+    if [[ -n $branch ]] && git -C "$dir" rev-parse --verify -q "origin/$branch" >/dev/null; then
+        ahead=$(git -C "$dir" rev-list --count "origin/$branch..HEAD")
+        (( ahead > 0 )) && print -r -- "⚠️  $ahead unpushed commit(s)"
+    fi
+fi
+
+if [[ ${usage_delete:-false} == true ]]; then
+    confirm "Permanently delete $dir? [y/N]" n || { print "Cancelled"; exit 0; }
+    rm -rf "$dir"
+    print -r -- "Deleted $name"
+else
+    archive=$projects_dir/.archive/$name
+    [[ -e $archive ]] && archive+=_$(date +%Y%m%d_%H%M%S)
+    confirm "Archive $name to $archive? [Y/n]" y || { print "Cancelled"; exit 0; }
+    mkdir -p "${archive:h}"
+    mv "$dir" "$archive"
+    print -r -- "Archived $name to $archive (restore with: mv $archive $dir)"
+fi
+
+# The shell was inside what just went away.
+if [[ -n ${usage_from:-} && ${usage_from:A}/ == ${dir:A}/* ]]; then
+    follow "$projects_dir"
+fi

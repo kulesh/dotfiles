@@ -1,0 +1,45 @@
+#!/usr/bin/env zsh
+#MISE description="Describe the project you're in: tools, git state, recent commits (showproject)"
+#MISE quiet=true
+#USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
+set -euo pipefail
+source "${0:A:h}/_lib.zsh"
+
+root=$(project_root "${usage_from:-$PWD}") || die "Not in a project"
+cd "$root"
+
+print -r -- "${c[bold]}${c[cyan]}${root:t}${c[reset]}"
+print -r -- "${c[dim]}$root · modified $(last_modified "$root" "%b %d %Y")${c[reset]}"
+[[ -f .sandbox ]] && print -r -- "${c[green]}🔒 Sandboxed${c[reset]}"
+print
+
+print -r -- "${c[bold]}Tools${c[reset]}"
+tools=$(mise ls --current 2>/dev/null || true)
+print -r -- "${${tools:-${c[dim]}(none)${c[reset]}}//$'\n'/$'\n'  }" | sed '1s/^/  /'
+print
+
+if [[ ! -d .git ]]; then
+    print -r -- "${c[dim]}Not a git repository${c[reset]}"
+    exit 0
+fi
+
+branch=$(git branch --show-current)
+print -r -- "${c[bold]}Git${c[reset]}  ${c[magenta]}⎇ $branch${c[reset]} ${c[dim]}($(git rev-parse --short HEAD 2>/dev/null || echo no commits))${c[reset]}"
+if remote=$(git remote get-url origin 2>/dev/null); then
+    print -r -- "  ${c[green]}↗ $remote${c[reset]}"
+    if git rev-parse --verify -q "origin/$branch" >/dev/null; then
+        ahead=$(git rev-list --count "origin/$branch..HEAD") behind=$(git rev-list --count "HEAD..origin/$branch")
+        print -r -- "  ${c[dim]}↑$ahead ↓$behind against origin/$branch${c[reset]}"
+    fi
+fi
+changes=$(git status --short)
+if [[ -n $changes ]]; then
+    print -r -- "  ${c[yellow]}$(wc -l <<< "$changes" | tr -d ' ') changed${c[reset]}"
+    head -5 <<< "$changes" | sed 's/^/    /'
+else
+    print -r -- "  ${c[dim]}✓ clean${c[reset]}"
+fi
+print
+
+print -r -- "${c[bold]}Recent${c[reset]}"
+git log --format="  %C(dim)%h%C(reset) %s" -n 3 2>/dev/null || print -r -- "  ${c[dim]}(no commits yet)${c[reset]}"

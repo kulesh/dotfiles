@@ -47,9 +47,11 @@ export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 eval "$(mise activate zsh)"
 eval "$(starship init zsh)"
 
-# project management commands
-MISEWRAPPER_SOURCE="${DOTFILES}/lib/misewrapper.sh"
-[[ -f ${MISEWRAPPER_SOURCE} ]] && source ${MISEWRAPPER_SOURCE}
+# Project commands (mkproject, workon, ...) are mise tasks with shell aliases
+# from ~/.config/mise/config.toml. These two parts have to live in the shell:
+# following a command to a new directory, and the per-project sandbox.
+source "$DOTFILES/lib/follow.zsh"
+source "$DOTFILES/lib/sandbox.sh"
 
 # Aliases
 alias_if_exists() {
@@ -68,10 +70,6 @@ if [[ -o interactive ]]; then
     alias_if_exists ls eza
     alias_if_exists time hyperfine
     alias_if_exists vim nvim
-    # Upgrade packages (~/.dotfiles/.mise.toml, read only from there) and
-    # global tools in one run
-    alias mup='mise -C "$DOTFILES" bootstrap --only packages,tools --upgrade'
-    alias dsync='mise -C "$DOTFILES" run sync'
 
     # Say when this Mac's dotfiles differ from GitHub, as of the last fetch;
     # the fetch is refreshed in the background at most once a day.

@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+#MISE hide=true
 
 # Copy template static files into the current project directory.
 # Usage: copy_template_files <template_name> [label]

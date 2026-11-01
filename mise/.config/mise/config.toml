@@ -1,10 +1,28 @@
-# ~/.config/mise/config.toml — Runtime configuration (stowed)
+# ~/.config/mise/config.toml — runtime configuration, linked from the repo.
 #
-# Bootstrap config (packages, taps, login shell) lives in .mise.toml at
-# the repo root because it must be readable before stow links this file.
+# Bootstrap config (packages, dotfile links, login shell) lives in .mise.toml
+# at the repo root, because it has to be readable before this file is linked.
 
 [tools]
 uv = "latest"
+
+# Commands for every shell with mise activated. Tasks run from / so the
+# project you're in neither loads nor gets trusted on the way; commands that
+# care where you are get it as --from.
+[shell_alias]
+mkproject = "mise -C / run project:new"
+cloneproject = "mise -C / run project:clone"
+lsprojects = "mise -C / run project:list"
+showproject = "mise -C / run project:show --from \"$PWD\""
+updateproject = "mise -C / run project:update --from \"$PWD\""
+rmproject = "mise -C / run project:remove --from \"$PWD\""
+workon = "mise -C / run project:workon"
+cdproject = "mise -C / run project:root --from \"$PWD\""
+list_project_types = "mise -C / run project:types"
+# Upgrade packages (~/.dotfiles/.mise.toml, read only from there) and global
+# tools in one run; share and apply dotfile changes between Macs.
+mup = "mise -C \"$DOTFILES\" bootstrap --only packages,tools --upgrade"
+dsync = "mise -C \"$DOTFILES\" run sync"
 
 [settings]
 # Every project under ~/dev is yours, created or cloned there by the project

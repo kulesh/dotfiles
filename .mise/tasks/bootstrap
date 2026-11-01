@@ -71,8 +71,9 @@ if gh auth status &>/dev/null && [[ -f $key.pub ]]; then
     fi
 fi
 
-# Clone your own repos (no forks, no archived) into ~/dev as managed
-# projects. Each runs in its own zsh so one bad repo is reported, not fatal.
+# Clone your own repos (no forks, no archived) into ~/dev as projects, with
+# the same command as cloneproject. One bad repo is reported, not fatal, and
+# no clone moves the shell (DOTFILES_FOLLOW, lib/follow.zsh).
 if gh auth status &>/dev/null; then
     self=$(git -C "$dotfiles" remote get-url origin 2>/dev/null || true)
     failed=()
@@ -80,8 +81,7 @@ if gh auth status &>/dev/null; then
         [[ ${self%.git} == *[:/]$repo ]] && continue   # already at ~/.dotfiles
         [[ -d $PROJECT_DIR/${repo#*/} ]] && continue
         if previewing; then echo "would clone $repo"; continue; fi
-        zsh -c 'source "$1/lib/misewrapper.sh" && cloneproject gh "$2"' _ "$dotfiles" "$repo" ||
-            failed+=("$repo")
+        DOTFILES_FOLLOW=/dev/null mise -C / run project:clone "$repo" || failed+=("$repo")
     done
     if (( ${#failed} )); then echo "Could not clone: ${failed[*]}"; fi
 else

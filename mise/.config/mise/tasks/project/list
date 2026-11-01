@@ -1,0 +1,40 @@
+#!/usr/bin/env zsh
+#MISE description="List the projects in ~/dev (lsprojects)"
+#MISE quiet=true
+#USAGE flag "--type <type>" help="Only cloned or created projects" {
+#USAGE   choices "cloned" "created"
+#USAGE }
+#USAGE flag "--tools" help="Show each project's mise tools"
+#USAGE flag "--names" hide=#true help="Names only, one per line (for completion)"
+set -euo pipefail
+source "${0:A:h}/_lib.zsh"
+
+if [[ ${usage_names:-false} == true ]]; then project_names; exit 0; fi
+
+typeset -A count=(cloned 0 created 0 sandboxed 0)
+print -r -- "${c[bold]}Projects${c[reset]} ${c[dim]}in $projects_dir${c[reset]}"
+print
+for name in ${(f)"$(project_names)"}; do
+    dir=$projects_dir/$name
+    if slug=$(github_slug "$dir"); then
+        kind=cloned origin="${c[green]}↙ $slug${c[reset]}"
+    else
+        kind=created origin="${c[yellow]}✦ local${c[reset]}"
+    fi
+    [[ -n ${usage_type:-} && $usage_type != $kind ]] && continue
+    (( count[$kind]++ )) || true
+    lock="  "
+    if [[ -f $dir/.sandbox ]]; then lock="🔒"; (( count[sandboxed]++ )) || true; fi
+    printf "${c[cyan]}%-24s${c[reset]} %s %s ${c[dim]}%s${c[reset]}\n" "$name" "$lock" "$origin" "$(last_modified "$dir")"
+    if [[ ${usage_tools:-false} == true ]]; then
+        mise -C "$dir" ls --current 2>/dev/null | sed 's/^/    /'
+    fi
+done
+
+print
+total=$(( count[cloned] + count[created] ))
+if (( total == 0 )); then
+    print -r -- "No ${usage_type:+$usage_type }projects"
+else
+    print -r -- "$total projects: ${count[cloned]} cloned, ${count[created]} created, ${count[sandboxed]} sandboxed"
+fi

@@ -1,0 +1,38 @@
+#!/usr/bin/env zsh
+#MISE description="Pull the latest changes for a cloned project (updateproject)"
+#MISE quiet=true
+#MISE raw=true
+#USAGE arg "[name]" help="Project in ~/dev (default: the one you're in)"
+#USAGE complete "name" run="mise run project:list --names"
+#USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
+set -euo pipefail
+source "${0:A:h}/_lib.zsh"
+
+if [[ -n ${usage_name:-} ]]; then
+    dir=$(project_dir "$usage_name") || exit 1
+else
+    dir=$(project_root "${usage_from:-$PWD}") || die "Not in a project; name one: updateproject <name>"
+fi
+cd "$dir"
+name=${dir:t}
+
+[[ -d .git ]] || die "$name isn't a git repository"
+remote=$(git remote get-url origin 2>/dev/null) || die "$name has no remote to pull from"
+branch=$(git branch --show-current)
+[[ -n $branch ]] || die "$name isn't on a branch"
+if [[ -n $(git status --porcelain --untracked-files=no) ]]; then
+    git status --short --untracked-files=no >&2
+    die "$name has uncommitted changes; commit or stash them first"
+fi
+
+print -r -- "Updating $name from $remote"
+git fetch -q origin "$branch"
+incoming=$(git rev-list --count "HEAD..origin/$branch")
+if (( incoming == 0 )); then
+    print -r -- "Already up to date"
+    exit 0
+fi
+git log --oneline "HEAD..origin/$branch" | head -10
+confirm "Pull $incoming commit(s)? [Y/n]" y || { print "Cancelled"; exit 0; }
+git pull -q origin "$branch"
+print -r -- "Updated $name"

@@ -1,0 +1,7 @@
+#!/usr/bin/env zsh
+#MISE description="List the templates mkproject can start from (list_project_types)"
+#MISE quiet=true
+set -euo pipefail
+
+print "Templates (mkproject <name> <template>):"
+mise tasks ls --no-header 2>/dev/null | sed -n 's/^mkproject:/  /p'

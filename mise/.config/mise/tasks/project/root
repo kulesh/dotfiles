@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+#MISE description="Go to the root of the project you're in (cdproject)"
+#MISE quiet=true
+#USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
+set -euo pipefail
+source "${0:A:h}/_lib.zsh"
+
+root=$(project_root "${usage_from:-$PWD}") || die "Not in a project"
+follow "$root"
