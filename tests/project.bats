@@ -8,7 +8,9 @@ load test_helper
 
 setup() {
     command -v mise >/dev/null || skip "mise not installed"
-    export HOME=$(mktemp -d)
+    # Teardown removes SCRATCH, never $HOME: after a skip, HOME is still yours.
+    SCRATCH=$(mktemp -d)
+    export HOME=$SCRATCH
     export DEV=$HOME/dev
     mkdir -p "$DEV"
     # mise reads the repo's global config and tasks directly.
@@ -27,7 +29,7 @@ setup() {
 }
 
 teardown() {
-    rm -rf "$HOME"
+    if [[ -n ${SCRATCH:-} ]]; then rm -rf "$SCRATCH"; fi
 }
 
 project() {   # project <command> [args...]
