@@ -55,6 +55,8 @@ eval "$(starship init zsh)"
 # following a command to a new directory, and the per-project sandbox.
 source "$DOTFILES/lib/follow.zsh"
 source "$DOTFILES/lib/sandbox.sh"
+# When dsync or an edit changes the shell's config, reload before the next prompt.
+source "$DOTFILES/lib/reload.zsh"
 
 # Aliases
 alias_if_exists() {

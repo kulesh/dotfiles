@@ -65,6 +65,7 @@ cdproject                         # cd to current mise project root
 ├── .mise/tasks/sync          # dsync: reconcile this Mac with GitHub
 ├── include/shared_vars.sh    # Shared configuration variables
 ├── lib/follow.zsh            # Shell follows a command to a new directory
+├── lib/reload.zsh            # Shell reloads when a file it loaded changes
 ├── lib/sandbox.sh            # Per-project macOS sandbox (chpwd)
 ├── mise/.config/mise/
 │   ├── config.toml           #   Runtime config: settings, tools (linked)

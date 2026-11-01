@@ -35,3 +35,23 @@ interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
     interactive 'print -r -- "mise: ${_comps[mise]:-none}"'
     [[ "$output" == *"mise: _mise"* ]]
 }
+
+# A shell keeps the config it started with. When a file it loaded changes
+# (dsync, git pull, an edit), it reloads itself before the next prompt.
+@test "the shell reloads itself before the next prompt once a file it loaded changes" {
+    # A copy, so the test can change it without touching the repo.
+    rm "$HOME/.zshrc"
+    cp "$DOTFILES_ROOT/zsh/.zshrc" "$HOME/.zshrc"
+    interactive '
+        _dotfiles_reload() { print RELOAD }
+        _dotfiles_reload_if_changed; print unchanged
+        touch -m -t 209901010000 ~/.zshrc
+        _dotfiles_reload_if_changed; _dotfiles_reload_if_changed'
+    [[ "$output" == *"unchanged"*"RELOAD"* ]]
+    [[ "$output" != *"RELOAD"*"RELOAD"* ]]
+}
+
+@test "reloading is a prompt hook, so every open window catches up" {
+    interactive 'print -r -- "precmd: ${precmd_functions[*]}"'
+    [[ "$output" == *"precmd: "*"_dotfiles_reload_if_changed"* ]]
+}

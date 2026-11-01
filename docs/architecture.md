@@ -97,6 +97,7 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 │
 ├── lib/                       The parts that must run inside your shell
 │   ├── follow.zsh             Go where a command says, before the next prompt
+│   ├── reload.zsh             Reload when the shell's own config changes
 │   └── sandbox.sh             macOS sandbox-exec lifecycle and chpwd hooks
 │
 ├── mise/.config/mise/

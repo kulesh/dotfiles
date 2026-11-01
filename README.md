@@ -91,7 +91,7 @@ Tools write through the links into `~/.dotfiles` (plugin lockfiles, agent settin
 dsync
 ```
 
-It offers to commit this Mac's changes, rebases them onto GitHub's, pushes, and re-runs `mise bootstrap` if anything came in. If another Mac changed the same lines, it lists the files and opens lazygit. Resolve or abort there; if you leave it unresolved, run `dsync` again later. New shells say when this Mac is out of step (`dotfiles: 2 from other Macs. Run dsync.`). See [ADR-009](docs/adrs/009-dsync-reconciles-macs.md).
+It offers to commit this Mac's changes, rebases them onto GitHub's, pushes, and re-runs `mise bootstrap` if anything came in. If another Mac changed the same lines, it lists the files and opens lazygit. Resolve or abort there; if you leave it unresolved, run `dsync` again later. New shells say when this Mac is out of step (`dotfiles: 2 from other Macs. Run dsync.`). Open shells pick up what dsync brought in by themselves: when a file the shell loaded has changed, it reloads before the next prompt (`lib/reload.zsh`), keeping its directory and exported environment. See [ADR-009](docs/adrs/009-dsync-reconciles-macs.md).
 
 ## Secrets
 
