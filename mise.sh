@@ -21,12 +21,20 @@ fi
 
 # 2. Homebrew. mise drives it but can't install it. Check by path, not
 #    PATH: a fresh shell won't have brew on PATH even after it's installed.
-if [[ $(uname -m) == arm64 ]]; then brew=/opt/homebrew/bin/brew; else brew=/usr/local/bin/brew; fi
+if [[ $(uname -m) == arm64 ]]; then prefix=/opt/homebrew; else prefix=/usr/local; fi
+brew=${HOMEBREW_PREFIX:-$prefix}/bin/brew
 [[ -x $brew ]] || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 eval "$("$brew" shellenv)"
 
 # 3. mise, via Homebrew so `mup` upgrades it along with everything else.
-command -v mise &>/dev/null || "$brew" install mise
+#    .mise.toml sets min_version, and an older mise misreads the config, so a
+#    Homebrew mise that's already here is upgraded. One installed another way
+#    keeps its own updater; min_version says if it's too old.
+if "$brew" list --formula mise &>/dev/null; then
+    "$brew" upgrade mise
+elif ! command -v mise &>/dev/null; then
+    "$brew" install mise
+fi
 
 # 4. The repo lives at ~/.dotfiles, where .zshenv and dsync expect it.
 [[ -d $dotfiles ]] || git clone "$repo" "$dotfiles"

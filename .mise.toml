@@ -15,6 +15,10 @@
 #   mise -C ~/.dotfiles dot status        # are the links in place?
 #   mise -C ~/.dotfiles run preview       # link into a scratch home, print the rest
 
+# The oldest mise this config works with; tests/ passes on it. Older ones
+# misread dotfile groups and {{config_root}}. mise.sh upgrades a Homebrew mise.
+min_version = "2026.10.22"
+
 # =============================================================================
 # Homebrew taps
 # =============================================================================
