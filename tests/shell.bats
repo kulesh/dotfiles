@@ -55,3 +55,10 @@ interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
     interactive 'print -r -- "precmd: ${precmd_functions[*]}"'
     [[ "$output" == *"precmd: "*"_dotfiles_reload_if_changed"* ]]
 }
+
+# mise warns at every prompt about a deprecated setting in the global config.
+@test "the global mise config uses no setting this mise has deprecated" {
+    run mise settings ls
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"deprecated"* ]]
+}
