@@ -16,13 +16,16 @@ setup() {
     mkdir "$HOMEBREW_PREFIX/bin"
     stub uname 'case $1 in -m) echo arm64 ;; *) echo Darwin ;; esac'
     stub xcode-select 'exit 0'
-    # brew list --formula mise succeeds when $BREW_HAS_MISE is set.
+    # brew list --formula mise succeeds when $BREW_HAS_MISE is set, and
+    # brew upgrade mise fails when $BREW_UPGRADE_FAILS is.
     # brew install mise puts a mise stub on PATH, as Homebrew would.
     cat > "$HOMEBREW_PREFIX/bin/brew" <<EOF
 #!/bin/sh
 echo "brew \$*" >> "$CALLS"
+echo "\$XDG_CONFIG_HOME" > "$HOME/brew-config-home"
 case "\$*" in
     shellenv) ;;
+    "upgrade mise") [ -z "\$BREW_UPGRADE_FAILS" ] ;;
     "list --formula mise") [ -n "\$BREW_HAS_MISE" ] ;;
     "install mise") printf '#!/bin/sh\necho "mise \$*" >> "$CALLS"\n' > "$STUBS/mise"; chmod +x "$STUBS/mise" ;;
 esac
@@ -65,4 +68,29 @@ bootload() {
     [ "$status" -eq 0 ]
     ! grep -q "brew install mise\|brew upgrade mise" "$CALLS"
     grep -qx "mise bootstrap" "$CALLS"
+}
+
+# Homebrew reads tap trust from $XDG_CONFIG_HOME/homebrew/trust.json, which
+# the shell sets (.zshenv); mise.sh runs in bash, before anything is linked.
+@test "Homebrew in mise.sh reads the same trust file as the shell" {
+    mise_stub
+    BREW_HAS_MISE=1 bootload
+    [ "$status" -eq 0 ]
+    [ "$(cat "$HOME/brew-config-home")" = "$HOME/.config" ]
+}
+
+@test "a failed upgrade stops before bootstrap and says how to fix the link" {
+    mise_stub
+    BREW_HAS_MISE=1 BREW_UPGRADE_FAILS=1 bootload
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"brew link --overwrite mise"* ]]
+    ! grep -q "mise bootstrap" "$CALLS"
+}
+
+@test "a mise that doesn't run stops before bootstrap and says how to fix the link" {
+    stub mise 'echo "mise $*" >> "$CALLS"; [ "$1" != --version ]'
+    BREW_HAS_MISE=1 bootload
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"brew link --overwrite mise"* ]]
+    ! grep -q "mise bootstrap" "$CALLS"
 }
