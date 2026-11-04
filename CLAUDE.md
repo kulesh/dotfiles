@@ -76,7 +76,7 @@ cdproject                         # cd to current mise project root
 └── dev/                      # Dev directory structure template
 ```
 
-**Dotfile groups** (`[bootstrap] dotfile_groups` in `.mise.toml`): bin, claude, dev, ghostty, git, mise, nvim, pi, sandbox, starship, yazi, zsh. `ssh/.ssh/config` is a marked block in `~/.ssh/config`.
+**Dotfile groups** (`[bootstrap] dotfile_groups` in `.mise.toml`): bin, claude, dev, ghostty, git, homebrew (tap trust), mise, nvim, pi, sandbox, starship, yazi, zsh. `ssh/.ssh/config` is a marked block in `~/.ssh/config`.
 
 **Project templates** (`mise/.config/mise/tasks/mkproject/`): base, python, fastapi, ruby, rails, rust, typescript, convex
 

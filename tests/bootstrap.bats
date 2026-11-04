@@ -171,6 +171,16 @@ EOF
     [[ "$output" != *"Missing secrets"* ]]
 }
 
+@test "links Homebrew's tap trust: all of kulesh/tap, only lumen from jnsahaj/lumen" {
+    preview
+    [ "$status" -eq 0 ]
+    local trust=$TARGET/.config/homebrew/trust.json
+    [ -L "$trust" ]
+    [ "$trust" -ef "$DOTFILES_ROOT/homebrew/.config/homebrew/trust.json" ]
+    run python3 -I -c 'import json, sys; t = json.load(open(sys.argv[1])); print(t["trustedtaps"], t["trustedformulae"])' "$trust"
+    [ "$output" = "['kulesh/tap'] ['jnsahaj/lumen/lumen']" ]
+}
+
 @test "previews GitHub login over SSH when not authenticated" {
     preview
     [ "$status" -eq 0 ]

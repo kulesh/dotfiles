@@ -119,7 +119,7 @@ min_version = "2026.10.22"
 dotfiles.root = "{{config_root}}"   # this checkout, wherever it is
 
 [bootstrap]
-dotfile_groups = ["bin", "claude", "dev", "ghostty", "git", "mise", "nvim", "pi", "sandbox", "starship", "yazi", "zsh"]
+dotfile_groups = ["bin", "claude", "dev", "ghostty", "git", "homebrew", "mise", "nvim", "pi", "sandbox", "starship", "yazi", "zsh"]
 
 # Our ssh settings are a marked block in a real ~/.ssh/config. Tools that add
 # their own lines (an Include for OrbStack, say) keep them; a link or a copy
