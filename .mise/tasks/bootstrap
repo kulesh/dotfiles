@@ -92,8 +92,11 @@ fi
 # needed are the ones projects name (secret get NAME in their .mise.toml).
 # Read-only check, so it runs in test runs too.
 if command -v security >/dev/null; then
-    needed=(${(u)${(f)"$(cat $PROJECT_DIR/*/{,.}mise{,.local}.toml(N.) /dev/null |
-        grep -o 'secret get [A-Z_][A-Z0-9_]*' | cut -d' ' -f3)"}})
+    # No project naming a secret is the usual case on a new Mac: grep finds
+    # nothing and exits 1, which pipefail and set -e would turn into a silent
+    # failure of the whole task.
+    needed=(${(u)${(f)"$({ grep -ho 'secret get [A-Z_][A-Z0-9_]*' \
+        $PROJECT_DIR/*/{,.}mise{,.local}.toml(N.) /dev/null || true; } | cut -d' ' -f3)"}})
     missing=()
     for name in $needed; do
         "$dotfiles/bin/.local/bin/secret" get "$name" &>/dev/null || missing+=("$name")

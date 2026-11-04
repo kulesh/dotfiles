@@ -162,6 +162,15 @@ EOF
     [[ "$output" != *"Missing secrets:"*"HAVE_API_KEY"* ]]
 }
 
+@test "finishes quietly when no project names a secret" {
+    export KC_STORE=$(scratch)
+    export PATH="$DOTFILES_ROOT/tests/fixtures:$PATH"
+    preview
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"ERROR"* ]]
+    [[ "$output" != *"Missing secrets"* ]]
+}
+
 @test "previews GitHub login over SSH when not authenticated" {
     preview
     [ "$status" -eq 0 ]
