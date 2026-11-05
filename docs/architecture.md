@@ -12,7 +12,7 @@
 │               │                              │                  │
 │               ▼                              ▼                  │
 │  /opt/homebrew                    ~/.zshrc → zsh/.zshrc         │
-│  ~/dev/project/.mise.toml         ~/.config/nvim → nvim/…       │
+│  ~/dev/<org>/<repo>/.mise.toml    ~/.config/nvim → nvim/…       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -46,7 +46,7 @@ bash <(curl -fsSL .../mise.sh)
 │      mise install → Claude Code           │
 │      → macOS defaults                     │
 │      → gh auth login (SSH key → GitHub)   │
-│      → cloneproject each own repo → ~/dev │
+│      → clone own repos: ~/dev/<owner>/…   │
 └───────────────────────────────────────────┘
 ```
 
@@ -58,10 +58,10 @@ Each command is a mise task with a short alias; the tasks live in `~/.config/mis
 workon demo<Tab>                     alias → mise -C / run project:workon demo
       │                              completion: mise lists projects (usage spec)
       ▼
-project:workon (a child process)     checks ~/dev/demo is a project
-      │                              writes ~/dev/demo to $DOTFILES_FOLLOW
+project:workon (a child process)     resolves demo to ~/dev/kulesh/demo
+      │                              writes it to $DOTFILES_FOLLOW
       ▼
-before the next prompt               lib/follow.zsh: cd ~/dev/demo
+before the next prompt               lib/follow.zsh: cd ~/dev/kulesh/demo
       │
       ▼
 chpwd                                lib/sandbox.sh: .sandbox marker? enter the sandbox
@@ -135,9 +135,11 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 mkproject "api" "fastapi"
         │
         ▼
-┌─────────────────┐     ┌──────────────────┐
-│ Create ~/dev/api │────▶│ mise trust .toml  │
-└────────┬────────┘     └──────────────────┘
+┌──────────────────────┐     ┌───────────────────────────────┐
+│ ~/dev/<login>/api    │────▶│ ~/dev/<login>/mise.toml       │
+│ (mkproject org/api:  │     │ (monorepo root, first project │
+│  ~/dev/org/api)      │     │  of the org; trusted by path) │
+└────────┬─────────────┘     └───────────────────────────────┘
          │
          ▼
 ┌─────────────────────────────────────────┐

@@ -150,8 +150,8 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
     export KC_STORE=$(scratch)
     export PATH="$DOTFILES_ROOT/tests/fixtures:$PATH"
     printf 'v\n' | "$DOTFILES_ROOT/bin/.local/bin/secret" set HAVE_API_KEY
-    mkdir -p "$TARGET/dev/agent"
-    cat > "$TARGET/dev/agent/.mise.toml" <<'EOF'
+    mkdir -p "$TARGET/dev/kulesh/agent"
+    cat > "$TARGET/dev/kulesh/agent/.mise.toml" <<'EOF'
 [env]
 HAVE_API_KEY = "{{ exec(command='secret get HAVE_API_KEY') }}"
 NEED_API_KEY = "{{ exec(command='secret get NEED_API_KEY') }}"
@@ -160,6 +160,20 @@ EOF
     [ "$status" -eq 0 ]
     [[ "$output" == *"Missing secrets: NEED_API_KEY"* ]]
     [[ "$output" != *"Missing secrets:"*"HAVE_API_KEY"* ]]
+}
+
+@test "reports a secret an org names for all its repos" {
+    export KC_STORE=$(scratch)
+    export PATH="$DOTFILES_ROOT/tests/fixtures:$PATH"
+    mkdir -p "$TARGET/dev/acme/tool"
+    : > "$TARGET/dev/acme/tool/.mise.toml"
+    cat > "$TARGET/dev/acme/mise.toml" <<'EOF'
+[env]
+ACME_API_KEY = "{{ exec(command='secret get ACME_API_KEY') }}"
+EOF
+    preview
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Missing secrets: ACME_API_KEY"* ]]
 }
 
 @test "finishes quietly when no project names a secret" {
@@ -216,7 +230,7 @@ case "$1 $2" in
   "repo list") printf 'kulesh/dotfiles\nkulesh/alpha\nkulesh/beta\n';;
 esac
 STUB
-    mkdir -p "$TARGET/dev/beta"
+    mkdir -p "$TARGET/dev/kulesh/beta"
     preview
     [ "$status" -eq 0 ]
     [[ "$output" == *"would clone kulesh/alpha"* ]]

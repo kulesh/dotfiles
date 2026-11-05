@@ -8,7 +8,7 @@ source "${0:A:h}/_lib.zsh"
 root=$(project_root "${usage_from:-$PWD}") || die "Not in a project"
 cd "$root"
 
-print -r -- "${c[bold]}${c[cyan]}${root:t}${c[reset]}"
+print -r -- "${c[bold]}${c[cyan]}$(project_label "$root")${c[reset]}"
 print -r -- "${c[dim]}$root · modified $(last_modified "$root" "%b %d %Y")${c[reset]}"
 [[ -f .sandbox ]] && print -r -- "${c[green]}🔒 Sandboxed${c[reset]}"
 print

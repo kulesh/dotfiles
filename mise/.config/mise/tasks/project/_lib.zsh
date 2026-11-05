@@ -3,8 +3,10 @@
 # Helpers shared by the project:* tasks. Hidden from the task list;
 # each task sources it.
 #
-# A project is a directory in ~/dev with a mise config (.mise.toml or
-# .tool-versions). Cloned projects have a GitHub origin; created ones don't.
+# A project is a repo at ~/dev/<org>/<repo> with a mise config (.mise.toml
+# or .tool-versions). An org is a GitHub user or organization: a cloned repo
+# lives under its owner, a created one under your GitHub login. Each org
+# directory is a mise monorepo (org_dir), so a task can run in all its repos.
 
 projects_dir=$HOME/dev
 templates_dir=${${(%):-%x}:A:h:h}/mkproject
@@ -32,27 +34,95 @@ pick_project() {   # pick_project <usage>
 
 is_project() { [[ -e $1/.mise.toml || -e $1/.tool-versions ]]; }
 
-# The nearest directory at or above $1 with a mise config. ~/dev and ~ don't
-# count: their configs are layers every project inherits, not projects.
+# An org directory's mise.toml makes it a monorepo root, never a project.
+is_org() { [[ -f $1/mise.toml ]] && grep -q '^monorepo_root = true' "$1/mise.toml"; }
+
+# The GitHub login gh uses here, in lowercase: the org for projects you
+# create. gh keeps it in its own config, so this works offline.
+own_org() {
+    local login
+    login=$(gh config get -h github.com user 2>/dev/null) || login=
+    [[ -n $login ]] || login=$(gh api user --jq .login 2>/dev/null) || return 1
+    [[ -n $login ]] || return 1
+    print -r -- "${login:l}"
+}
+
+# ~/dev/<org>, made a mise monorepo the first time a project lands in it. An
+# existing mise.toml is the org's own and stays as it is.
+org_dir() {   # org_dir <org>
+    local dir=$projects_dir/$1
+    mkdir -p "$dir"
+    [[ -e $dir/mise.toml ]] || cat > "$dir/mise.toml" <<EOF
+# The $1 projects, one repo each, as a mise monorepo:
+#   mise run '//...:test'     runs test in every $1 repo
+#   mise run //<repo>:test    runs it in one, from anywhere in $1
+# Tools and [env] here reach every $1 repo.
+monorepo_root = true
+
+[monorepo]
+config_roots = ["*"]
+EOF
+    print -r -- "$dir"
+}
+
+# The project you're in. Within ~/dev it's the repo, ~/dev/<org>/<repo>: a
+# config deeper inside is a package of the repo, not another project.
+# Elsewhere, the nearest directory with a mise config. ~/dev, an org and ~
+# don't count: their configs are layers projects inherit.
 project_root() {
-    local dir=${1:A}
+    local dir=${1:A} dev=${projects_dir:A}
+    if [[ $dir == $dev || $dir == $dev/* ]]; then
+        local -a parts=(${(s:/:)${dir#$dev}})
+        (( $#parts >= 2 )) || return 1
+        dir=$dev/$parts[1]/$parts[2]
+        is_project "$dir" || return 1
+        print -r -- "$dir"
+        return
+    fi
     until is_project "$dir"; do
         [[ $dir == / ]] && return 1
         dir=${dir:h}
     done
-    [[ $dir != ${projects_dir:A} && $dir != ${HOME:A} ]] || return 1
+    [[ $dir != ${HOME:A} ]] || return 1
     print -r -- "$dir"
 }
 
-# Every project in ~/dev, by name.
-project_names() {
-    local dir
-    for dir in $projects_dir/*(N/); do is_project "$dir" && print -r -- "${dir:t}"; done
+# How a project is named: org/repo in ~/dev, the directory name elsewhere.
+project_label() {
+    local dev=${projects_dir:A}
+    if [[ ${1:A} == $dev/*/* ]]; then print -r -- "${1:A:h:t}/${1:A:t}"; else print -r -- "${1:t}"; fi
 }
 
-# A project directory by name, or a clear error.
+# Every project in ~/dev, as org/repo. .archive is hidden, so never listed.
+project_names() {
+    local dir
+    for dir in $projects_dir/*/*(N/); do is_project "$dir" && print -r -- "${dir:h:t}/${dir:t}"; done
+}
+
+# Names to complete: a repo name alone while one org has it, org/repo when
+# more than one does.
+project_short_names() {
+    local -a names=(${(f)"$(project_names)"})
+    local -A count
+    local name
+    for name in $names; do count[${name#*/}]=$(( ${count[${name#*/}]:-0} + 1 )); done
+    for name in $names; do
+        if (( count[${name#*/}] == 1 )); then print -r -- "${name#*/}"; else print -r -- "$name"; fi
+    done
+}
+
+# A project directory from org/repo, or from a repo name only one org has;
+# otherwise a clear error.
 project_dir() {
-    local dir=$projects_dir/$1
+    local dir
+    if [[ $1 == */* ]]; then
+        dir=$projects_dir/${${1%%/*}:l}/${1#*/}
+    else
+        local -a found=()
+        for dir in $projects_dir/*/$1(N/); do is_project "$dir" && found+=("$dir"); done
+        (( $#found > 1 )) && die "'$1' is in more than one org: ${(j:, :)${found[@]/#$projects_dir\//}}. Name one as <org>/$1."
+        dir=${found[1]:-$projects_dir/$1}
+    fi
     [[ -d $dir ]] || die "No project '$1' in $projects_dir"
     is_project "$dir" || die "$dir isn't a project (no .mise.toml)"
     print -r -- "$dir"
@@ -67,7 +137,7 @@ github_slug() {
     print -r -- "${match[1]}/${match[2]%.git}"
 }
 
-# What a user types for a GitHub repo → "clone URL|project name". Accepts
+# What a user types for a GitHub repo → "clone URL|owner/repo". Accepts
 # user/repo, gh user/repo, and HTTPS or SSH URLs; clones always use SSH.
 parse_github_repo() {
     local spec=$1
@@ -82,7 +152,7 @@ parse_github_repo() {
     else
         return 1
     fi
-    print -r -- "git@github.com:$user/$repo.git|$repo"
+    print -r -- "git@github.com:$user/$repo.git|$user/$repo"
 }
 
 last_modified() {

@@ -1,8 +1,8 @@
 #!/usr/bin/env zsh
 #MISE description="Go to a project in ~/dev, optionally in the sandbox (workon)"
 #MISE quiet=true
-#USAGE arg "[name]" help="Project in ~/dev; without one, pick it with fzf"
-#USAGE complete "name" run="mise run project:list --names"
+#USAGE arg "[name]" help="org/repo, or a repo name one org has; without one, pick with fzf"
+#USAGE complete "name" run="mise run project:list --short"
 #USAGE flag "-s --sandbox" help="Always open this project in the macOS sandbox"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
@@ -15,6 +15,6 @@ dir=$(project_dir "$name") || exit 1
 # in this project (lib/sandbox.sh), not only through workon.
 if [[ ${usage_sandbox:-false} == true && ! -f $dir/.sandbox ]]; then
     touch "$dir/.sandbox"
-    print -r -- "Sandbox enabled for $name"
+    print -r -- "Sandbox enabled for $(project_label "$dir")"
 fi
 follow "$dir"

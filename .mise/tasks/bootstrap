@@ -79,7 +79,7 @@ if gh auth status &>/dev/null; then
     failed=()
     for repo in ${(f)"$(gh repo list --source --no-archived --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner')"}; do
         [[ ${self%.git} == *[:/]$repo ]] && continue   # already at ~/.dotfiles
-        [[ -d $PROJECT_DIR/${repo#*/} ]] && continue
+        [[ -d $PROJECT_DIR/${${repo%%/*}:l}/${repo#*/} ]] && continue   # ~/dev/<owner>/<repo>
         if previewing; then echo "would clone $repo"; continue; fi
         DOTFILES_FOLLOW=/dev/null mise -C / run project:clone "$repo" || failed+=("$repo")
     done
@@ -89,14 +89,15 @@ else
 fi
 
 # Secrets live in this Mac's Keychain, entered once per machine. The ones
-# needed are the ones projects name (secret get NAME in their .mise.toml).
+# needed are the ones projects and orgs name (secret get NAME in their mise
+# config, at ~/dev/<org>/<repo> or ~/dev/<org> for all of an org's repos).
 # Read-only check, so it runs in test runs too.
 if command -v security >/dev/null; then
     # No project naming a secret is the usual case on a new Mac: grep finds
     # nothing and exits 1, which pipefail and set -e would turn into a silent
     # failure of the whole task.
     needed=(${(u)${(f)"$({ grep -ho 'secret get [A-Z_][A-Z0-9_]*' \
-        $PROJECT_DIR/*/{,.}mise{,.local}.toml(N.) /dev/null || true; } | cut -d' ' -f3)"}})
+        $PROJECT_DIR/*/{,*/}{,.}mise{,.local}.toml(N.) /dev/null || true; } | cut -d' ' -f3)"}})
     missing=()
     for name in $needed; do
         "$dotfiles/bin/.local/bin/secret" get "$name" &>/dev/null || missing+=("$name")

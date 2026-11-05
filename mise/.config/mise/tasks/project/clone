@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-#MISE description="Clone a GitHub repo into ~/dev as a project (cloneproject)"
+#MISE description="Clone a GitHub repo into ~/dev/<owner> as a project (cloneproject)"
 #MISE quiet=true
 #MISE raw=true
 #USAGE arg "[repo]" var=#true var_max=2 help="user/repo, or a GitHub URL (gh user/repo also works)"
@@ -9,14 +9,17 @@ source "${0:A:h}/_lib.zsh"
 need "${usage_repo:-}" "cloneproject <user>/<repo>   (or a GitHub URL)"
 parsed=$(parse_github_repo ${(z)usage_repo}) ||
     die "Not a GitHub repo: $usage_repo (use user/repo, or a GitHub URL)"
-url=${parsed%|*} name=${parsed#*|}
-dir=$projects_dir/$name
+url=${parsed%|*} slug=${parsed#*|}
+# GitHub owners are case-insensitive; one directory per owner.
+owner=${${slug%%/*}:l} name=${slug#*/}
+dir=$projects_dir/$owner/$name
 
-[[ -e $dir ]] && die "$dir already exists. Use workon $name, or updateproject $name."
+[[ -e $dir ]] && die "$dir already exists. Use workon $owner/$name, or updateproject $owner/$name."
 
 # Clone first: a failed clone leaves nothing behind, git's own error is
 # visible, and the repo's default branch is whatever it is.
 git clone "$url" "$dir" || exit 1
+org_dir "$owner" >/dev/null
 # A mise config is what makes a directory a project.
 is_project "$dir" || : > "$dir/.mise.toml"
 

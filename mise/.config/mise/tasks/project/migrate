@@ -1,0 +1,48 @@
+#!/usr/bin/env zsh
+#MISE description="Move projects from ~/dev/<repo> to ~/dev/<org>/<repo>, once"
+#MISE quiet=true
+#MISE raw=true
+#USAGE flag "-n --dry-run" help="List the moves without making them"
+set -euo pipefail
+source "${0:A:h}/_lib.zsh"
+
+staging=$projects_dir/.migrating
+[[ -e $staging ]] && die "A migration stopped partway: its projects are in $staging. Move them to ~/dev/<org>/<repo>, remove $staging, and run again."
+
+# The flat layout's projects sit directly in ~/dev. An org directory is never
+# one of them: its mise.toml makes it a monorepo root. A cloned project goes
+# under its GitHub owner, a local one under your login.
+typeset -A moves   # repo -> org
+for dir in $projects_dir/*(N/); do
+    is_project "$dir" || continue
+    is_org "$dir" && continue
+    if slug=$(github_slug "$dir"); then
+        moves[${dir:t}]=${${slug%%/*}:l}
+    else
+        moves[${dir:t}]=$(own_org) || die "No GitHub login to take your org from (gh auth login); $dir has no GitHub origin to place it by."
+    fi
+done
+
+if (( ! ${#moves} )); then
+    print -r -- "Nothing to migrate: every project is in $projects_dir/<org>/<repo>."
+    exit 0
+fi
+
+for repo in ${(ko)moves}; do
+    print -r -- "  $projects_dir/$repo → $projects_dir/${moves[$repo]}/$repo"
+done
+[[ ${usage_dry_run:-false} == true ]] && exit 0
+confirm "Move ${#moves} project(s)? [y/N]" n || { print "Cancelled"; exit 0; }
+
+# Two steps: everything out of the way first, so a repo named like an org
+# (~/dev/kulesh, which moves to ~/dev/kulesh/kulesh) has left before its org
+# directory is made.
+mkdir "$staging"
+for repo in ${(k)moves}; do mv "$projects_dir/$repo" "$staging/$repo"; done
+for repo in ${(k)moves}; do
+    target=$(org_dir "${moves[$repo]}")/$repo
+    [[ -e $target ]] && die "$target already exists; $repo stays in $staging."
+    mv "$staging/$repo" "$target"
+done
+rmdir "$staging"
+print -r -- "Moved ${#moves} project(s). Each org in $projects_dir is now a mise monorepo."

@@ -11,41 +11,41 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
 }
 
 # =============================================================================
-# parse_github_repo: what a user types → "clone URL|project name"
+# parse_github_repo: what a user types → "clone URL|owner/repo"
 # =============================================================================
 
 @test "parse_github_repo: user/repo" {
     lib parse_github_repo "kulesh/dotfiles"
     [ "$status" -eq 0 ]
-    [ "$output" = "git@github.com:kulesh/dotfiles.git|dotfiles" ]
+    [ "$output" = "git@github.com:kulesh/dotfiles.git|kulesh/dotfiles" ]
 }
 
 @test "parse_github_repo: gh user/repo, the older form" {
     lib parse_github_repo "gh" "kulesh/dotfiles"
     [ "$status" -eq 0 ]
-    [ "$output" = "git@github.com:kulesh/dotfiles.git|dotfiles" ]
+    [ "$output" = "git@github.com:kulesh/dotfiles.git|kulesh/dotfiles" ]
 }
 
 @test "parse_github_repo: HTTPS URL with and without .git, and with a trailing slash" {
     for url in https://github.com/kulesh/dotfiles.git https://github.com/kulesh/dotfiles https://github.com/kulesh/dotfiles/; do
         lib parse_github_repo "$url"
         [ "$status" -eq 0 ]
-        [ "$output" = "git@github.com:kulesh/dotfiles.git|dotfiles" ]
+        [ "$output" = "git@github.com:kulesh/dotfiles.git|kulesh/dotfiles" ]
     done
 }
 
 @test "parse_github_repo: SSH URL with and without .git" {
     lib parse_github_repo "git@github.com:kulesh/dotfiles.git"
-    [ "$output" = "git@github.com:kulesh/dotfiles.git|dotfiles" ]
+    [ "$output" = "git@github.com:kulesh/dotfiles.git|kulesh/dotfiles" ]
     lib parse_github_repo "git@github.com:kulesh/dotfiles"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"|dotfiles" ]]
+    [[ "$output" == *"|kulesh/dotfiles" ]]
 }
 
 @test "parse_github_repo: repo names with hyphens and dots" {
     lib parse_github_repo "user/my-cool.repo"
     [ "$status" -eq 0 ]
-    [ "$output" = "git@github.com:user/my-cool.repo.git|my-cool.repo" ]
+    [ "$output" = "git@github.com:user/my-cool.repo.git|user/my-cool.repo" ]
 }
 
 @test "parse_github_repo: rejects anything else" {

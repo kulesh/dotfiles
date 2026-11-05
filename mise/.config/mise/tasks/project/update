@@ -2,8 +2,8 @@
 #MISE description="Pull the latest changes for a cloned project (updateproject)"
 #MISE quiet=true
 #MISE raw=true
-#USAGE arg "[name]" help="Project in ~/dev (default: the one you're in)"
-#USAGE complete "name" run="mise run project:list --names"
+#USAGE arg "[name]" help="org/repo, or a repo name one org has (default: the one you're in)"
+#USAGE complete "name" run="mise run project:list --short"
 #USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
@@ -14,7 +14,7 @@ else
     dir=$(project_root "${usage_from:-$PWD}") || die "Not in a project; name one: updateproject <name>"
 fi
 cd "$dir"
-name=${dir:t}
+name=$(project_label "$dir")
 
 [[ -d .git ]] || die "$name isn't a git repository"
 remote=$(git remote get-url origin 2>/dev/null) || die "$name has no remote to pull from"

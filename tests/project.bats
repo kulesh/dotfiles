@@ -2,7 +2,8 @@
 # Acceptance tests for the project commands: mise tasks under
 # mise/.config/mise/tasks/project, run the way the shell aliases run them
 # (mise -C / run project:<command>), in a scratch home whose ~/dev holds the
-# projects. Clones come from local bare repos standing in for GitHub.
+# projects as ~/dev/<org>/<repo>. Clones come from local bare repos standing
+# in for GitHub; a stand-in gh reports the login kulesh, the default org.
 
 load test_helper
 
@@ -23,7 +24,17 @@ setup() {
     git config --global user.email test@example.com
     git config --global commit.gpgsign false
     git config --global init.defaultBranch main
-    git config --global url."$HOME/github/".insteadOf git@github.com:kulesh/
+    git config --global url."$HOME/github/".insteadOf git@github.com:
+    # gh knows who you're logged in as; GH_NO_LOGIN makes it not.
+    mkdir -p "$HOME/stubs"
+    cat > "$HOME/stubs/gh" <<'EOF'
+#!/bin/sh
+[ -z "$GH_NO_LOGIN" ] && [ "$*" = "config get -h github.com user" ] && echo kulesh && exit 0
+exit 1
+EOF
+    chmod +x "$HOME/stubs/gh"
+    export PATH=$HOME/stubs:$PATH
+    MINE=$DEV/kulesh
 }
 
 
@@ -31,11 +42,16 @@ project() {   # project <command> [args...]
     run mise -C / run "project:$1" "${@:2}" </dev/null
 }
 
-github_repo() {   # github_repo <name> [default branch]: a bare repo with one commit
-    local seed=$HOME/seed-$1
+github_repo() {   # github_repo <owner/name> [default branch]: a bare repo with one commit
+    local seed=$HOME/seed/$1
     git init -q -b "${2:-main}" "$seed"
     git -C "$seed" commit -q --allow-empty -m init
     git clone -q --bare "$seed" "$HOME/github/$1.git"
+}
+
+push_commit() {   # push_commit <owner/name> <message>: a new commit on GitHub
+    git -C "$HOME/seed/$1" commit -q --allow-empty -m "$2"
+    git -C "$HOME/seed/$1" push -q "$HOME/github/$1.git" main
 }
 
 followed() { cat "$DOTFILES_FOLLOW" 2>/dev/null || true; }
@@ -51,26 +67,43 @@ completions() {   # the candidates zsh would offer for a command line
 @test "mkproject creates a project from the base template and moves the shell there" {
     project new demo
     [ "$status" -eq 0 ]
-    [ -d "$DEV/demo/.git" ]
-    [ "$(cat "$DEV/demo/README.md")" = "# demo" ]
-    [ -f "$DEV/demo/.mise.toml" ]
+    [ -d "$MINE/demo/.git" ]
+    [ "$(cat "$MINE/demo/README.md")" = "# demo" ]
+    [ -f "$MINE/demo/.mise.toml" ]
     # One instructions file for every agent; Claude Code reads AGENTS.md
     # when there's no CLAUDE.md.
-    [ -f "$DEV/demo/AGENTS.md" ]
-    [ ! -e "$DEV/demo/CLAUDE.md" ]
-    [ "$(followed)" = "$DEV/demo" ]
+    [ -f "$MINE/demo/AGENTS.md" ]
+    [ ! -e "$MINE/demo/CLAUDE.md" ]
+    [ "$(followed)" = "$MINE/demo" ]
+}
+
+@test "mkproject puts a new project in your own org, or in the org you name" {
+    project new demo
+    [ -d "$DEV/kulesh/demo" ]
+    project new acme/tool
+    [ "$status" -eq 0 ]
+    [ -d "$DEV/acme/tool/.git" ]
+    [ "$(followed)" = "$DEV/acme/tool" ]
+}
+
+@test "mkproject without a GitHub login asks for the org instead of guessing" {
+    GH_NO_LOGIN=1 project new demo
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"mkproject <org>/demo"* ]]
+    [ -z "$(ls -A "$DEV")" ]
 }
 
 @test "mkproject --dry-run describes the project and creates nothing" {
     project new demo python --dry-run
     [ "$status" -eq 0 ]
     [[ "$output" == *"mkproject:python"* ]]
-    [ ! -e "$DEV/demo" ]
+    [[ "$output" == *"$MINE/demo"* ]]
+    [ ! -e "$MINE/demo" ]
     [ -z "$(followed)" ]
 }
 
 @test "mkproject refuses a name that's already a project" {
-    mkdir -p "$DEV/demo"
+    mkdir -p "$MINE/demo"
     project new demo
     [ "$status" -ne 0 ]
     [[ "$output" == *"already exists"* ]]
@@ -80,13 +113,13 @@ completions() {   # the candidates zsh would offer for a command line
     project new demo nosuch
     [ "$status" -ne 0 ]
     [[ "$output" == *"python"* ]]
-    [ ! -e "$DEV/demo" ]
+    [ ! -e "$MINE/demo" ]
 }
 
 @test "mkproject without a name shows how to use it" {
     project new
     [ "$status" -ne 0 ]
-    [[ "$output" == *"Usage: mkproject <name> [template]"* ]]
+    [[ "$output" == *"Usage: mkproject [org/]name [template]"* ]]
     [[ "$output" != *"mise ERROR"* ]]
 }
 
@@ -106,37 +139,42 @@ completions() {   # the candidates zsh would offer for a command line
 # cloneproject (project:clone)
 # =============================================================================
 
-@test "cloneproject clones into ~/dev, keeps the repo's default branch, and moves the shell there" {
-    github_repo alpha trunk
+@test "cloneproject clones into ~/dev/<owner>, keeps the repo's default branch, and moves the shell there" {
+    github_repo kulesh/alpha trunk
     project clone kulesh/alpha
     [ "$status" -eq 0 ]
-    [ "$(git -C "$DEV/alpha" branch --show-current)" = "trunk" ]
-    [ -f "$DEV/alpha/.mise.toml" ]
-    [ "$(followed)" = "$DEV/alpha" ]
+    [ "$(git -C "$MINE/alpha" branch --show-current)" = "trunk" ]
+    [ -f "$MINE/alpha/.mise.toml" ]
+    [ "$(followed)" = "$MINE/alpha" ]
+}
+
+@test "cloneproject puts someone else's repo under its owner, in lowercase" {
+    github_repo crmne/ruby_llm
+    # GitHub matches owners whatever their case.
+    ln -s crmne "$HOME/github/Crmne"
+    project clone Crmne/ruby_llm
+    [ "$status" -eq 0 ]
+    [ -d "$DEV/crmne/ruby_llm/.git" ]
 }
 
 @test "cloneproject accepts gh user/repo and GitHub URLs" {
-    github_repo alpha
-    github_repo beta
+    github_repo kulesh/alpha
+    github_repo kulesh/beta
     project clone gh kulesh/alpha
     [ "$status" -eq 0 ]
     project clone https://github.com/kulesh/beta.git
     [ "$status" -eq 0 ]
-    [ -d "$DEV/alpha/.git" ]
-    [ -d "$DEV/beta/.git" ]
+    [ -d "$MINE/alpha/.git" ]
+    [ -d "$MINE/beta/.git" ]
 }
 
 @test "cloneproject: a failed clone reports git's error and leaves nothing behind" {
     project clone kulesh/missing
     [ "$status" -ne 0 ]
     [[ "$output" == *"does not appear to be a git repository"* || "$output" == *"Could not read from remote repository"* ]]
-    [ ! -e "$DEV/missing" ]
+    [ ! -e "$MINE/missing" ]
     [ -z "$(followed)" ]
 }
-
-# =============================================================================
-# lsprojects (project:list)
-# =============================================================================
 
 @test "cloneproject without a repo shows how to use it" {
     project clone
@@ -145,22 +183,53 @@ completions() {   # the candidates zsh would offer for a command line
     [[ "$output" != *"mise ERROR"* ]]
 }
 
-@test "lsprojects lists cloned and created projects, and nothing else" {
-    github_repo alpha
-    project clone kulesh/alpha
+# =============================================================================
+# An org is a mise monorepo: ~/dev/<org>/mise.toml
+# =============================================================================
+
+@test "an org's first project makes the org a monorepo: a task runs in every repo" {
     project new demo
-    mkdir -p "$DEV/not-a-project" "$DEV/.archive/old"
-    touch "$DEV/.archive/old/.mise.toml"
+    github_repo kulesh/alpha
+    project clone kulesh/alpha
+    grep -q '^monorepo_root = true' "$MINE/mise.toml"
+    printf '[tasks.hello]\nrun = "echo hello from demo"\n' >> "$MINE/demo/.mise.toml"
+    printf '[tasks.hello]\nrun = "echo hello from alpha"\n' >> "$MINE/alpha/.mise.toml"
+    run mise -C "$MINE" run '//...:hello'
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"hello from demo"* ]]
+    [[ "$output" == *"hello from alpha"* ]]
+}
+
+@test "an org's mise.toml is left alone once it exists" {
+    mkdir -p "$MINE"
+    printf '# mine\n' > "$MINE/mise.toml"
+    project new demo
+    [ "$(cat "$MINE/mise.toml")" = "# mine" ]
+}
+
+# =============================================================================
+# lsprojects (project:list)
+# =============================================================================
+
+@test "lsprojects lists cloned and created projects by org, and nothing else" {
+    github_repo kulesh/alpha
+    github_repo crmne/ruby_llm
+    project clone kulesh/alpha
+    project clone crmne/ruby_llm
+    project new demo
+    mkdir -p "$MINE/not-a-project" "$DEV/.archive/kulesh/old"
+    touch "$DEV/.archive/kulesh/old/.mise.toml"
     project list
     [ "$status" -eq 0 ]
-    [[ "$output" == *"kulesh/alpha"* ]]
-    [[ "$output" == *"demo"* ]]
+    [[ "$output" == *"crmne"*"ruby_llm"*"kulesh"*"alpha"*"demo"* ]]
+    [[ "$output" == *"↙ kulesh/alpha"* ]]
     [[ "$output" != *"not-a-project"* ]]
     [[ "$output" != *"old"* ]]
+    [[ "$output" == *"3 projects in 2 orgs"* ]]
 }
 
 @test "lsprojects --type cloned shows only cloned projects" {
-    github_repo alpha
+    github_repo kulesh/alpha
     project clone kulesh/alpha
     project new demo
     project list --type cloned
@@ -175,18 +244,18 @@ completions() {   # the candidates zsh would offer for a command line
 
 @test "showproject describes the project you're in, from any directory inside it" {
     project new demo
-    mkdir -p "$DEV/demo/src/deep"
-    project show --from "$DEV/demo/src/deep"
+    mkdir -p "$MINE/demo/src/deep"
+    project show --from "$MINE/demo/src/deep"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"demo"* ]]
+    [[ "$output" == *"kulesh/demo"* ]]
     [[ "$output" == *"main"* ]]
 }
 
 @test "showproject lists the project's own tools, one per line, and counts the inherited ones" {
     printf '[tools]\nuv = "0.5.0"\n' > "$DEV/.mise.toml"
-    mkdir -p "$DEV/tooled"
-    printf '[tools]\nnode = "20.1.0"\npython = "3.11.1"\n' > "$DEV/tooled/.mise.toml"
-    MISE_TRUSTED_CONFIG_PATHS=$DEV project show --from "$DEV/tooled"
+    mkdir -p "$MINE/tooled"
+    printf '[tools]\nnode = "20.1.0"\npython = "3.11.1"\n' > "$MINE/tooled/.mise.toml"
+    MISE_TRUSTED_CONFIG_PATHS=$DEV project show --from "$MINE/tooled"
     [ "$status" -eq 0 ]
     local node=$'\n  node +20\.1\.0' python=$'\n  python +3\.11\.1'
     [[ "$output" =~ $node ]]
@@ -196,16 +265,16 @@ completions() {   # the candidates zsh would offer for a command line
     [[ "$output" =~ \+\ [0-9]+\ inherited ]]
 }
 
-@test "showproject in ~/dev or ~ says you're not in a project, though both hold mise config" {
+@test "showproject in ~/dev, an org or ~ says you're not in a project, though all hold mise config" {
     project new demo
     printf '[tools]\n' > "$DEV/.mise.toml"
     printf '[tools]\n' > "$HOME/.mise.toml"
-    for dir in "$DEV" "$HOME"; do
+    for dir in "$DEV" "$MINE" "$HOME"; do
         project show --from "$dir"
         [ "$status" -ne 0 ]
         [[ "$output" == *"Not in a project"* ]]
     done
-    project show --from "$DEV/demo"
+    project show --from "$MINE/demo"
     [ "$status" -eq 0 ]
 }
 
@@ -218,10 +287,12 @@ completions() {   # the candidates zsh would offer for a command line
 @test "cdproject moves the shell to the root of the project you're in" {
     project new demo
     rm -f "$DOTFILES_FOLLOW"
-    mkdir -p "$DEV/demo/src/deep"
-    project root --from "$DEV/demo/src/deep"
+    mkdir -p "$MINE/demo/src/deep/pkg"
+    # A config deeper in the repo (a package of its own) doesn't make it the root.
+    : > "$MINE/demo/src/deep/pkg/.mise.toml"
+    project root --from "$MINE/demo/src/deep/pkg"
     [ "$status" -eq 0 ]
-    [ "$(followed)" = "$DEV/demo" ]
+    [ "$(followed)" = "$MINE/demo" ]
 }
 
 @test "cdproject outside a project says so and goes nowhere" {
@@ -239,14 +310,30 @@ completions() {   # the candidates zsh would offer for a command line
     rm -f "$DOTFILES_FOLLOW"
     project workon demo
     [ "$status" -eq 0 ]
-    [ "$(followed)" = "$DEV/demo" ]
+    [ "$(followed)" = "$MINE/demo" ]
+}
+
+@test "workon takes org/repo, and a bare repo name only while it's unambiguous" {
+    project new demo
+    project new acme/demo
+    project new acme/tool
+    rm -f "$DOTFILES_FOLLOW"
+    project workon tool
+    [ "$(followed)" = "$DEV/acme/tool" ]
+    project workon acme/demo
+    [ "$(followed)" = "$DEV/acme/demo" ]
+    rm -f "$DOTFILES_FOLLOW"
+    project workon demo
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"acme/demo"*"kulesh/demo"* ]]
+    [ -z "$(followed)" ]
 }
 
 @test "workon -s marks the project sandboxed" {
     project new demo
     project workon demo -s
     [ "$status" -eq 0 ]
-    [ -f "$DEV/demo/.sandbox" ]
+    [ -f "$MINE/demo/.sandbox" ]
 }
 
 @test "workon an unknown project says so and goes nowhere" {
@@ -268,7 +355,6 @@ completions() {   # the candidates zsh would offer for a command line
     project new demo
     # A stand-in fzf: runs the preview it was given for the first project,
     # as fzf would on the highlighted line, then picks that project.
-    mkdir "$HOME/stubs"
     cat > "$HOME/stubs/fzf" <<'EOF'
 #!/bin/sh
 first=$(head -n 1)
@@ -283,15 +369,18 @@ EOF
     # The pickers open only in a terminal.
     PATH=$HOME/stubs:$PATH run python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' \
         mise -C / run project:workon </dev/null
-    [ "$(followed)" = "$DEV/demo" ]
-    [[ "$(cat "$HOME/preview")" == *"demo"*"Git"* ]]
+    [ "$(followed)" = "$MINE/demo" ]
+    [[ "$(cat "$HOME/preview")" == *"kulesh/demo"*"Git"* ]]
 }
 
-@test "workon completes project names, and only projects" {
+@test "workon completes project names, and only projects; a name in two orgs completes with its org" {
     project new demo
-    mkdir -p "$DEV/not-a-project"
+    project new tool
+    project new acme/tool
+    mkdir -p "$MINE/not-a-project"
     local candidates=$(completions 'mise -C / run project:workon ')
-    [[ "$candidates" == *demo* ]]
+    [[ $'\n'"$candidates"$'\n' == *$'\n'demo$'\n'* ]]
+    [[ "$candidates" == *acme/tool* && "$candidates" == *kulesh/tool* ]]
     [[ "$candidates" != *not-a-project* ]]
 }
 
@@ -300,25 +389,23 @@ EOF
 # =============================================================================
 
 @test "updateproject pulls new commits, by name or from inside the project" {
-    github_repo alpha
+    github_repo kulesh/alpha
     project clone kulesh/alpha
-    git -C "$HOME/seed-alpha" commit -q --allow-empty -m "second"
-    git -C "$HOME/seed-alpha" push -q "$HOME/github/alpha.git" main
+    push_commit kulesh/alpha second
     project update alpha
     [ "$status" -eq 0 ]
-    [ "$(git -C "$DEV/alpha" log -1 --format=%s)" = "second" ]
-    git -C "$HOME/seed-alpha" commit -q --allow-empty -m "third"
-    git -C "$HOME/seed-alpha" push -q "$HOME/github/alpha.git" main
-    project update --from "$DEV/alpha"
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "second" ]
+    push_commit kulesh/alpha third
+    project update --from "$MINE/alpha"
     [ "$status" -eq 0 ]
-    [ "$(git -C "$DEV/alpha" log -1 --format=%s)" = "third" ]
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "third" ]
 }
 
 @test "updateproject refuses a project with uncommitted changes" {
-    github_repo alpha
+    github_repo kulesh/alpha
     project clone kulesh/alpha
-    echo change > "$DEV/alpha/file"
-    git -C "$DEV/alpha" add file
+    echo change > "$MINE/alpha/file"
+    git -C "$MINE/alpha" add file
     project update alpha
     [ "$status" -ne 0 ]
     [[ "$output" == *"uncommitted"* ]]
@@ -335,28 +422,28 @@ EOF
 # rmproject (project:remove)
 # =============================================================================
 
-@test "rmproject archives the project into ~/dev/.archive" {
+@test "rmproject archives the project into ~/dev/.archive/<org>" {
     project new demo
     project remove demo
     [ "$status" -eq 0 ]
-    [ ! -e "$DEV/demo" ]
-    [ -d "$DEV/.archive/demo/.git" ]
+    [ ! -e "$MINE/demo" ]
+    [ -d "$DEV/.archive/kulesh/demo/.git" ]
 }
 
 @test "rmproject --delete removes it for good" {
     project new demo
     project remove demo --delete
     [ "$status" -eq 0 ]
-    [ ! -e "$DEV/demo" ]
-    [ ! -e "$DEV/.archive/demo" ]
+    [ ! -e "$MINE/demo" ]
+    [ ! -e "$DEV/.archive/kulesh/demo" ]
 }
 
-@test "rmproject from inside the project moves the shell to ~/dev" {
+@test "rmproject from inside the project moves the shell to its org" {
     project new demo
     rm -f "$DOTFILES_FOLLOW"
-    project remove demo --from "$DEV/demo"
+    project remove demo --from "$MINE/demo/src"
     [ "$status" -eq 0 ]
-    [ "$(followed)" = "$DEV" ]
+    [ "$(followed)" = "$MINE" ]
 }
 
 @test "rmproject without a name, outside a terminal, shows how to use it and removes nothing" {
@@ -365,7 +452,7 @@ EOF
     [ "$status" -ne 0 ]
     [[ "$output" == *"Usage: rmproject <name> [--delete]"* ]]
     [[ "$output" != *"mise ERROR"* ]]
-    [ -d "$DEV/demo" ]
+    [ -d "$MINE/demo" ]
 }
 
 @test "rmproject an unknown project says so and changes nothing" {
@@ -373,7 +460,56 @@ EOF
     project remove nosuch
     [ "$status" -ne 0 ]
     [[ "$output" == *"nosuch"* ]]
-    [ -d "$DEV/demo" ]
+    [ -d "$MINE/demo" ]
+}
+
+# =============================================================================
+# Migrating ~/dev/<repo> to ~/dev/<org>/<repo> (project:migrate)
+# =============================================================================
+
+old_layout() {   # projects as the flat layout left them, one per kind
+    github_repo kulesh/alpha
+    github_repo kulesh/kulesh
+    github_repo crmne/ruby_llm
+    git clone -q git@github.com:kulesh/alpha.git "$DEV/alpha"
+    # A repo named like its owner: ~/dev/kulesh is both it and the new org.
+    git clone -q git@github.com:kulesh/kulesh.git "$DEV/kulesh"
+    git clone -q git@github.com:crmne/ruby_llm.git "$DEV/ruby_llm"
+    mkdir -p "$DEV/scratchpad"
+    for dir in alpha kulesh ruby_llm scratchpad; do : > "$DEV/$dir/.mise.toml"; done
+    touch "$DEV/kulesh/.sandbox"
+}
+
+@test "migrate moves each project under its GitHub owner, local ones under yours" {
+    old_layout
+    project migrate
+    [ "$status" -eq 0 ]
+    [ -d "$DEV/kulesh/alpha/.git" ]
+    [ -d "$DEV/kulesh/kulesh/.git" ]
+    [ -f "$DEV/kulesh/kulesh/.sandbox" ]
+    [ -d "$DEV/crmne/ruby_llm/.git" ]
+    [ -f "$DEV/kulesh/scratchpad/.mise.toml" ]
+    grep -q '^monorepo_root = true' "$DEV/kulesh/mise.toml"
+    grep -q '^monorepo_root = true' "$DEV/crmne/mise.toml"
+    [ ! -e "$DEV/alpha" ]
+    [ ! -e "$DEV/ruby_llm" ]
+}
+
+@test "migrate --dry-run lists the moves and moves nothing" {
+    old_layout
+    project migrate --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"$DEV/ruby_llm"*"$DEV/crmne/ruby_llm"* ]]
+    [ -d "$DEV/ruby_llm/.git" ]
+    [ ! -e "$DEV/crmne" ]
+}
+
+@test "migrate on a migrated ~/dev has nothing to do" {
+    old_layout
+    project migrate
+    project migrate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Nothing to migrate"* ]]
 }
 
 # =============================================================================

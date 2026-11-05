@@ -1,19 +1,27 @@
 #!/usr/bin/env zsh
-#MISE description="Create a project in ~/dev from a template (mkproject)"
+#MISE description="Create a project in ~/dev/<org> from a template (mkproject)"
 #MISE quiet=true
 #MISE raw=true
-#USAGE arg "[name]" help="Directory name in ~/dev"
+#USAGE arg "[name]" help="Name, or org/name; the org defaults to your GitHub login"
 #USAGE arg "[template]" default="base" help="Template to start from (list_project_types)"
 #USAGE complete "template" run="mise tasks ls --no-header 2>/dev/null | awk '/^mkproject:/ {sub(/^mkproject:/, \"\", $1); print $1}'"
 #USAGE flag "-n --dry-run" help="Describe the project without creating it"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
-need "${usage_name:-}" "mkproject <name> [template]   (list_project_types lists templates)"
-name=$usage_name template=${usage_template:-base}
-dir=$projects_dir/$name
+usage="mkproject [org/]name [template]   (list_project_types lists templates)"
+need "${usage_name:-}" "$usage"
+template=${usage_template:-base}
+if [[ $usage_name == */* ]]; then
+    org=${${usage_name%%/*}:l} name=${usage_name#*/}
+else
+    name=$usage_name
+    org=$(own_org) || die "No GitHub login to take the org from (gh auth login). Name it: mkproject <org>/$name"
+fi
+[[ -n $org && -n $name && $name != */* ]] || die "Usage: $usage"
+dir=$projects_dir/$org/$name
 
-[[ -e $dir ]] && die "$dir already exists. Use workon $name, or pick another name."
+[[ -e $dir ]] && die "$dir already exists. Use workon $org/$name, or pick another name."
 if ! mise tasks ls --no-header 2>/dev/null | grep -q "^mkproject:$template "; then
     print -r -- "No template '$template'." >&2
     mise run project:types >&2
@@ -24,24 +32,25 @@ if [[ ${usage_dry_run:-false} == true ]]; then
     print -r -- "Would create $dir:"
     print -r -- "  - an empty .mise.toml"
     print -r -- "  - mise run mkproject:$template in it"
-    print -r -- "  - CLAUDE.md and AGENTS.md from the $template template"
+    print -r -- "  - AGENTS.md from the $template template"
     exit 0
 fi
 
-print -r -- "Creating $template project $name"
+print -r -- "Creating $template project $org/$name"
+org_dir "$org" >/dev/null
 mkdir -p "$dir"
 : > "$dir/.mise.toml"
 
 if ! mise run --cd "$dir" "mkproject:$template"; then
     # Keep what was made, for a look at what went wrong; offer to clear it away.
     print -r -- "mkproject:$template failed; the partial project is in $dir" >&2
-    if confirm "Archive it to $projects_dir/.archive? [y/N]" n; then
-        mkdir -p "$projects_dir/.archive"
-        mv "$dir" "$projects_dir/.archive/${name}_failed_$(date +%Y%m%d_%H%M%S)"
+    if confirm "Archive it to $projects_dir/.archive/$org? [y/N]" n; then
+        mkdir -p "$projects_dir/.archive/$org"
+        mv "$dir" "$projects_dir/.archive/$org/${name}_failed_$(date +%Y%m%d_%H%M%S)"
     fi
     exit 1
 fi
 
-write_agent_docs "$dir" "$template" "$name" || print -r -- "Couldn't write CLAUDE.md and AGENTS.md" >&2
+write_agent_docs "$dir" "$template" "$name" || print -r -- "Couldn't write AGENTS.md" >&2
 print -r -- "Created $dir"
 follow "$dir"

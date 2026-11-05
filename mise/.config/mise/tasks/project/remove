@@ -1,9 +1,9 @@
 #!/usr/bin/env zsh
-#MISE description="Archive a project to ~/dev/.archive, or delete it (rmproject)"
+#MISE description="Archive a project to ~/dev/.archive/<org>, or delete it (rmproject)"
 #MISE quiet=true
 #MISE raw=true
-#USAGE arg "[name]" help="Project in ~/dev; without one, pick it with fzf"
-#USAGE complete "name" run="mise run project:list --names"
+#USAGE arg "[name]" help="org/repo, or a repo name one org has; without one, pick with fzf"
+#USAGE complete "name" run="mise run project:list --short"
 #USAGE flag "--delete" help="Delete permanently instead of archiving"
 #USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
 set -euo pipefail
@@ -13,6 +13,7 @@ name=${usage_name:-}
 [[ -n $name ]] || name=$(pick_project "rmproject <name> [--delete]")
 [[ -n $name ]] || exit 0   # the picker was cancelled
 dir=$(project_dir "$name") || exit 1
+name=$(project_label "$dir")
 
 # What would be lost with a delete, or kept in the archive.
 if [[ -d $dir/.git ]]; then
@@ -30,7 +31,7 @@ if [[ ${usage_delete:-false} == true ]]; then
     rm -rf "$dir"
     print -r -- "Deleted $name"
 else
-    archive=$projects_dir/.archive/$name
+    archive=$projects_dir/.archive/$name   # org/repo
     [[ -e $archive ]] && archive+=_$(date +%Y%m%d_%H%M%S)
     confirm "Archive $name to $archive? [Y/n]" y || { print "Cancelled"; exit 0; }
     mkdir -p "${archive:h}"
@@ -38,7 +39,7 @@ else
     print -r -- "Archived $name to $archive (restore with: mv $archive $dir)"
 fi
 
-# The shell was inside what just went away.
+# The shell was inside what just went away; its org is the nearest place.
 if [[ -n ${usage_from:-} && ${usage_from:A}/ == ${dir:A}/* ]]; then
-    follow "$projects_dir"
+    follow "${dir:h}"
 fi

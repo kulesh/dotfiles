@@ -13,7 +13,7 @@ Everything runs on [mise-en-place](https://mise.jdx.dev/): system packages, deve
 bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
 ```
 
-This installs Xcode CLI tools, Homebrew, and mise, clones the repo to `~/.dotfiles`, then runs `mise bootstrap`: system packages, login shell, dotfile symlinks, global tools, Claude Code, and macOS settings. It finishes by logging you in to GitHub in the browser, which creates an SSH key and adds it to your account for pushing and for signing commits, then clones every repo you own (no forks or archived repos) into `~/dev` as a managed project.
+This installs Xcode CLI tools, Homebrew, and mise, clones the repo to `~/.dotfiles`, then runs `mise bootstrap`: system packages, login shell, dotfile symlinks, global tools, Claude Code, and macOS settings. It finishes by logging you in to GitHub in the browser, which creates an SSH key and adds it to your account for pushing and for signing commits, then clones every repo you own (no forks or archived repos) into `~/dev/<owner>/<repo>` as a managed project.
 
 To re-run on an existing machine:
 
@@ -33,13 +33,13 @@ Each top-level directory (`zsh/`, `git/`, `nvim/`…) mirrors `$HOME` and is lin
 ## Quick Start
 
 ```sh
-# Clone a GitHub project
+# Clone a GitHub project: ~/dev/kulesh/example
 cloneproject kulesh/example
 
-# Or create a new project from template
+# Or create a new project from template: ~/dev/<your login>/my-api
 mkproject my-api fastapi
 
-# Switch between projects (tab completion works)
+# Switch between projects (tab completion works; org/repo when a name is in two orgs)
 workon my-api
 
 # See all your projects
@@ -51,23 +51,25 @@ showproject
 
 ## Commands
 
+Projects live at `~/dev/<org>/<repo>`: a clone under its GitHub owner, a new project under your GitHub login or the org you name. Each org directory is a mise monorepo: from anywhere in `~/dev/<org>`, `mise run '//...:test'` runs `test` in every repo, and tools and `[env]` in `~/dev/<org>/mise.toml` reach all of them. Moving from the old flat `~/dev/<repo>`: `mise -C / run project:migrate --dry-run`, then without `--dry-run`. See [ADR-013](docs/adrs/013-projects-grouped-by-org.md).
+
 Each command is a mise task (`mise tasks ls`), so `<command> --help` explains it and Tab completes project names, templates and flags. Commands that move you (`mkproject`, `cloneproject`, `workon`, `cdproject`, and `rmproject` from inside the project) take effect at the next prompt. See [ADR-011](docs/adrs/011-project-commands-as-mise-tasks.md).
 
 | Command | Description |
 |---------|-------------|
-| `mkproject <name> [template]` | Create new project (default: base template) |
-| `mkproject <name> [template] -n` | Describe the project without creating it |
-| `cloneproject <user>/<repo>` | Clone a GitHub repo into `~/dev` (a URL works too) |
-| `workon <project>` | Switch to project (with tab completion) |
+| `mkproject [org/]name [template]` | Create new project (default: base template, your org) |
+| `mkproject [org/]name [template] -n` | Describe the project without creating it |
+| `cloneproject <user>/<repo>` | Clone a GitHub repo into `~/dev/<user>` (a URL works too) |
+| `workon <project>` | Switch to project: `repo`, or `org/repo` (with tab completion) |
 | `workon` | Pick a project with fzf, `showproject` beside it |
 | `workon <project> -s` | Switch to project in sandbox mode |
-| `lsprojects` | List all projects with metadata |
+| `lsprojects` | List all projects by org, with metadata |
 | `lsprojects --type cloned` | Only cloned (or `created`) projects |
 | `lsprojects --tools` | List projects with mise tools |
 | `showproject` | Show current project details |
 | `cdproject` | Jump to current project root |
 | `updateproject [name]` | Pull latest changes (cloned projects) |
-| `rmproject <name>` | Archive project (safe removal) |
+| `rmproject <name>` | Archive project to `~/dev/.archive/<org>` (safe removal) |
 | `rmproject <name> --delete` | Permanently delete project |
 | `rmproject` | Pick the project to archive with fzf, `showproject` beside it |
 | `list_project_types` | Show available templates |

@@ -43,8 +43,8 @@ mup                               # upgrade all packages and global tools
 dsync                             # share this Mac's changes, apply other Macs'
 
 # Project lifecycle
-mkproject <name> [template]       # Create from template (base, python, fastapi, ruby, rails, etc.)
-cloneproject <user>/<repo>        # Clone GitHub repo into ~/dev
+mkproject [org/]name [template]   # Create in ~/dev/<org> (default: your GitHub login) from a template
+cloneproject <user>/<repo>        # Clone GitHub repo into ~/dev/<user>/<repo>
 workon [name]                     # Switch to project; no name opens an fzf picker with a showproject preview
 showproject                       # Current project status and git info
 updateproject [name]              # Pull latest for cloned projects
@@ -52,7 +52,10 @@ rmproject [name] [--delete]       # Archive (default) or delete; no name opens a
 lsprojects [--type=cloned|created] [--tools]
 list_project_types                # Available templates
 cdproject                         # cd to current mise project root
+mise -C / run project:migrate     # once: ~/dev/<repo> → ~/dev/<org>/<repo> (--dry-run first)
 ```
+
+Projects are `~/dev/<org>/<repo>`; each org directory is a mise monorepo (`mise run '//...:task'` across its repos; its `mise.toml` tools and `[env]` reach every repo). See ADR-013.
 
 ### Architecture
 
