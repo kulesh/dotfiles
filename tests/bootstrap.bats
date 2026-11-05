@@ -238,6 +238,23 @@ STUB
     [[ "$output" != *"would clone kulesh/dotfiles"* ]]
 }
 
+@test "with projects still in the flat layout, clones none of them again and says to migrate" {
+    cat > "$STUBS/gh" <<'STUB'
+#!/bin/sh
+case "$1 $2" in
+  "auth status") exit 0;;
+  "repo list") printf 'kulesh/alpha\nkulesh/beta\n';;
+esac
+STUB
+    mkdir -p "$TARGET/dev/alpha"
+    : > "$TARGET/dev/alpha/.mise.toml"
+    preview
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"would clone kulesh/alpha"* ]]
+    [[ "$output" == *"would clone kulesh/beta"* ]]
+    [[ "$output" == *"project:migrate"* ]]
+}
+
 @test "creates ~/.ssh as a private real directory, with our settings in a real config file" {
     preview
     [ "$status" -eq 0 ]

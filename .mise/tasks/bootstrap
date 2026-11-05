@@ -71,15 +71,23 @@ if gh auth status &>/dev/null && [[ -f $key.pub ]]; then
     fi
 fi
 
-# Clone your own repos (no forks, no archived) into ~/dev as projects, with
-# the same command as cloneproject. One bad repo is reported, not fatal, and
-# no clone moves the shell (DOTFILES_FOLLOW, lib/follow.zsh).
+# Projects left in the flat layout, ~/dev/<repo>, from before ADR-013. Their
+# own mise config marks them (an org directory has mise.toml, no dot).
+flat=($PROJECT_DIR/*/{.mise.toml,.tool-versions}(N.:h))
+if (( ${#flat} )); then
+    echo "${#flat} project(s) in ~/dev/<repo> predate ~/dev/<org>/<repo>. Move them: mise -C / run project:migrate --dry-run"
+fi
+
+# Clone your own repos (no forks, no archived) into ~/dev/<owner> as
+# projects, with the same command as cloneproject. One bad repo is reported,
+# not fatal, and no clone moves the shell (DOTFILES_FOLLOW, lib/follow.zsh).
 if gh auth status &>/dev/null; then
     self=$(git -C "$dotfiles" remote get-url origin 2>/dev/null || true)
     failed=()
     for repo in ${(f)"$(gh repo list --source --no-archived --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner')"}; do
         [[ ${self%.git} == *[:/]$repo ]] && continue   # already at ~/.dotfiles
         [[ -d $PROJECT_DIR/${${repo%%/*}:l}/${repo#*/} ]] && continue   # ~/dev/<owner>/<repo>
+        (( ${flat[(Ie)$PROJECT_DIR/${repo#*/}]} )) && continue   # not migrated yet
         if previewing; then echo "would clone $repo"; continue; fi
         DOTFILES_FOLLOW=/dev/null mise -C / run project:clone "$repo" || failed+=("$repo")
     done
