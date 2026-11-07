@@ -131,10 +131,10 @@ workon myproject       # Subsequent runs auto-enter sandbox
 | Access | Allowed | Blocked |
 |--------|---------|---------|
 | **Read** | Everything except credentials | SSH private keys, `~/.aws`, `~/.netrc`, GPG keys, browser data |
-| **Write** | Project dir, `~/.cache`, `~/.config`, `~/.local`, `/tmp` | System dirs, shell configs, `~/.ssh`, `~/.gitconfig` |
+| **Write** | Everything else: the project, tool state, caches | Whatever your Mac runs later outside the sandbox: shell startup files, `~/Library/LaunchAgents`, the `~/.dotfiles` checkout (agent settings aside), configs that run commands (`~/.config/mise`, `git`, `gh`, `starship`, `ghostty`, `homebrew`, `nvim`, `yazi`, `sandbox`), `~/.local/bin`, `/usr/local`, the project's `.git/hooks` and `.git/config`; plus `~/.ssh`, GPG and AWS keys and system dirs |
 | **Network** | All outbound | — |
 
-The Keychain stays readable (git's credential helper needs it), so secrets stored with `secret` are reachable from inside the sandbox.
+The Keychain stays readable (git's credential helper needs it), so secrets stored with `secret` are reachable from inside the sandbox. Inside it, push without `-u`: the project's `.git/config` is read-only. Still open: Claude Code's `settings.json` (its hooks), `~/.claude/plugins`, and tools installed under `~/.local/share`. See [ADR-002](docs/adrs/002-sandbox-exec-for-agents.md).
 
 ### Sandbox Status
 

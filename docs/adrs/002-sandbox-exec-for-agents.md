@@ -18,9 +18,17 @@ Considered approaches:
 
 Use `sandbox-exec` with a project-scoped profile (`default.sb`). The security model:
 
-- **Read broadly, write narrowly** — Agents can read almost everything (needed for language servers, dependency resolution) but can only write to the project directory and tool state directories.
+- **Read broadly, write broadly, deny what escapes** — Agents can read almost everything (needed for language servers, dependency resolution) and write by default. Writes are denied where your Mac would later run the result outside the sandbox (below).
 - **Block secrets at read level** — SSH private keys, AWS credentials, browser data, and keychains are explicitly denied.
 - **Allow all outbound network** — Agents need to fetch packages, query APIs, and access documentation.
+
+## Writes that escape the sandbox (2026-11-07)
+
+Reviewing devvm, a VM-per-project sandbox, showed that the profile's `allow file-write*` list never restricted anything: the profile ends in `(allow default)` and had no general write deny, so every path not explicitly denied was writable. A sandboxed agent couldn't read your SSH keys, but it could write files your Mac later runs outside the sandbox: `~/.dotfiles` libraries, tasks and the profile itself, `~/.config/mise` and other configs that run commands, `~/.local/bin`, `~/.zprofile`, `~/Library/LaunchAgents`, and the project's `.git/hooks` and `.git/config`.
+
+The profile stays a deny-list, and now denies that class: every file the host runs later. The agents' settings linked into `~/.dotfiles/claude` and `~/.dotfiles/pi` stay writable, apart from Claude Code's `statusline.sh`, skills and commands, which run or load as code and which `dsync` would carry to other Macs. `tests/sandbox.bats` runs the profile with `sandbox-exec` (macOS only).
+
+Still open, and listed in the profile: Claude Code's `settings.json` (its hooks run on the host, and `/config` needs it writable), `~/.claude/plugins`, and tools installed under `~/.local/share`, mise's included. Closing those takes a boundary the agent's configuration lives outside of, which devvm provides with a Linux VM, a read-only agent store and secrets the VM never holds. devvm doesn't replace this sandbox for everyday work (no Swift or Xcode, four toolchains, no mise config, no Pi), but suits code you don't trust in its toolchains.
 
 ## Implementation
 
