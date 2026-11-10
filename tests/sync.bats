@@ -206,3 +206,9 @@ STUB
     [ "$status" -eq 0 ]
     [ "$(calls)" = "mise bootstrap packages upgrade brew:mise --yes"$'\n'"mise bootstrap" ]
 }
+
+# A *.local file stays on the Mac that made it: dsync never offers it.
+@test "the repo ignores *.local files, wherever they are" {
+    git -C "$DOTFILES_ROOT" check-ignore -q dev/dev/docs/notes.md.local
+    git -C "$DOTFILES_ROOT" check-ignore -q claude/.claude/skills/draft.local
+}

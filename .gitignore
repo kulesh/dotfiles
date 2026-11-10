@@ -5,4 +5,7 @@ ssh/.ssh/*
 !ssh/.ssh/config
 
 .DS_Store
+
+# Files that stay on the Mac that made them: dsync never offers them.
+*.local
 AGENTS.md

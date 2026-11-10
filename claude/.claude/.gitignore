@@ -9,3 +9,6 @@
 !settings.json
 !statusline.sh
 !.gitignore
+
+# Stays on this Mac, even under commands/ or skills/ (as in the root .gitignore)
+*.local
