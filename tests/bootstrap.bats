@@ -413,6 +413,22 @@ claude_state_in_repo() {   # $1 = repo
     [ ! -e "$repo/claude/.claude/projects" ]
 }
 
+@test "a file already home with the same content leaves no duplicate; a different one is kept beside it" {
+    local repo=$(repo_copy)
+    mkdir -p "$repo/claude/.claude/plugins/p" "$TARGET/.claude/plugins/p"
+    echo same > "$repo/claude/.claude/plugins/p/plugin.json"
+    echo same > "$TARGET/.claude/plugins/p/plugin.json"
+    echo older > "$repo/claude/.claude/plugins/p/notes.md"
+    echo newer > "$TARGET/.claude/plugins/p/notes.md"
+    ln -s "$repo" "$TARGET/.dotfiles"
+    preview "$repo"
+    [ "$status" -eq 0 ]
+    [ ! -e "$TARGET/.claude/plugins/p/plugin.json.from-dotfiles" ]
+    [ "$(cat "$TARGET/.claude/plugins/p/notes.md")" = "newer" ]
+    [ "$(cat "$TARGET/.claude/plugins/p/notes.md.from-dotfiles")" = "older" ]
+    [ ! -e "$repo/claude/.claude/plugins" ]
+}
+
 @test "a preview never moves agent state out of a checkout that isn't ~/.dotfiles" {
     local repo=$(repo_copy)
     claude_state_in_repo "$repo"
