@@ -9,6 +9,12 @@ cd "$dotfiles"
 
 rebasing() { [[ -d $(git rev-parse --git-path rebase-merge) || -d $(git rev-parse --git-path rebase-apply) ]]; }
 
+# The commit this Mac last applied with bootstrap, kept in this clone's .git:
+# anything newer still needs applying, however it arrived (this sync, a plain
+# git pull, or a sync whose bootstrap failed).
+applied_file=$(git rev-parse --absolute-git-dir)/dotfiles-applied
+applied=$(cat "$applied_file" 2>/dev/null || true)
+
 if rebasing; then
     resumed=true   # a previous sync stopped at a conflict
 else
@@ -24,9 +30,13 @@ else
             files=(${(f)"$(git status --porcelain | cut -c4- | sed 's/.* -> //')"})
             git add --all
             git commit --quiet -m "$(hostname -s): update ${(j:, :)${(u)${files:t}}}"
+            # This Mac's own changes are live here already.
+            if [[ $applied == $(git rev-parse HEAD~) ]]; then
+                applied=$(git rev-parse HEAD)
+                print -r -- "$applied" > "$applied_file"
+            fi
         fi
     fi
-    before=$(git rev-parse HEAD)
     git pull --quiet --rebase --autostash || rebasing || exit 1
 fi
 
@@ -62,9 +72,25 @@ if (( $(git rev-list --count '@{upstream}..HEAD') )); then
 fi
 
 # Bootstrap applies what came in: new links, packages, tools, repos.
-if $resumed || (( $(git rev-list --count "$before..@{upstream}") )); then
-    $resumed || git log --oneline "$before..@{upstream}"
-    mise bootstrap
-else
+head=$(git rev-parse HEAD)
+if [[ $applied == $head ]]; then
     echo "Already up to date with your other Macs."
+    exit 0
 fi
+if [[ -n $applied ]] && git merge-base --is-ancestor "$applied" HEAD 2>/dev/null; then
+    git log --oneline "$applied..HEAD"
+fi
+
+# The config can need a newer mise than this Mac has (min_version in
+# .mise.toml, a soft floor: an older mise warns and runs). Bring mise up to
+# it first, the way mup would, so bootstrap reads the config as written.
+autoload -Uz is-at-least
+floor=$(awk -F'"' '/^min_version/ { for (i = 2; i <= NF; i += 2) v = $i; print v }' .mise.toml 2>/dev/null || true)
+current=$(mise --version 2>/dev/null | cut -d' ' -f1)
+if [[ -n $floor && -n $current ]] && ! is-at-least "$floor" "$current"; then
+    echo "mise $current is older than the $floor this config needs; upgrading it first."
+    mise bootstrap packages upgrade brew:mise --yes
+fi
+
+mise bootstrap
+print -r -- "$head" > "$applied_file"

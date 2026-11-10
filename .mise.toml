@@ -16,8 +16,10 @@
 #   mise -C ~/.dotfiles run preview       # link into a scratch home, print the rest
 
 # The oldest mise this config works with; tests/ passes on it. Older ones
-# misread dotfile groups and {{config_root}}. mise.sh upgrades a Homebrew mise.
-min_version = "2026.10.22"
+# misread dotfile groups and {{config_root}}. Soft, so an older mise warns and
+# still runs: a hard floor locked out dsync and mup, the commands that upgrade
+# it. dsync and mise.sh upgrade mise before they bootstrap.
+min_version = { soft = "2026.10.22" }
 
 # =============================================================================
 # Homebrew taps

@@ -13,8 +13,15 @@ setup() {
     git config --global init.defaultBranch main
     git config --global commit.gpgsign false
 
-    # mise and lazygit record their calls instead of running.
-    printf '#!/bin/sh\necho "mise $*" >> "%s/calls"\n' "$WORK" > "$STUBS/mise"
+    # mise and lazygit record their calls instead of running. mise reports
+    # $MISE_STUB_VERSION, and its bootstrap fails while $MISE_STUB_FAILS is set.
+    cat > "$STUBS/mise" <<EOF
+#!/bin/sh
+[ "\$*" = --version ] && echo "\${MISE_STUB_VERSION:-2026.11.1} macos-arm64" && exit 0
+echo "mise \$*" >> "$WORK/calls"
+[ "\$*" = bootstrap ] && [ -n "\$MISE_STUB_FAILS" ] && exit 1
+exit 0
+EOF
     printf '#!/bin/sh\necho lazygit >> "%s/calls"\n' "$WORK" > "$STUBS/lazygit"
     chmod +x "$STUBS/mise" "$STUBS/lazygit"
 
@@ -27,6 +34,8 @@ setup() {
     git -C "$WORK/this" commit -q -m seed
     git -C "$WORK/this" push -q -u origin main
     git clone -q "$WORK/github.git" "$WORK/other"
+    # This Mac has applied what it has, as after an earlier dsync.
+    git -C "$WORK/this" rev-parse HEAD > "$(git -C "$WORK/this" rev-parse --absolute-git-dir)/dotfiles-applied"
 }
 
 
@@ -151,4 +160,40 @@ STUB
     PATH="$STUBS:/usr/bin:/bin" run zsh "$WORK/this/.mise/tasks/sync" </dev/null
     [ "$status" -ne 0 ]
     [[ "$output" == *"edit and git add them"* ]]
+}
+
+# =============================================================================
+# Applying: bootstrap runs until this Mac has applied the commit it's on
+# =============================================================================
+
+@test "commits that arrived without dsync (a plain git pull) are applied" {
+    other_mac_commits "three"
+    git -C "$WORK/this" pull -q
+    sync
+    [ "$status" -eq 0 ]
+    [ "$(calls)" = "mise bootstrap" ]
+    sync
+    [ "$(calls)" = "mise bootstrap" ]
+    [[ "$output" == *"Already up to date"* ]]
+}
+
+@test "a bootstrap that failed is tried again by the next dsync" {
+    other_mac_commits "three"
+    MISE_STUB_FAILS=1 sync
+    [ "$status" -ne 0 ]
+    sync
+    [ "$status" -eq 0 ]
+    [ "$(calls)" = "mise bootstrap"$'\n'"mise bootstrap" ]
+}
+
+# The config's min_version (.mise.toml) can need a newer mise than this Mac
+# has; an old mise warns, and dsync brings it up to date before bootstrapping.
+@test "a mise older than the config needs is upgraded before bootstrap" {
+    printf 'min_version = { soft = "2026.10.22" }\n' > "$WORK/other/.mise.toml"
+    git -C "$WORK/other" add .mise.toml
+    git -C "$WORK/other" commit -q -m "need a newer mise"
+    git -C "$WORK/other" push -q
+    MISE_STUB_VERSION=2026.10.21 sync
+    [ "$status" -eq 0 ]
+    [ "$(calls)" = "mise bootstrap packages upgrade brew:mise --yes"$'\n'"mise bootstrap" ]
 }
