@@ -144,9 +144,10 @@ root = "nvim"
 # 3. Move agent state back home. Stow linked ~/.claude to the repo as a whole,
 #    so Claude Code wrote its state (history, todos, sessions) into the
 #    checkout, where git ignores it; linking it would keep it there, one link
-#    per file. What git ignores under claude/ goes to ~/.claude as real files,
-#    replacing a link to it or filling a gap, never a real file. Only for the
-#    checkout at ~/.dotfiles: a preview's scratch home takes nothing out.
+#    per file. What git ignores under claude/ goes to ~/.claude as real
+#    files, a directory at a time; a real file already there stays, with the
+#    checkout's copy beside it as <name>.from-dotfiles. Only for the checkout
+#    at ~/.dotfiles: a preview's scratch home takes nothing out.
 # 4. Create ~/.ssh, private, for the config block below and for keys.
 [bootstrap.hooks.pre-dotfiles]
 description = "Prepare the home for linking"
@@ -170,20 +171,36 @@ if command -v stow >/dev/null; then
     fi
 fi
 if [ "$(cd -P "$HOME/.dotfiles" 2>/dev/null && pwd)" = "$(pwd -P)" ]; then
-    state=$(git ls-files --others --ignored --exclude-standard -- claude)
-    if [ -n "$state" ]; then
-        echo "Moving $(printf '%s\n' "$state" | wc -l | tr -d ' ') files of Claude Code state from the checkout back to ~/.claude"
-        printf '%s\n' "$state" | while IFS= read -r file; do
-            target=$HOME/${file#claude/}
-            if [ -L "$target" ] || [ ! -e "$target" ]; then
-                mkdir -p "$(dirname "$target")"
-                rm -f "$target"
-                mv "$file" "$target"
-            fi
-        done
-        git ls-files --others --ignored --exclude-standard --directory -- claude |
-            while IFS= read -r dir; do [ -d "$dir" ] && find "$dir" -depth -type d -empty -delete; done
-    fi
+    # Home it: a link or a gap is replaced; a real file stays, with the
+    # checkout's copy beside it.
+    home_it() {   # home_it <file in the checkout> <path in the home>
+        mkdir -p "$(dirname "$2")"
+        if [ -L "$2" ] || [ ! -e "$2" ]; then rm -f "$2"; mv "$1" "$2"; else mv "$1" "$2.from-dotfiles"; fi
+    }
+    # A whole directory at a time, in one rename, unless the home already has
+    # real files of its own there; then file by file, keeping them.
+    git ls-files --others --ignored --exclude-standard --directory -- claude | while IFS= read -r entry; do
+        entry=${entry%/}
+        target=$HOME/${entry#claude/}
+        count=$(find "$entry" -type f | wc -l | tr -d ' ')
+        [ "$count" = 1 ] && files="1 file" || files="$count files"
+        echo "Claude Code state back home: ~/${entry#claude/} ($files)"
+        if [ ! -d "$entry" ]; then home_it "$entry" "$target"; continue; fi
+        # Only links and directories (an earlier run's links): nothing to lose.
+        if [ -d "$target" ] && [ ! -L "$target" ] && [ -z "$(find "$target" ! -type d ! -type l -print -quit)" ]; then
+            rm -rf "$target"
+        fi
+        if [ -L "$target" ] || [ ! -e "$target" ]; then
+            mkdir -p "$(dirname "$target")"
+            rm -f "$target"
+            mv "$entry" "$target"
+        else
+            (cd "$entry" && find . -type f) | while IFS= read -r file; do
+                home_it "$entry/${file#./}" "$target/${file#./}"
+            done
+            find "$entry" -depth -type d -empty -delete
+        fi
+    done
 fi
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"

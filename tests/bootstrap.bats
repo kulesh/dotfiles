@@ -383,6 +383,8 @@ claude_state_in_repo() {   # $1 = repo
     [ "$(cat "$state")" = "history" ]
     [ ! -e "$repo/claude/.claude/projects" ]
     [ -L "$TARGET/.claude/settings.json" ]
+    # Whole directories move at once, each named as it goes.
+    [[ "$output" == *"~/.claude/projects (1 file)"* ]]
 }
 
 @test "agent state already linked file by file goes back home too" {
@@ -396,6 +398,19 @@ claude_state_in_repo() {   # $1 = repo
     local state=$TARGET/.claude/projects/app/session.jsonl
     [ -f "$state" ] && [ ! -L "$state" ]
     [ "$(cat "$state")" = "history" ]
+}
+
+@test "agent state merges into a home directory that has real files of its own, keeping them" {
+    local repo=$(repo_copy)
+    claude_state_in_repo "$repo"
+    ln -s "$repo" "$TARGET/.dotfiles"
+    mkdir -p "$TARGET/.claude/projects/app"
+    echo newer > "$TARGET/.claude/projects/app/today.jsonl"
+    preview "$repo"
+    [ "$status" -eq 0 ]
+    [ "$(cat "$TARGET/.claude/projects/app/today.jsonl")" = "newer" ]
+    [ "$(cat "$TARGET/.claude/projects/app/session.jsonl")" = "history" ]
+    [ ! -e "$repo/claude/.claude/projects" ]
 }
 
 @test "a preview never moves agent state out of a checkout that isn't ~/.dotfiles" {
