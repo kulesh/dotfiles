@@ -23,11 +23,13 @@ else
     # agent settings, `packages use`). Commit them so they reach the other
     # Macs, or keep them on this Mac for now; the pull goes ahead either way.
     if [[ -n $(git status --porcelain) ]]; then
-        git status --short
+        # Every file, not a new directory as one line: the list is what you
+        # agree to commit, and the commit message names each file.
+        git status --short --untracked-files=all
         print -n "Commit these for your other Macs? [Y/n] " >&2
         read -r reply || reply=n
         if [[ $reply != [nN]* ]]; then
-            files=(${(f)"$(git status --porcelain | cut -c4- | sed 's/.* -> //')"})
+            files=(${(f)"$(git status --porcelain --untracked-files=all | cut -c4- | sed 's/.* -> //')"})
             git add --all
             git commit --quiet -m "$(hostname -s): update ${(j:, :)${(u)${files:t}}}"
             # This Mac's own changes are live here already.

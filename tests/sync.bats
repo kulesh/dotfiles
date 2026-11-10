@@ -76,6 +76,15 @@ calls() { cat "$WORK/calls" 2>/dev/null || true; }
     [ -z "$(git -C "$WORK/this" status --porcelain)" ]
 }
 
+@test "a new directory's files are each listed and named in the commit" {
+    mkdir -p "$WORK/this/skills/task-manager"
+    touch "$WORK/this/skills/task-manager/SKILL.md" "$WORK/this/skills/task-manager/README.md"
+    sync y
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"skills/task-manager/SKILL.md"* ]]
+    [[ "$(github_log | head -1)" == *"README.md"*"SKILL.md"* ]]
+}
+
 @test "an empty answer means yes" {
     echo "local" >> "$WORK/this/settings"
     sync ""
