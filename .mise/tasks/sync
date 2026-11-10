@@ -94,5 +94,7 @@ if [[ -n $floor && -n $current ]] && ! is-at-least "$floor" "$current"; then
     mise bootstrap packages upgrade brew:mise --yes
 fi
 
-mise bootstrap
+# dsync's job is to make the home match the repo, so mise's "files: apply ~?"
+# would only ever be answered yes. A bootstrap you run by hand still asks.
+mise bootstrap --yes
 print -r -- "$head" > "$applied_file"

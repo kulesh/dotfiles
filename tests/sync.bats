@@ -19,7 +19,7 @@ setup() {
 #!/bin/sh
 [ "\$*" = --version ] && echo "\${MISE_STUB_VERSION:-2026.11.1} macos-arm64" && exit 0
 echo "mise \$*" >> "$WORK/calls"
-[ "\$*" = bootstrap ] && [ -n "\$MISE_STUB_FAILS" ] && exit 1
+[ "\${1:-}" = bootstrap ] && [ -n "\$MISE_STUB_FAILS" ] && exit 1
 exit 0
 EOF
     printf '#!/bin/sh\necho lazygit >> "%s/calls"\n' "$WORK" > "$STUBS/lazygit"
@@ -59,13 +59,15 @@ calls() { cat "$WORK/calls" 2>/dev/null || true; }
     [ -z "$(calls)" ]
 }
 
-@test "applies another Mac's changes and re-runs bootstrap" {
+# dsync's job is to make the home match the repo, so it doesn't stop to ask
+# before relinking (mise's "files: apply ~?"); a bootstrap run by hand asks.
+@test "applies another Mac's changes and re-runs bootstrap, without asking" {
     other_mac_commits "three"
     sync
     [ "$status" -eq 0 ]
     [ "$(cat "$WORK/this/settings")" = "three" ]
     [[ "$output" == *"other: update settings"* ]]
-    [ "$(calls)" = "mise bootstrap" ]
+    [ "$(calls)" = "mise bootstrap --yes" ]
 }
 
 @test "commits local changes, named for this Mac and the files, and pushes them" {
@@ -110,7 +112,7 @@ calls() { cat "$WORK/calls" 2>/dev/null || true; }
     sync
     [ "$status" -eq 0 ]
     [ "$(github_log | head -2 | tr '\n' ,)" = "this: add new-file,other: update settings," ]
-    [ "$(calls)" = "mise bootstrap" ]
+    [ "$(calls)" = "mise bootstrap --yes" ]
 }
 
 conflicting_edits() {
@@ -138,7 +140,7 @@ STUB
     sync
     [ "$status" -eq 0 ]
     [ "$(git -C "$WORK/github.git" show main:settings)" = "merged" ]
-    [ "$(calls)" = "mise bootstrap" ]
+    [ "$(calls)" = "mise bootstrap --yes" ]
 }
 
 @test "aborting the rebase in lazygit pushes nothing" {
@@ -160,7 +162,7 @@ STUB
     sync
     [ "$status" -eq 0 ]
     [ "$(git -C "$WORK/github.git" show main:settings)" = "merged" ]
-    [ "$(calls)" = "mise bootstrap" ]
+    [ "$(calls)" = "mise bootstrap --yes" ]
 }
 
 @test "without lazygit, a conflict explains how to resolve it" {
@@ -180,9 +182,9 @@ STUB
     git -C "$WORK/this" pull -q
     sync
     [ "$status" -eq 0 ]
-    [ "$(calls)" = "mise bootstrap" ]
+    [ "$(calls)" = "mise bootstrap --yes" ]
     sync
-    [ "$(calls)" = "mise bootstrap" ]
+    [ "$(calls)" = "mise bootstrap --yes" ]
     [[ "$output" == *"Already up to date"* ]]
 }
 
@@ -192,7 +194,7 @@ STUB
     [ "$status" -ne 0 ]
     sync
     [ "$status" -eq 0 ]
-    [ "$(calls)" = "mise bootstrap"$'\n'"mise bootstrap" ]
+    [ "$(calls)" = "mise bootstrap --yes"$'\n'"mise bootstrap --yes" ]
 }
 
 # The config's min_version (.mise.toml) can need a newer mise than this Mac
@@ -204,7 +206,7 @@ STUB
     git -C "$WORK/other" push -q
     MISE_STUB_VERSION=2026.10.21 sync
     [ "$status" -eq 0 ]
-    [ "$(calls)" = "mise bootstrap packages upgrade brew:mise --yes"$'\n'"mise bootstrap" ]
+    [ "$(calls)" = "mise bootstrap packages upgrade brew:mise --yes"$'\n'"mise bootstrap --yes" ]
 }
 
 # A *.local file stays on the Mac that made it: dsync never offers it.
