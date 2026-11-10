@@ -31,7 +31,7 @@ else
         if [[ $reply != [nN]* ]]; then
             files=(${(f)"$(git status --porcelain --untracked-files=all | cut -c4- | sed 's/.* -> //')"})
             git add --all
-            git commit --quiet -m "$(hostname -s): update ${(j:, :)${(u)${files:t}}}"
+            git commit --quiet -m "$(hostname -s): update ${(j:, :)${(u)files[@]:t}}"
             # This Mac's own changes are live here already.
             if [[ $applied == $(git rev-parse HEAD~) ]]; then
                 applied=$(git rev-parse HEAD)

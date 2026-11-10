@@ -82,7 +82,7 @@ calls() { cat "$WORK/calls" 2>/dev/null || true; }
     sync y
     [ "$status" -eq 0 ]
     [[ "$output" == *"skills/task-manager/SKILL.md"* ]]
-    [[ "$(github_log | head -1)" == *"README.md"*"SKILL.md"* ]]
+    [[ "$(github_log | head -1)" == *"README.md, SKILL.md"* ]]
 }
 
 @test "an empty answer means yes" {
