@@ -365,6 +365,47 @@ STUB
     [ "$(git -C "$repo" status --porcelain)" = "$before" ]
 }
 
+# Stow linked ~/.claude to the repo as a whole, so Claude Code wrote its
+# state (history, todos, sessions) into the checkout, where git ignores it.
+claude_state_in_repo() {   # $1 = repo
+    mkdir -p "$1/claude/.claude/projects/app"
+    echo history > "$1/claude/.claude/projects/app/session.jsonl"
+}
+
+@test "agent state Stow left in the checkout goes back home as real files" {
+    local repo=$(repo_copy)
+    claude_state_in_repo "$repo"
+    ln -s "$repo" "$TARGET/.dotfiles"   # this checkout is ~/.dotfiles
+    preview "$repo"
+    [ "$status" -eq 0 ]
+    local state=$TARGET/.claude/projects/app/session.jsonl
+    [ -f "$state" ] && [ ! -L "$state" ]
+    [ "$(cat "$state")" = "history" ]
+    [ ! -e "$repo/claude/.claude/projects" ]
+    [ -L "$TARGET/.claude/settings.json" ]
+}
+
+@test "agent state already linked file by file goes back home too" {
+    local repo=$(repo_copy)
+    claude_state_in_repo "$repo"
+    ln -s "$repo" "$TARGET/.dotfiles"
+    mkdir -p "$TARGET/.claude/projects/app"
+    ln -s "$repo/claude/.claude/projects/app/session.jsonl" "$TARGET/.claude/projects/app/session.jsonl"
+    preview "$repo"
+    [ "$status" -eq 0 ]
+    local state=$TARGET/.claude/projects/app/session.jsonl
+    [ -f "$state" ] && [ ! -L "$state" ]
+    [ "$(cat "$state")" = "history" ]
+}
+
+@test "a preview never moves agent state out of a checkout that isn't ~/.dotfiles" {
+    local repo=$(repo_copy)
+    claude_state_in_repo "$repo"
+    preview "$repo"
+    [ "$status" -eq 0 ]
+    [ -f "$repo/claude/.claude/projects/app/session.jsonl" ]
+}
+
 @test "a migrated home is left alone by the Stow cleanup" {
     local repo=$(repo_copy)
     stowed_by_stow "$repo"

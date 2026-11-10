@@ -141,7 +141,13 @@ root = "nvim"
 #    inside the checkout, and moving them is a decision for a person.
 # 2. Remove links GNU Stow made on Macs set up before ADR-010. Stow's dry run
 #    lists only its own links, so this is silent once a Mac has moved over.
-# 3. Create ~/.ssh, private, for the config block below and for keys.
+# 3. Move agent state back home. Stow linked ~/.claude to the repo as a whole,
+#    so Claude Code wrote its state (history, todos, sessions) into the
+#    checkout, where git ignores it; linking it would keep it there, one link
+#    per file. What git ignores under claude/ goes to ~/.claude as real files,
+#    replacing a link to it or filling a gap, never a real file. Only for the
+#    checkout at ~/.dotfiles: a preview's scratch home takes nothing out.
+# 4. Create ~/.ssh, private, for the config block below and for keys.
 [bootstrap.hooks.pre-dotfiles]
 description = "Prepare the home for linking"
 run = """
@@ -161,6 +167,22 @@ if command -v stow >/dev/null; then
     if stow --simulate --verbose --delete --dir=. --target="$HOME" "$@" 2>&1 | grep -q '^UNLINK:'; then
         echo "unstow: removing links made by GNU Stow"
         stow --delete --dir=. --target="$HOME" "$@"
+    fi
+fi
+if [ "$(cd -P "$HOME/.dotfiles" 2>/dev/null && pwd)" = "$(pwd -P)" ]; then
+    state=$(git ls-files --others --ignored --exclude-standard -- claude)
+    if [ -n "$state" ]; then
+        echo "Moving $(printf '%s\n' "$state" | wc -l | tr -d ' ') files of Claude Code state from the checkout back to ~/.claude"
+        printf '%s\n' "$state" | while IFS= read -r file; do
+            target=$HOME/${file#claude/}
+            if [ -L "$target" ] || [ ! -e "$target" ]; then
+                mkdir -p "$(dirname "$target")"
+                rm -f "$target"
+                mv "$file" "$target"
+            fi
+        done
+        git ls-files --others --ignored --exclude-standard --directory -- claude |
+            while IFS= read -r dir; do [ -d "$dir" ] && find "$dir" -depth -type d -empty -delete; done
     fi
 fi
 mkdir -p "$HOME/.ssh"
