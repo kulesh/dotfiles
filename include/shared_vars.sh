@@ -1,4 +1,4 @@
 #!/usr/bin/env zsh
 
-# Shared variables between .zshenv, misewrapper.sh, and tasks/bootstrap
+# Shared between .zshenv and the bootstrap task
 PROJECT_DIR="$HOME/dev"

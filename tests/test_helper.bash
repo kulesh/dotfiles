@@ -14,17 +14,3 @@ export DOTFILES_ROOT="${BATS_TEST_DIRNAME}/.."
 scratch() {
     mktemp -d "$BATS_TEST_TMPDIR/XXXXXX"
 }
-
-# Run a zsh function from our library and capture output.
-# Usage: run_zsh_fn <function_name> [args...]
-run_zsh_fn() {
-    local fn_name="$1"
-    shift
-    run zsh -c "
-        source '${DOTFILES_ROOT}/include/shared_vars.sh'
-        _MISEWRAPPER_DOTFILES_DIR='${DOTFILES_ROOT}'
-        MISE_PROJECTS_DIR='\${PROJECT_DIR}'
-        source '${DOTFILES_ROOT}/lib/git_utils.sh'
-        ${fn_name} \"\$@\"
-    " -- "$@"
-}

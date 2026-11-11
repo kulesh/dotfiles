@@ -81,3 +81,13 @@ interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
     interactive 'source ~/.zshenv; source ~/.zshrc; source ~/.zshenv; print -l -- P:${^path}'
     [ -z "$(grep '^P:' <<< "$output" | sort | uniq -d)" ]
 }
+
+# DOTFILES is wherever .zshenv really lives, so a checkout outside
+# ~/.dotfiles works the same: one variable, resolved, for every user of it.
+@test "the shell finds its libraries from a checkout outside ~/.dotfiles" {
+    rm "$HOME/.dotfiles"
+    interactive 'print -r -- "dotfiles=$DOTFILES"; whence -w _dotfiles_follow _dotfiles_reload_if_changed'
+    [[ "$output" == *"dotfiles=$(cd "$DOTFILES_ROOT" && pwd -P)"* ]]
+    [[ "$output" == *"_dotfiles_follow: function"* ]]
+    [[ "$output" == *"_dotfiles_reload_if_changed: function"* ]]
+}

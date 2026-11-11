@@ -75,7 +75,7 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
 @test "never links infrastructure directories" {
     preview
     [ "$status" -eq 0 ]
-    for f in shared_vars.sh misewrapper.sh architecture.md adrs bootstrap.bats; do
+    for f in shared_vars.sh architecture.md adrs bootstrap.bats; do
         [ ! -e "$TARGET/$f" ]
     done
 }
