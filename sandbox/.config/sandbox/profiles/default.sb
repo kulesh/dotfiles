@@ -63,12 +63,15 @@
 ;; FILE WRITES - allowed by default; denied where your Mac would run them later
 ;; =============================================================================
 ;; Symlinks resolve to real paths, so a linked file is denied by its path in
-;; ~/.dotfiles. Still open, by design or for lack of a cheap rule: Claude
-;; Code's settings.json (its hooks run on your Mac; /config needs it
-;; writable), ~/.claude/plugins, and tools installed under ~/.local/share
-;; (mise's included). devvm closes those with a VM; see ADR-002.
+;; ~/.dotfiles. Still open, by design or for lack of a cheap rule: the two
+;; agent settings files (Claude Code's hooks and statusLine, Pi's packages run
+;; on your Mac; changing settings from inside needs them writable),
+;; ~/.claude/plugins, tools installed under ~/.local/share (mise's included),
+;; and mise configs nested inside the project (packages/x/.mise.toml). devvm
+;; closes those with a VM; see ADR-002.
 
-;; Shell startup files and login items
+;; Shell startup files, zsh's completion dump (compinit sources it), and login
+;; items
 (deny file-write* (literal (string-append HOME "/.zshrc")))
 (deny file-write* (literal (string-append HOME "/.zshenv")))
 (deny file-write* (literal (string-append HOME "/.zprofile")))
@@ -78,17 +81,22 @@
 (deny file-write* (literal (string-append HOME "/.bash_profile")))
 (deny file-write* (literal (string-append HOME "/.profile")))
 (deny file-write* (subpath (string-append HOME "/Library/LaunchAgents")))
+(deny file-write* (literal (string-append HOME "/.zcompdump")))
+(deny file-write* (literal (string-append HOME "/.zcompdump.zwc")))
 
 ;; The dotfiles checkout: shell libraries, mise config and tasks, bootstrap,
-;; dsync, this profile, its .git. The agents' settings linked into it stay
-;; writable, apart from what Claude Code runs or loads as code and dsync
-;; would carry to your other Macs.
+;; dsync, this profile, its .git. Only the two agent settings files linked
+;; into it stay writable: a new file there would be linked into your home by
+;; the next bootstrap, and dsync would carry it to your other Macs.
 (deny file-write* (subpath (string-append HOME "/.dotfiles")))
-(allow file-write* (subpath (string-append HOME "/.dotfiles/claude")))
-(allow file-write* (subpath (string-append HOME "/.dotfiles/pi")))
-(deny file-write* (literal (string-append HOME "/.dotfiles/claude/.claude/statusline.sh")))
-(deny file-write* (subpath (string-append HOME "/.dotfiles/claude/.claude/skills")))
-(deny file-write* (subpath (string-append HOME "/.dotfiles/claude/.claude/commands")))
+(allow file-write* (literal (string-append HOME "/.dotfiles/claude/.claude/settings.json")))
+(allow file-write* (literal (string-append HOME "/.dotfiles/pi/.pi/agents/settings.json")))
+
+;; ~/dev: only this project. Other repos' git hooks and mise configs, org
+;; configs and the shared ~/dev/.mise.toml all run on your Mac, unprompted
+;; for repos mise trusts (ADR-014).
+(deny file-write* (subpath (string-append HOME "/dev")))
+(allow file-write* (subpath PROJECT_DIR))
 
 ;; Configs that make a tool run commands: mise tasks and hooks, git hooks and
 ;; aliases, gh shell aliases, starship custom modules, ghostty's command,
@@ -103,16 +111,32 @@
 (deny file-write* (subpath (string-append HOME "/.config/nvim")))
 (deny file-write* (subpath (string-append HOME "/.config/yazi")))
 (deny file-write* (subpath (string-append HOME "/.config/sandbox")))
+(deny file-write* (subpath (string-append HOME "/.config/colima")))   ; ~/.ssh/config includes its ssh_config
 
 ;; Commands on your PATH outside the sandbox
 (deny file-write* (subpath (string-append HOME "/.local/bin")))
 (deny file-write* (subpath "/usr/local"))
 
-;; The project's git hooks and config: your next git command outside the
-;; sandbox would run what they name. Commits, branches and fetches still work;
-;; git push -u can't record the upstream, so push without -u here.
+;; The project's git hooks and config, and .git itself (swapped for a file
+;; pointing elsewhere, its hooks would escape these rules): your next git
+;; command outside the sandbox would run what they name. Commits, branches and
+;; fetches still work; git push -u can't record the upstream, so push without
+;; -u here.
+(deny file-write* (literal (string-append PROJECT_DIR "/.git")))
 (deny file-write* (subpath (string-append PROJECT_DIR "/.git/hooks")))
 (deny file-write* (literal (string-append PROJECT_DIR "/.git/config")))
+
+;; The project's mise config: mise loads it unprompted (ADR-014), and it can
+;; run commands. Change tools outside the sandbox (mise use).
+(deny file-write* (literal (string-append PROJECT_DIR "/.mise.toml")))
+(deny file-write* (literal (string-append PROJECT_DIR "/mise.toml")))
+(deny file-write* (literal (string-append PROJECT_DIR "/.mise.local.toml")))
+(deny file-write* (literal (string-append PROJECT_DIR "/mise.local.toml")))
+(deny file-write* (literal (string-append PROJECT_DIR "/.tool-versions")))
+(deny file-write* (literal (string-append PROJECT_DIR "/.config/mise.toml")))
+(deny file-write* (subpath (string-append PROJECT_DIR "/.config/mise")))
+(deny file-write* (literal (string-append PROJECT_DIR "/.mise/config.toml")))
+(deny file-write* (literal (string-append PROJECT_DIR "/mise/config.toml")))
 
 ;; Keys and credentials
 (deny file-write* (subpath (string-append HOME "/.ssh")))

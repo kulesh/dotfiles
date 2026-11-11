@@ -19,7 +19,7 @@ Considered approaches:
 Use `sandbox-exec` with a project-scoped profile (`default.sb`). The security model:
 
 - **Read broadly, write broadly, deny what escapes** — Agents can read almost everything (needed for language servers, dependency resolution) and write by default. Writes are denied where your Mac would later run the result outside the sandbox (below).
-- **Block secrets at read level** — SSH private keys, AWS credentials, browser data, and keychains are explicitly denied.
+- **Block secrets at read level** — SSH private keys, AWS credentials and browser data are explicitly denied. The Keychain is not: git's credential helper needs it, and a file rule wouldn't stop `security` reaching the Keychain service anyway, so every `secret` value is readable from inside (ADR-008).
 - **Allow all outbound network** — Agents need to fetch packages, query APIs, and access documentation.
 
 ## Writes that escape the sandbox (2026-11-07)
@@ -29,6 +29,10 @@ Reviewing devvm, a VM-per-project sandbox, showed that the profile's `allow file
 The profile stays a deny-list, and now denies that class: every file the host runs later. The agents' settings linked into `~/.dotfiles/claude` and `~/.dotfiles/pi` stay writable, apart from Claude Code's `statusline.sh`, skills and commands, which run or load as code and which `dsync` would carry to other Macs. `tests/sandbox.bats` runs the profile with `sandbox-exec` (macOS only).
 
 Still open, and listed in the profile: Claude Code's `settings.json` (its hooks run on the host, and `/config` needs it writable), `~/.claude/plugins`, and tools installed under `~/.local/share`, mise's included. Closing those takes a boundary the agent's configuration lives outside of, which devvm provides with a Linux VM, a read-only agent store and secrets the VM never holds. devvm doesn't replace this sandbox for everyday work (no Swift or Xcode, four toolchains, no mise config, no Pi), but suits code you don't trust in its toolchains.
+
+## Project scope (2026-11-11)
+
+Within `~/dev` the sandbox writes only to its own project. Other repos, org configs and the shared `~/dev/.mise.toml` are read-only, as are the project's own mise configs, `.git/hooks`, `.git/config` and `.git` itself: mise loads those configs unprompted for repos it trusts (ADR-014), and git runs what its hooks and config name. Change a project's tools outside the sandbox (`mise use`). Only the two agent settings files linked into `~/.dotfiles` stay writable. `~/.zcompdump` and `~/.config/colima` (included by `~/.ssh/config`) join the denied files.
 
 ## Implementation
 

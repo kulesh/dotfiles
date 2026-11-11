@@ -80,3 +80,31 @@ cannot_write() {   # cannot_write <file>: the sandbox may not create it
     done
     cannot_write "$HOME/.local/bin/claude"
 }
+
+@test "other repos, org config and the shared ~/dev config are read-only" {
+    mkdir -p "$HOME/dev/acme/other/.git"
+    cannot_write "$HOME/dev/acme/other/src/main.py"
+    cannot_write "$HOME/dev/acme/other/.git/hooks/post-checkout"
+    cannot_write "$HOME/dev/acme/mise.toml"
+    cannot_write "$HOME/dev/.mise.toml"
+}
+
+@test "the project's own mise config and its .git can't be swapped" {
+    for file in .mise.toml mise.toml .mise.local.toml mise.local.toml .tool-versions .config/mise.toml .mise/config.toml mise/config.toml; do
+        cannot_write "$PROJECT/$file"
+    done
+    sandboxed mv "$PROJECT/.git" "$HOME/elsewhere-git"
+    [ "$status" -ne 0 ]
+    [ -d "$PROJECT/.git" ]
+}
+
+@test "zsh's completion dump and colima's ssh config are read-only" {
+    cannot_write "$HOME/.zcompdump"
+    cannot_write "$HOME/.config/colima/ssh_config"
+}
+
+@test "of the agents' linked settings, only the settings files themselves are writable" {
+    can_write "$HOME/.dotfiles/pi/.pi/agents/settings.json"
+    cannot_write "$HOME/.dotfiles/claude/.local/bin/git"
+    cannot_write "$HOME/.dotfiles/pi/.pi/agents/other.json"
+}
