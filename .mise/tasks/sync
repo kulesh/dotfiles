@@ -8,6 +8,7 @@ dotfiles=${0:A:h:h:h}
 cd "$dotfiles"
 
 rebasing() { [[ -d $(git rev-parse --git-path rebase-merge) || -d $(git rev-parse --git-path rebase-apply) ]]; }
+conflicts() { git diff --name-only --diff-filter=U; }
 
 # The commit this Mac last applied with bootstrap, kept in this clone's .git:
 # anything newer still needs applying, however it arrived (this sync, a plain
@@ -19,6 +20,13 @@ if rebasing; then
     resumed=true   # a previous sync stopped at a conflict
 else
     resumed=false
+    # Never commit, or apply, files with conflict markers in them.
+    if [[ -n $(conflicts) ]]; then
+        echo "Sync stopped: these files are still in conflict:" >&2
+        conflicts | sed 's/^/  /' >&2
+        echo "Resolve them (lazygit, or edit and git add), then run dsync again." >&2
+        exit 1
+    fi
     # Changes here are mostly tools writing through the links (lazy-lock.json,
     # agent settings, `packages use`). Commit them so they reach the other
     # Macs, or keep them on this Mac for now; the pull goes ahead either way.
@@ -40,11 +48,23 @@ else
         fi
     fi
     git pull --quiet --rebase --autostash || rebasing || exit 1
+    # Kept local changes that clash with what came in: git puts them back
+    # with conflict markers and keeps the originals in the stash, yet the pull
+    # succeeds. Resolve before anything is linked or committed.
+    if ! rebasing && [[ -n $(conflicts) ]]; then
+        echo "Your uncommitted changes conflict with another Mac's in:" >&2
+        conflicts | sed 's/^/  /' >&2
+        command -v lazygit >/dev/null && lazygit
+        if [[ -n $(conflicts) ]]; then
+            echo "Sync paused. Resolve them (in lazygit, or edit and git add them) and run dsync again. Your originals are in git stash." >&2
+            exit 1
+        fi
+        echo "Resolved. Your originals are still in git stash; drop them with: git stash drop" >&2
+    fi
 fi
 
 # Another Mac changed the same lines. Resolve (or abort) in lazygit; once
 # nothing is left in conflict, the rebase carries on from here.
-conflicts() { git diff --name-only --diff-filter=U; }
 while rebasing; do
     if [[ -n $(conflicts) ]]; then
         echo "These files changed here and on another Mac:" >&2

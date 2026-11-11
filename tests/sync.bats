@@ -214,3 +214,30 @@ STUB
     git -C "$DOTFILES_ROOT" check-ignore -q dev/dev/docs/notes.md.local
     git -C "$DOTFILES_ROOT" check-ignore -q claude/.claude/skills/draft.local
 }
+
+# =============================================================================
+# Uncommitted changes that conflict with another Mac's (git's autostash)
+# =============================================================================
+
+conflicting_change() {   # this Mac edits a line another Mac changed too
+    other_mac_commits "theirs"
+    printf 'mine\ntwo\n' > "$WORK/this/settings"
+}
+
+@test "kept local changes that conflict with another Mac's pause the sync before anything is applied" {
+    conflicting_change
+    sync n
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"stash"* ]]
+    [[ "$(calls)" == *lazygit* ]]
+    [[ "$(calls)" != *bootstrap* ]]
+}
+
+@test "a sync never starts, or commits, while files are in conflict" {
+    conflicting_change
+    sync n
+    sync y
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"conflict"* ]]
+    [ "$(git -C "$WORK/this" log -1 --format=%s)" = "other: update settings" ]
+}
