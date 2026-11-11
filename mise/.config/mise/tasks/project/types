@@ -1,7 +1,15 @@
 #!/usr/bin/env zsh
 #MISE description="List the templates mkproject can start from (list_project_types)"
 #MISE quiet=true
+#USAGE flag "--names" hide=#true help="Names only, one per line (completion, mkproject)"
 set -euo pipefail
 
+# The templates are the visible mkproject:* tasks; this is the one place that
+# reads them, for the list, completion and mkproject's check.
+names=(${(f)"$(mise tasks ls --no-header 2>/dev/null | awk '$1 ~ /^mkproject:/ { sub(/^mkproject:/, "", $1); print $1 }')"})
+if [[ ${usage_names:-false} == true ]]; then
+    print -rl -- $names
+    exit 0
+fi
 print "Templates (mkproject <name> <template>):"
 mise tasks ls --no-header 2>/dev/null | sed -n 's/^mkproject:/  /p'

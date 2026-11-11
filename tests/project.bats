@@ -152,8 +152,21 @@ completions() {   # the candidates zsh would offer for a command line
     [[ "$output" != *"mise ERROR"* ]]
 }
 
-@test "mkproject completes template names" {
-    [[ "$(completions 'mise -C / run project:new demo ')" == *python* ]]
+@test "mkproject completes template names, and only templates" {
+    local candidates=$(completions 'mise -C / run project:new demo ')
+    [[ "$candidates" == *python* ]]
+    [[ "$candidates" != *tools:* ]]
+}
+
+@test "the templates are named once: list_project_types --names, without the tool steps" {
+    run --separate-stderr mise -C / run project:types --names
+    [ "$status" -eq 0 ]
+    [ "$output" = $'base\nconvex\nfastapi\npython\nrails\nruby\nrust\ntypescript' ]
+    project types
+    [[ "$output" != *tools:* ]]
+    project new demo tools:python
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"No template 'tools:python'"* ]]
 }
 
 @test "list_project_types lists every template" {

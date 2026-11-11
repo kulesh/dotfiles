@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+#MISE hide=true
 #MISE description="Install Bun via mise"
 #MISE dir="{{cwd}}"
 

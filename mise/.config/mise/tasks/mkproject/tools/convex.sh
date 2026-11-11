@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+#MISE hide=true
 #MISE description="Install Bun and Node for Convex development"
 #MISE dir="{{cwd}}"
 
