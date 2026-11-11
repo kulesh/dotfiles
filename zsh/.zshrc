@@ -9,7 +9,8 @@ setopt interactive_comments
 
 # history
 setopt EXTENDED_HISTORY
-setopt inc_append_history_time
+# sharehistory writes each command as it runs and reads the other windows';
+# zsh's manual says not to add inc_append_history_time to it.
 setopt histignorealldups sharehistory
 HISTSIZE=1024
 SAVEHIST=1024
@@ -23,7 +24,6 @@ zstyle ':completion:*' completer _expand _complete _correct _approximate
 zstyle ':completion:*' format 'Completing %d'
 zstyle ':completion:*' group-name ''
 # zstyle ':completion:*' menu select=2 eval "$(dircolors -b)"
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
 zstyle ':completion:*' list-colors ''
 zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
 zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
@@ -83,7 +83,7 @@ if [[ -o interactive ]]; then
         (( $#fetched )) || (GIT_TERMINAL_PROMPT=0 git -C "$DOTFILES" fetch -q &>/dev/null &)
         local counts
         counts=$(git -C "$DOTFILES" rev-list --left-right --count '@{upstream}...HEAD' 2>/dev/null) || return 0
-        changed=(${(f)"$(git -C "$DOTFILES" status --porcelain)"})
+        changed=(${(f)"$(git -C "$DOTFILES" --no-optional-locks status --porcelain)"})   # no index lock while dsync may run
         local behind=${counts%%$'\t'*} ahead=${counts##*$'\t'}
         (( behind )) && state+=("$behind from other Macs")
         (( ahead )) && state+=("$ahead to share")
