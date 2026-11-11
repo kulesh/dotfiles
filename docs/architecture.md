@@ -138,7 +138,7 @@ mkproject "api" "fastapi"
 ┌──────────────────────┐
 │ ~/dev/<login>/api    │   inherits ~/dev/<login>/mise.toml,
 │ (mkproject org/api:  │   if you wrote one, and ~/dev/.mise.toml;
-│  ~/dev/org/api)      │   trusted by path
+│  ~/dev/org/api)      │   trusted if you or your org own it (ADR-014)
 └────────┬─────────────┘
          │
          ▼

@@ -129,21 +129,47 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
     [[ "$output" != *"mise trust"* ]]
 }
 
-@test "projects under ~/dev load without a trust prompt; configs elsewhere still need one" {
+# A cloned repo's mise config can run commands, so only repos you or your
+# GitHub orgs own load without asking; anyone else's clone asks first.
+@test "your own and your orgs' projects load without a trust prompt; other owners' and other places ask" {
+    cat > "$STUBS/gh" <<'STUB'
+#!/bin/sh
+case "$*" in
+  "auth status"*) exit 0 ;;
+  "config get -h github.com user") echo Kulesh ;;
+  "api user/orgs --jq .[].login") echo Acme ;;
+  *) echo "gh $*" ;;
+esac
+STUB
     preview
     [ "$status" -eq 0 ]
-    mkdir -p "$TARGET/dev/alpha" "$TARGET/elsewhere"
-    printf '[env]\nALPHA = "loaded"\n' > "$TARGET/dev/alpha/.mise.toml"
+    mkdir -p "$TARGET/dev/kulesh/app" "$TARGET/dev/acme/app" "$TARGET/dev/crmne/lib" "$TARGET/elsewhere"
+    printf '[env]\nMINE = "loaded"\n' > "$TARGET/dev/kulesh/app/.mise.toml"
+    printf '[env]\nORGS = "loaded"\n' > "$TARGET/dev/acme/app/.mise.toml"
+    printf '[env]\nTHEIRS = "loaded"\n' > "$TARGET/dev/crmne/lib/.mise.toml"
     printf '[env]\nELSEWHERE = "loaded"\n' > "$TARGET/elsewhere/.mise.toml"
     in_target() {
         ( cd "$1" && HOME="$TARGET" MISE_CONFIG_DIR="$TARGET/.config/mise" \
           MISE_STATE_DIR="$TARGET/.state" MISE_DATA_DIR="$TARGET/.data" MISE_CACHE_DIR="$TARGET/.cache" \
           MISE_OFFLINE=1 MISE_VERSION_CHECK=0 mise env 2>&1 )
     }
-    run in_target "$TARGET/dev/alpha"
-    [[ "$output" == *"ALPHA=loaded"* ]]
+    run in_target "$TARGET/dev/kulesh/app"
+    [[ "$output" == *"MINE=loaded"* ]]
+    run in_target "$TARGET/dev/acme/app"
+    [[ "$output" == *"ORGS=loaded"* ]]
+    run in_target "$TARGET/dev/crmne/lib"
+    [[ "$output" == *"not trusted"* ]]
     run in_target "$TARGET/elsewhere"
     [[ "$output" == *"not trusted"* ]]
+}
+
+@test "a project's .env doesn't load into the shell's environment" {
+    preview
+    mkdir -p "$TARGET/dev/kulesh/app"
+    : > "$TARGET/dev/kulesh/app/.mise.toml"
+    printf 'PATH=/tmp/evil\nFROM_DOTENV=1\n' > "$TARGET/dev/kulesh/app/.env"
+    run sh -c 'cd "$1" && HOME="$2" MISE_CONFIG_DIR="$2/.config/mise" MISE_TRUSTED_CONFIG_PATHS="$2/dev" MISE_STATE_DIR="$2/.state" MISE_DATA_DIR="$2/.data" MISE_CACHE_DIR="$2/.cache" MISE_OFFLINE=1 mise env' _ "$TARGET/dev/kulesh/app" "$TARGET"
+    [[ "$output" != *"FROM_DOTENV"* ]]
 }
 
 @test "reports a secret a project names that this Mac's Keychain lacks" {

@@ -16,6 +16,8 @@ setup() {
     export MISE_CONFIG_DIR="$DOTFILES_ROOT/mise/.config/mise"
     export MISE_STATE_DIR=$HOME/.state MISE_DATA_DIR=$HOME/.data MISE_CACHE_DIR=$HOME/.cache
     export MISE_OFFLINE=1 MISE_VERSION_CHECK=0 MISE_AUTO_INSTALL=0
+    # Bootstrap writes which orgs are trusted on each Mac; here, all of ~/dev.
+    export MISE_TRUSTED_CONFIG_PATHS=$DEV
     # Where a command leaves the directory the shell should move to.
     export DOTFILES_FOLLOW=$HOME/follow
     # GitHub is a directory of bare repos; commits need an identity, not a key.

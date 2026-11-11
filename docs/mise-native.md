@@ -44,7 +44,7 @@ The result is one framework instead of two. Stow goes, most of the bootstrap tas
 | Login shell | `[bootstrap.user] login_shell` | Same | Full | Tested (dry run) |
 | `~/dev`, `~/.local/bin`, `~/.ssh` 0700 | `mkdir` before stow | Phase 2: groups make the first two unnecessary; `~/.ssh` 0700 moves with the linking | Full | Tested |
 | Global tools | `mise install` in task | Bootstrap step 16 | Full | Docs `bootstrap.md:152` |
-| Trust `~/dev` projects | `mise trust` in bootstrap, mkproject, cloneproject, updateproject | `trusted_config_paths = ["~/dev"]` (global) | Full | Done in phase 1; tested: `~/dev` and below load, elsewhere still asks |
+| Trust `~/dev` projects | `mise trust` in bootstrap, mkproject, cloneproject, updateproject | `trusted_config_paths = ["~/dev"]` (global) | Full | Done in phase 1; narrowed to your own orgs by [ADR-014](adrs/014-trust-only-your-own-repos.md) |
 | Claude Code | `curl claude.ai/install.sh` | Native installer (unchanged). Claude Code updates itself, which mise warns fights its installs (`self-updating-tools.md:12-16`); mise tools are on PATH only in activated shells, while `~/.local/bin` is on PATH everywhere | None by choice | Docs |
 | Screenshot folder | `defaults write` in task | Task (unchanged): `[bootstrap.macos.defaults]` stores values as written, so `~` would need the username spelled out | None | Mac: `~` stored literally (`bootstrap.md:392`) |
 | GitHub login, SSH key, signing | Task | Task (unchanged) | None | No bootstrap section covers it |

@@ -100,6 +100,31 @@ for config in $PROJECT_DIR/*/mise.toml(N.); do
     if [[ "$(<$config)" == "$(generated_org_config ${config:h:t})" ]]; then run rm "$config"; fi
 done
 
+# Trust: mise loads a project's config without asking only for repos you or
+# your GitHub orgs own (~/dev/<owner>/...); anyone else's clone asks first,
+# since a config can run commands. Per Mac, as the login differs, so it's a
+# file of its own in conf.d rather than the linked config.toml. It holds the
+# whole list (separate files' lists replace, not add to, each other),
+# starting with ~/dev/.mise.toml, which every project loads. Without a
+# GitHub login it trusts that file alone; if the lookup fails while logged
+# in, the file stays as it was.
+trust=${XDG_CONFIG_HOME:-$HOME/.config}/mise/conf.d/trust.toml
+owners=()
+if gh auth status &>/dev/null; then
+    owners=(${(u)${(L)${(f)"$( { gh config get -h github.com user; gh api user/orgs --jq '.[].login'; } 2>/dev/null || true)"}}})
+fi
+if (( ${#owners} )) || [[ ! -e $trust ]]; then
+    paths=('"~/dev/.mise.toml"')
+    for owner in $owners; do paths+=("\"~/dev/$owner\""); done
+    # Built whole, then written: a failure can't leave a half-written file.
+    content="# Written by bootstrap: the shared ~/dev config, and repos owned by you
+# or your GitHub orgs. Anyone else's clone asks before mise loads its config.
+[settings]
+trusted_config_paths = [${(j:, :)paths}]"
+    mkdir -p "${trust:h}"
+    print -r -- "$content" > "$trust"
+fi
+
 # Clone your own repos (no forks, no archived) into ~/dev/<owner> as
 # projects, with the same command as cloneproject. One bad repo is reported,
 # not fatal, and no clone moves the shell (DOTFILES_FOLLOW, lib/follow.zsh).

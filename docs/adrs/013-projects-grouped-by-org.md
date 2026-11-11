@@ -37,5 +37,5 @@ The first version made every org a mise monorepo: the project commands wrote `~/
 
 - Paths change once: editors' recent lists, zoxide entries and Claude Code's per-project history (keyed by path) start fresh for migrated projects
 - One-repo orgs appear for third-party clones (`~/dev/crmne/ruby_llm`); the path always says where a repo came from
-- The sandbox, trust (`~/dev` and below) and `follow` are unaffected
+- The sandbox and `follow` are unaffected; trust narrowed later to your own orgs ([ADR-014](014-trust-only-your-own-repos.md))
 - A per-org git identity (`includeIf "gitdir:~/dev/<org>/"`) fits this layout; it's left for a separate change

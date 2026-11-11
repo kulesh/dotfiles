@@ -25,10 +25,9 @@ mup = "mise -C \"$DOTFILES\" bootstrap --only packages,tools --upgrade"
 dsync = "mise -C \"$DOTFILES\" run sync"
 
 [settings]
-# Every project under ~/dev is yours, created or cloned there by the project
-# commands, so its config loads without a trust prompt. Configs elsewhere
-# still ask.
-trusted_config_paths = ["~/dev"]
+# Trust differs per Mac (your GitHub login and orgs), so bootstrap writes it
+# to conf.d/trust.toml: ~/dev/<login> and ~/dev/<your org> load without a
+# prompt; anyone else's clone asks, since its config can run commands.
 experimental = true
 idiomatic_version_file_enable_tools = []
 always_keep_install = false
@@ -37,5 +36,4 @@ http_timeout = "30s"
 jobs = 4
 not_found_auto_install = true
 paranoid = false
-env_file = '.env'
 status = { missing_tools = "if_other_versions_installed", show_env = false, show_tools = false }
