@@ -16,7 +16,8 @@
 typeset -g SANDBOX_PROFILE=${XDG_CONFIG_HOME:-$HOME/.config}/sandbox/profiles/default.sb
 typeset -g SANDBOX_LOG_DIR=${XDG_STATE_HOME:-$HOME/.local/state}/sandbox/logs
 
-_sandbox_is_project() { [[ -f $1/.sandbox && -f $1/.mise.toml ]]; }
+# workon -s writes the marker; it alone decides.
+_sandbox_is_project() { [[ -f $1/.sandbox ]]; }
 
 _sandbox_log() {   # _sandbox_log <project> <event> <message>; never fails
     mkdir -p "$SANDBOX_LOG_DIR" 2>/dev/null || return 0

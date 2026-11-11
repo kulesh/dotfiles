@@ -3,8 +3,8 @@
 # Helpers shared by the project:* tasks. Hidden from the task list;
 # each task sources it.
 #
-# A project is a repo at ~/dev/<org>/<repo> with a mise config (.mise.toml
-# or .tool-versions). An org is a GitHub user or organization: a cloned repo
+# A project is a repo at ~/dev/<org>/<repo>: a git repo, or a directory with
+# a mise config (.mise.toml or .tool-versions). An org is a GitHub user or organization: a cloned repo
 # lives under its owner, a created one under your GitHub login. An org
 # directory is a plain folder; a mise.toml you put there reaches all its repos.
 
@@ -32,7 +32,8 @@ pick_project() {   # pick_project <usage>
         --preview-window=right,60% || true
 }
 
-is_project() { [[ -e $1/.mise.toml || -e $1/.tool-versions ]]; }
+# A project is a git repo, or a directory with a mise config of its own.
+is_project() { [[ -e $1/.git || -e $1/.mise.toml || -e $1/.tool-versions ]]; }
 
 # An org or repo name: one path segment, never hidden (.archive and .migrating
 # are ours), so a name can't reach outside ~/dev or into its own parts.
@@ -128,7 +129,7 @@ project_dir() {
         dir=${found[1]:-$projects_dir/$1}
     fi
     [[ -d $dir && ${dir:A} == ${projects_dir:A}/*/* ]] || die "No project '$1' in $projects_dir"
-    is_project "$dir" || die "$dir isn't a project (no .mise.toml)"
+    is_project "$dir" || die "$dir isn't a project (no .git or mise config)"
     print -r -- "$dir"
 }
 

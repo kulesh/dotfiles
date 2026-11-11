@@ -72,3 +72,10 @@ outer_shell() {   # cd into the sandboxed project, then report where it ended up
     grep -qx "PROJECT_DIR=$PROJECT" "$HOME/sandbox-exec.args"
     grep -qx "HOME=$HOME" "$HOME/sandbox-exec.args"
 }
+
+@test "the .sandbox marker alone is enough: a clone without mise config is sandboxed" {
+    rm "$PROJECT/.mise.toml"
+    mkdir "$PROJECT/.git"
+    CHILD="cd $HOME/elsewhere" outer_shell
+    [[ "$output" == *"sandbox entered"* ]]
+}

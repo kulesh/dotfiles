@@ -173,8 +173,19 @@ completions() {   # the candidates zsh would offer for a command line
     project clone kulesh/alpha
     [ "$status" -eq 0 ]
     [ "$(git -C "$MINE/alpha" branch --show-current)" = "trunk" ]
-    [ -f "$MINE/alpha/.mise.toml" ]
     [ "$(followed)" = "$MINE/alpha" ]
+}
+
+@test "a clone stays as git made it: no config added, nothing to commit, still a project" {
+    github_repo kulesh/alpha
+    project clone kulesh/alpha
+    [ ! -e "$MINE/alpha/.mise.toml" ]
+    [ -z "$(git -C "$MINE/alpha" status --porcelain)" ]
+    project list
+    [[ "$output" == *"alpha"* ]]
+    project show --from "$MINE/alpha"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"clean"* ]]
 }
 
 @test "cloneproject puts someone else's repo under its owner, in lowercase" {
