@@ -8,4 +8,17 @@ ssh/.ssh/*
 
 # Files that stay on the Mac that made them: dsync never offers them.
 *.local
+!*.local/
+
+# Files that usually hold secrets: dsync commits into a public repo.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+id_rsa*
+id_ed25519*
+auth.json
+credentials.json
 AGENTS.md

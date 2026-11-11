@@ -213,6 +213,9 @@ STUB
 @test "the repo ignores *.local files, wherever they are" {
     git -C "$DOTFILES_ROOT" check-ignore -q dev/dev/docs/notes.md.local
     git -C "$DOTFILES_ROOT" check-ignore -q claude/.claude/skills/draft.local
+    # Files only: a directory named *.local, like bin/.local, isn't ignored.
+    run git -C "$DOTFILES_ROOT" check-ignore -q bin/.local/bin/newtool
+    [ "$status" -ne 0 ]
 }
 
 # =============================================================================
@@ -240,4 +243,32 @@ conflicting_change() {   # this Mac edits a line another Mac changed too
     [ "$status" -ne 0 ]
     [[ "$output" == *"conflict"* ]]
     [ "$(git -C "$WORK/this" log -1 --format=%s)" = "other: update settings" ]
+}
+
+# =============================================================================
+# Reviewing what came in before it runs on this Mac
+# =============================================================================
+
+# Bootstrap runs what the repo says (the pre-dotfiles hook is plain shell),
+# and anything that could push to the repo could write it: dsync shows what
+# it's about to apply, and applies nothing if you say no.
+@test "shows the incoming commits and files, and applies nothing when declined" {
+    other_mac_commits "three"
+    sync n
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"other: update settings"* ]]
+    [[ "$output" == *"settings"*"|"* ]]
+    [[ "$output" == *"Not applied"* ]]
+    [[ "$(calls)" != *bootstrap* ]]
+    sync
+    [ "$(calls)" = "mise bootstrap --yes" ]
+}
+
+# dsync commits into a public repo: files that are usually secrets never go.
+@test "the repo ignores files that usually hold secrets, but not .env.example" {
+    for file in .env .env.production app/.env.local certs/server.pem certs/server.key id_ed25519 auth.json credentials.json; do
+        git -C "$DOTFILES_ROOT" check-ignore -q "dev/dev/docs/$file"
+    done
+    run git -C "$DOTFILES_ROOT" check-ignore -q mise/.config/mise/tasks/mkproject/fastapi/files/.env.example
+    [ "$status" -ne 0 ]
 }
