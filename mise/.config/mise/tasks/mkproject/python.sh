@@ -35,13 +35,6 @@ description = "A Python project"
 requires-python = ">= $PYTHON_VERSION"
 dependencies = []
 
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-cov",
-    "ruff",
-    "basedpyright"
-]
 
 [project.scripts]
 $PROJECT_NAME = "$MODULE_NAME:main"
@@ -117,9 +110,8 @@ def test_main(capsys):
     assert "Hello, World!" in captured.out
 EOF
 
-# Install development dependencies and package in editable mode
+# Development dependencies; uv sync installs the project itself, editable
 mise exec -- uv add --dev pytest pytest-cov ruff basedpyright
-mise exec -- uv pip install -e .
 mise exec -- uv sync
 
 # Generated code follows the project's own lint and format rules

@@ -28,11 +28,11 @@ mkdir -p lib/src bin/src examples tests benches
 cat > "Cargo.toml" << EOF
 [workspace]
 members = ["lib", "bin"]
-resolver = "2"
+resolver = "3"
 
 [workspace.package]
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Your Name <your.email@example.com>"]
 license = "MIT OR Apache-2.0"
 
@@ -247,24 +247,11 @@ EOF
 # Replace PROJECT_NAME placeholder in benchmark
 sed -i.bak "s/PROJECT_NAME/$CRATE_NAME/g" benches/benchmark.rs && rm benches/benchmark.rs.bak
 
-echo "Installing cargo tools..."
-
-# Install cargo tools using cargo install
-mise exec -- cargo install cargo-watch cargo-nextest cargo-edit 2>/dev/null || {
-    echo "Some cargo tools may already be installed or failed to install."
-    echo "You can manually install them later with:"
-    echo "  cargo install cargo-watch cargo-nextest cargo-edit"
-}
-
 echo "Building project..."
 mise exec -- cargo build
 
 echo "Running tests..."
-if command -v cargo-nextest &> /dev/null; then
-    mise exec -- cargo nextest run
-else
-    mise exec -- cargo test
-fi
+mise exec -- cargo test
 
 echo ""
 echo "Rust workspace project setup complete!"
@@ -274,9 +261,8 @@ echo "  bin/  - Binary crate ($PROJECT_NAME-bin)"
 echo ""
 echo "Try: cargo run                          # Run the binary"
 echo "Try: cargo test                         # Run all tests"
-echo "Try: cargo nextest run                  # Run tests with nextest"
 echo "Try: cargo run --example basic          # Run example"
 echo "Try: cargo doc --open                   # Build and view docs"
-echo "Try: cargo watch -x run                 # Auto-rebuild on changes"
+echo "Try: cargo add <crate>                  # Add a dependency"
 echo "Try: cargo clippy                       # Run linter"
 echo "Try: cargo fmt                          # Format code"

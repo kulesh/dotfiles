@@ -14,7 +14,7 @@ copy_template_files "typescript" "TypeScript"
 
 PROJECT_NAME=$(basename "$PWD")
 # For scoped packages
-PACKAGE_SCOPE="@${PROJECT_NAME}"
+PACKAGE_SCOPE="@${PROJECT_NAME:l}"   # npm scopes are lowercase
 
 echo "Creating workspace structure..."
 
@@ -404,8 +404,6 @@ cat >> .gitignore << 'EOF'
 dist/
 *.tsbuildinfo
 
-# Bun
-bun.lockb
 
 # Test coverage
 coverage/

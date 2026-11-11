@@ -23,44 +23,6 @@ mkdir -p convex
 mkdir -p lib
 mkdir -p public
 
-# Create package.json
-cat > "package.json" << EOF
-{
-  "name": "$PROJECT_NAME",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "dev:convex": "convex dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "biome check .",
-    "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@auth/core": "latest",
-    "@convex-dev/auth": "latest",
-    "convex": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "clsx": "latest",
-    "tailwind-merge": "latest"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "latest",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@tailwindcss/postcss": "latest",
-    "postcss": "latest",
-    "tailwindcss": "latest",
-    "typescript": "latest"
-  }
-}
-EOF
-
 # Create tsconfig.json
 cat > "tsconfig.json" << 'EOF'
 {
@@ -884,7 +846,6 @@ convex/_generated/
 
 # Dependencies
 node_modules/
-bun.lockb
 
 # TypeScript
 *.tsbuildinfo
@@ -892,7 +853,7 @@ next-env.d.ts
 EOF
 
 # Add radix-ui/react-label and class-variance-authority for shadcn components
-cat > "package.json.tmp" << EOF
+cat > "package.json" << EOF
 {
   "name": "$PROJECT_NAME",
   "version": "0.1.0",
@@ -930,7 +891,6 @@ cat > "package.json.tmp" << EOF
   }
 }
 EOF
-mv "package.json.tmp" "package.json"
 
 echo "Installing dependencies..."
 mise exec -- bun install

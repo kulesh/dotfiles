@@ -39,15 +39,6 @@ dependencies = [
     "pydantic-settings"
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-asyncio",
-    "httpx",
-    "pytest-cov",
-    "ruff",
-    "basedpyright"
-]
 
 [project.scripts]
 $PROJECT_NAME = "$MODULE_NAME:main"
@@ -282,7 +273,6 @@ sed -i.bak "s/your-project-name/$PROJECT_NAME/" .env.example && rm .env.example.
 # Install dependencies and setup
 mise exec -- uv add "fastapi[standard]" pydantic pydantic-settings
 mise exec -- uv add --dev pytest pytest-asyncio httpx pytest-cov ruff basedpyright
-mise exec -- uv pip install -e .
 mise exec -- uv sync
 
 # Generated code follows the project's own lint and format rules
