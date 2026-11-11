@@ -180,10 +180,12 @@ follow() {
     fi
 }
 
-# Ask y/n on the terminal, Enter taking the default. Without a terminal the
-# command was asked for explicitly (a script, a test), so go ahead.
+# Ask y/n on the terminal, Enter taking the default. --yes (usage_yes) says
+# yes. Without a terminal and without --yes, the default stands: a script
+# never deletes, archives or moves anything it wasn't told to.
 confirm() {   # confirm <question> <y|n default>
-    [[ -t 0 ]] || return 0
+    [[ ${usage_yes:-false} == true ]] && return 0
+    [[ -t 0 ]] || { [[ $2 == y ]]; return; }
     local reply
     read -r "reply?$1 " || return 1
     [[ -z $reply ]] && reply=$2

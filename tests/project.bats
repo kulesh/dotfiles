@@ -92,7 +92,7 @@ completions() {   # the candidates zsh would offer for a command line
     mkdir -p "$HOME/victim" && : > "$HOME/victim/.mise.toml"
     project new demo
     for name in ../victim kulesh/../../victim ..; do
-        project remove "$name" --delete
+        project remove "$name" --delete --yes
         [ "$status" -ne 0 ]
         project workon "$name"
         [ "$status" -ne 0 ]
@@ -120,6 +120,16 @@ completions() {   # the candidates zsh would offer for a command line
     [ "$status" -ne 0 ]
     [[ "$output" == *"mkproject:base failed"* ]]
     [[ "$output" != *"Created"* ]]
+}
+
+@test "a failed mkproject outside a terminal leaves the partial project where it is" {
+    local git=$(command -v git)
+    printf '#!/bin/sh\n[ "$1" = init ] && exit 1\nexec %s "$@"\n' "$git" > "$HOME/stubs/git"
+    chmod +x "$HOME/stubs/git"
+    project new demo
+    [ "$status" -ne 0 ]
+    [ -d "$MINE/demo" ]
+    [ ! -e "$DEV/.archive" ]
 }
 
 @test "mkproject --dry-run describes the project and creates nothing" {
@@ -495,10 +505,17 @@ EOF
 
 @test "rmproject --delete removes it for good" {
     project new demo
-    project remove demo --delete
+    project remove demo --delete --yes
     [ "$status" -eq 0 ]
     [ ! -e "$MINE/demo" ]
     [ ! -e "$DEV/.archive/kulesh/demo" ]
+}
+
+@test "outside a terminal, rmproject --delete deletes only with --yes" {
+    project new demo
+    project remove demo --delete
+    [ -d "$MINE/demo" ]
+    [[ "$output" == *"Cancelled"* ]]
 }
 
 @test "rmproject from inside the project moves the shell to its org" {
@@ -545,7 +562,7 @@ old_layout() {   # projects as the flat layout left them, one per kind
 
 @test "migrate moves each project under its GitHub owner, local ones under yours" {
     old_layout
-    project migrate
+    project migrate --yes
     [ "$status" -eq 0 ]
     [ -d "$DEV/kulesh/alpha/.git" ]
     [ -d "$DEV/kulesh/kulesh/.git" ]
@@ -565,11 +582,11 @@ old_layout() {   # projects as the flat layout left them, one per kind
     mkdir -p "$DEV/mono/frontend"
     : > "$DEV/mono/.mise.toml"
     : > "$DEV/mono/frontend/.mise.toml"   # a package of the repo, not a project
-    project migrate
+    project migrate --yes
     [ "$status" -eq 0 ]
     [ -d "$MINE/demo/.git" ] && [ -f "$MINE/.mise.toml" ]
     [ -d "$MINE/mono/frontend" ]
-    project migrate
+    project migrate --yes
     [[ "$output" == *"Nothing to migrate"* ]]
 }
 
@@ -582,10 +599,21 @@ old_layout() {   # projects as the flat layout left them, one per kind
     [ ! -e "$DEV/crmne" ]
 }
 
+@test "migrate finishes a run that stopped halfway" {
+    old_layout
+    mkdir "$DEV/.migrating"
+    mv "$DEV/alpha" "$DEV/.migrating/alpha"   # moved out, never placed
+    project migrate --yes
+    [ "$status" -eq 0 ]
+    [ -d "$DEV/kulesh/alpha/.git" ]
+    [ -d "$DEV/crmne/ruby_llm/.git" ]
+    [ ! -e "$DEV/.migrating" ]
+}
+
 @test "migrate on a migrated ~/dev has nothing to do" {
     old_layout
-    project migrate
-    project migrate
+    project migrate --yes
+    project migrate --yes
     [ "$status" -eq 0 ]
     [[ "$output" == *"Nothing to migrate"* ]]
 }

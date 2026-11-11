@@ -3,43 +3,48 @@
 #MISE quiet=true
 #MISE raw=true
 #USAGE flag "-n --dry-run" help="List the moves without making them"
+#USAGE flag "-y --yes" help="Don't ask (without a terminal, moving needs it)"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
 staging=$projects_dir/.migrating
-[[ -e $staging ]] && die "A migration stopped partway: its projects are in $staging. Move them to ~/dev/<org>/<repo>, remove $staging, and run again."
 
-# The flat layout's projects sit directly in ~/dev (flat_projects). A cloned
-# project goes under its GitHub owner, a local one under your login.
-typeset -A moves   # repo -> org
-for dir in ${(f)"$(flat_projects)"}; do
+# The flat layout's projects sit directly in ~/dev (flat_projects); a run that
+# stopped partway left some in the staging directory. A cloned project goes
+# under its GitHub owner, a local one under your login.
+typeset -A moves from   # repo -> org, repo -> where it is now
+for dir in ${(f)"$(flat_projects)"} $staging/*(N/); do
     if slug=$(github_slug "$dir"); then
         moves[${dir:t}]=${${slug%%/*}:l}
     else
         moves[${dir:t}]=$(own_org) || die "No GitHub login to take your org from (gh auth login); $dir has no GitHub origin to place it by."
     fi
+    from[${dir:t}]=$dir
 done
 
 if (( ! ${#moves} )); then
+    [[ -d $staging ]] && rmdir "$staging" 2>/dev/null
     print -r -- "Nothing to migrate: every project is in $projects_dir/<org>/<repo>."
     exit 0
 fi
 
 for repo in ${(ko)moves}; do
-    print -r -- "  $projects_dir/$repo → $projects_dir/${moves[$repo]}/$repo"
+    print -r -- "  ${from[$repo]} → $projects_dir/${moves[$repo]}/$repo"
 done
 [[ ${usage_dry_run:-false} == true ]] && exit 0
 confirm "Move ${#moves} project(s)? [y/N]" n || { print "Cancelled"; exit 0; }
 
-# Two steps: everything out of the way first, so a repo named like an org
-# (~/dev/kulesh, which moves to ~/dev/kulesh/kulesh) has left before its org
-# directory is made.
-mkdir "$staging"
-for repo in ${(k)moves}; do mv "$projects_dir/$repo" "$staging/$repo"; done
+# Two steps: everything into the staging directory first, so a repo named
+# like an org (~/dev/kulesh, which moves to ~/dev/kulesh/kulesh) has left
+# before its org directory is made. A run that stops partway resumes here.
+mkdir -p "$staging"
+for repo in ${(k)moves}; do
+    [[ ${from[$repo]} == $staging/$repo ]] || mv "${from[$repo]}" "$staging/$repo"
+done
 for repo in ${(k)moves}; do
     mkdir -p "$projects_dir/${moves[$repo]}"
     target=$projects_dir/${moves[$repo]}/$repo
-    [[ -e $target ]] && die "$target already exists; $repo stays in $staging."
+    [[ -e $target ]] && die "$target already exists; $repo stays in $staging. Move one of them, then run migrate again."
     mv "$staging/$repo" "$target"
 done
 rmdir "$staging"
