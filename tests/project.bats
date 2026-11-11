@@ -86,6 +86,23 @@ completions() {   # the candidates zsh would offer for a command line
     [ "$(followed)" = "$DEV/acme/tool" ]
 }
 
+@test "names that reach outside ~/dev are refused, and nothing outside it is touched" {
+    mkdir -p "$HOME/victim" && : > "$HOME/victim/.mise.toml"
+    project new demo
+    for name in ../victim kulesh/../../victim ..; do
+        project remove "$name" --delete
+        [ "$status" -ne 0 ]
+        project workon "$name"
+        [ "$status" -ne 0 ]
+    done
+    [ -d "$HOME/victim" ]
+    for name in ../escape acme/../escape a/b/c .hidden; do
+        project new "$name"
+        [ "$status" -ne 0 ]
+    done
+    [ ! -e "$HOME/escape" ] && [ ! -e "$HOME/mise.toml" ] && [ ! -e "$DEV/.hidden" ]
+}
+
 @test "mkproject without a GitHub login asks for the org instead of guessing" {
     GH_NO_LOGIN=1 project new demo
     [ "$status" -ne 0 ]
@@ -399,6 +416,20 @@ EOF
     project update --from "$MINE/alpha"
     [ "$status" -eq 0 ]
     [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "third" ]
+}
+
+@test "updateproject pulls from the branch's own upstream; a branch without one says so" {
+    github_repo kulesh/alpha
+    project clone kulesh/alpha
+    git -C "$MINE/alpha" checkout -q -b work --track origin/main
+    push_commit kulesh/alpha second
+    project update alpha
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "second" ]
+    git -C "$MINE/alpha" checkout -q -b local-only
+    project update alpha
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"no upstream"* ]]
 }
 
 @test "updateproject refuses a project with uncommitted changes" {

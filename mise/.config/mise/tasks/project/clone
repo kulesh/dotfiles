@@ -12,6 +12,7 @@ parsed=$(parse_github_repo ${(z)usage_repo}) ||
 url=${parsed%|*} slug=${parsed#*|}
 # GitHub owners are case-insensitive; one directory per owner.
 owner=${${slug%%/*}:l} name=${slug#*/}
+valid_name "$owner" && valid_name "$name" || die "Not a project name: $owner/$name"
 dir=$projects_dir/$owner/$name
 
 [[ -e $dir ]] && die "$dir already exists. Use workon $owner/$name, or updateproject $owner/$name."

@@ -17,22 +17,24 @@ cd "$dir"
 name=$(project_label "$dir")
 
 [[ -d .git ]] || die "$name isn't a git repository"
-remote=$(git remote get-url origin 2>/dev/null) || die "$name has no remote to pull from"
 branch=$(git branch --show-current)
 [[ -n $branch ]] || die "$name isn't on a branch"
+# The branch's own upstream, wherever it points (origin/main, upstream/main).
+upstream=$(git rev-parse -q --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null) ||
+    die "$name's branch $branch has no upstream to pull from (git branch -u <remote>/<branch>)"
 if [[ -n $(git status --porcelain --untracked-files=no) ]]; then
     git status --short --untracked-files=no >&2
     die "$name has uncommitted changes; commit or stash them first"
 fi
 
-print -r -- "Updating $name from $remote"
-git fetch -q origin "$branch"
-incoming=$(git rev-list --count "HEAD..origin/$branch")
+print -r -- "Updating $name from $upstream"
+git fetch -q "${upstream%%/*}"
+incoming=$(git rev-list --count 'HEAD..@{upstream}')
 if (( incoming == 0 )); then
     print -r -- "Already up to date"
     exit 0
 fi
-git log --oneline "HEAD..origin/$branch" | head -10
+git log --oneline 'HEAD..@{upstream}' | head -10
 confirm "Pull $incoming commit(s)? [Y/n]" y || { print "Cancelled"; exit 0; }
-git pull -q origin "$branch"
+git merge -q --ff-only '@{upstream}' || die "$name has diverged from $upstream; merge or rebase it yourself"
 print -r -- "Updated $name"

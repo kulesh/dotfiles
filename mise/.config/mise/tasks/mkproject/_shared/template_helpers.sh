@@ -5,6 +5,11 @@
 # function, zsh sets $0 to the function's name.
 _templates_dir=${${(%):-%x}:A:h:h}
 
+# A project name as a Ruby or Swift module: my-gem and my_gem → MyGem.
+module_name() {   # module_name <project name>
+    print -r -- ${(j::)${(C)${(s:-:)${1//_/-}}}}
+}
+
 # Copy template static files into the current project directory.
 # Usage: copy_template_files <template_name> [label]
 copy_template_files() {

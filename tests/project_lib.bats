@@ -5,6 +5,12 @@
 load test_helper
 
 LIB="$DOTFILES_ROOT/mise/.config/mise/tasks/project/_lib.zsh"
+HELPERS="$DOTFILES_ROOT/mise/.config/mise/tasks/mkproject/_shared/template_helpers.sh"
+
+# The helpers read ~/dev; never the real one.
+setup() {
+    export HOME=$(scratch)
+}
 
 lib() {   # run a helper from _lib.zsh: lib <function> [args...]
     run zsh -c 'source "$1"; shift; "$@"' _ "$LIB" "$@"
@@ -46,6 +52,12 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
     lib parse_github_repo "user/my-cool.repo"
     [ "$status" -eq 0 ]
     [ "$output" = "git@github.com:user/my-cool.repo.git|user/my-cool.repo" ]
+}
+
+@test "parse_github_repo: user/repo.git means the repo, not repo.git" {
+    lib parse_github_repo "kulesh/dotfiles.git"
+    [ "$status" -eq 0 ]
+    [ "$output" = "git@github.com:kulesh/dotfiles.git|kulesh/dotfiles" ]
 }
 
 @test "parse_github_repo: rejects anything else" {
@@ -122,8 +134,11 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
         local tmp=$(scratch)
         lib write_agent_docs "$tmp" "$template" "test-project"
         grep -q "secret get" "$tmp/AGENTS.md"
-        ! grep -qi "api keys)" "$tmp/AGENTS.md"
-        ! grep -q "Use \`.env\` file for local development" "$tmp/AGENTS.md"
+        # run, not !: a negated command never fails a bats test under set -e.
+        run grep -q "e.g. API keys" "$tmp/AGENTS.md"
+        [ "$status" -ne 0 ]
+        run grep -q "Use \`.env\` file for local development" "$tmp/AGENTS.md"
+        [ "$status" -ne 0 ]
     done
 }
 
@@ -137,4 +152,10 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
         "$DOTFILES_ROOT/mise/.config/mise/tasks/mkproject/_shared/template_helpers.sh"
     [ "$status" -eq 0 ]
     [ -f "$project/.env.example" ]
+}
+
+@test "module_name: a project name as a Ruby or Swift module, MyGem" {
+    run zsh -c 'source "$1"; module_name my-gem; module_name my_gem; module_name tool' _ "$HELPERS"
+    [ "$status" -eq 0 ]
+    [ "$output" = $'MyGem\nMyGem\nTool' ]
 }

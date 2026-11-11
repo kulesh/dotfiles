@@ -18,7 +18,7 @@ else
     name=$usage_name
     org=$(own_org) || die "No GitHub login to take the org from (gh auth login). Name it: mkproject <org>/$name"
 fi
-[[ -n $org && -n $name && $name != */* ]] || die "Usage: $usage"
+valid_name "$org" && valid_name "$name" || die "Not a project name: $usage_name (letters, digits, _ . -; one org and one name)"
 dir=$projects_dir/$org/$name
 
 [[ -e $dir ]] && die "$dir already exists. Use workon $org/$name, or pick another name."

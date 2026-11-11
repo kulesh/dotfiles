@@ -14,7 +14,7 @@ copy_template_files "ruby" "Ruby"
 RUBY_VERSION=$(mise exec -- ruby -e "puts RUBY_VERSION")
 PROJECT_NAME=$(basename "$PWD")
 # Capitalize first letter (zsh-compatible)
-PROJECT_CLASS_NAME="${(C)PROJECT_NAME}"
+PROJECT_CLASS_NAME=$(module_name "$PROJECT_NAME")
 
 # Create Ruby project structure
 mkdir -p lib spec bin

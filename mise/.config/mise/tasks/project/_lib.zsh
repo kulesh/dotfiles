@@ -34,6 +34,10 @@ pick_project() {   # pick_project <usage>
 
 is_project() { [[ -e $1/.mise.toml || -e $1/.tool-versions ]]; }
 
+# An org or repo name: one path segment, never hidden (.archive and .migrating
+# are ours), so a name can't reach outside ~/dev or into its own parts.
+valid_name() { [[ $1 =~ '^[A-Za-z0-9_][A-Za-z0-9_.-]*$' ]]; }
+
 # An org directory's mise.toml makes it a monorepo root, never a project.
 is_org() { [[ -f $1/mise.toml ]] && grep -q '^monorepo_root = true' "$1/mise.toml"; }
 
@@ -116,14 +120,16 @@ project_short_names() {
 project_dir() {
     local dir
     if [[ $1 == */* ]]; then
+        valid_name "${1%%/*}" && valid_name "${1#*/}" || die "Not a project name: $1 (use <org>/<repo>)"
         dir=$projects_dir/${${1%%/*}:l}/${1#*/}
     else
+        valid_name "$1" || die "Not a project name: $1"
         local -a found=()
         for dir in $projects_dir/*/$1(N/); do is_project "$dir" && found+=("$dir"); done
         (( $#found > 1 )) && die "'$1' is in more than one org: ${(j:, :)${found[@]/#$projects_dir\//}}. Name one as <org>/$1."
         dir=${found[1]:-$projects_dir/$1}
     fi
-    [[ -d $dir ]] || die "No project '$1' in $projects_dir"
+    [[ -d $dir && ${dir:A} == ${projects_dir:A}/*/* ]] || die "No project '$1' in $projects_dir"
     is_project "$dir" || die "$dir isn't a project (no .mise.toml)"
     print -r -- "$dir"
 }
@@ -144,7 +150,7 @@ parse_github_repo() {
     [[ $1 == gh && -n ${2:-} ]] && spec=$2
     local user repo
     if [[ $spec =~ '^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$' ]]; then
-        user=${match[1]} repo=${match[2]}
+        user=${match[1]} repo=${match[2]%.git}
     elif [[ $spec =~ '^https://github\.com/([^/]+)/([^/]+)/?$' ]]; then
         user=${match[1]} repo=${match[2]%.git}
     elif [[ $spec =~ '^git@github\.com:([^/]+)/([^/]+)$' ]]; then
