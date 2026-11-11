@@ -1,4 +1,4 @@
-export PATH="/opt/homebrew/bin:/opt/homebrew/opt/ruby/bin:$PATH"
+path=(/opt/homebrew/bin /opt/homebrew/opt/ruby/bin $path)   # each once (typeset -U in .zshenv)
 export EDITOR="vim"
 
 export CLICOLOR=YES

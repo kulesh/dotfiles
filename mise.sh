@@ -18,7 +18,8 @@ export XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 # 1. Xcode Command Line Tools provide git and a compiler. The installer
 #    is a GUI dialog that returns immediately, so wait until it's done.
 if ! xcode-select -p &>/dev/null; then
-    xcode-select --install
+    # Fails if an install it started is still pending: wait for that one.
+    xcode-select --install || true
     echo "Complete the Xcode Command Line Tools dialog. Waiting..."
     until xcode-select -p &>/dev/null; do sleep 5; done
 fi

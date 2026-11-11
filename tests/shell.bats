@@ -62,3 +62,22 @@ interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
     [ "$status" -eq 0 ]
     [[ "$output" != *"deprecated"* ]]
 }
+
+@test "the shell waits to reload while it has jobs, so they aren't orphaned" {
+    rm "$HOME/.zshrc"
+    cp "$DOTFILES_ROOT/zsh/.zshrc" "$HOME/.zshrc"
+    interactive '
+        _dotfiles_reload() { print RELOAD }
+        sleep 30 &
+        touch -m -t 209901010000 ~/.zshrc
+        _dotfiles_reload_if_changed
+        kill %1; wait 2>/dev/null
+        _dotfiles_reload_if_changed'
+    [[ "$output" == *"after your jobs finish"* ]]
+    [ "$(grep -c RELOAD <<< "$output")" -eq 1 ]
+}
+
+@test "PATH has each directory once, however often the shell reloads" {
+    interactive 'source ~/.zshenv; source ~/.zshrc; source ~/.zshenv; print -l -- P:${^path}'
+    [ -z "$(grep '^P:' <<< "$output" | sort | uniq -d)" ]
+}

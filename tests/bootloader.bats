@@ -94,3 +94,17 @@ bootload() {
     [[ "$output" == *"brew link --overwrite mise"* ]]
     ! grep -q "mise bootstrap" "$CALLS"
 }
+
+# xcode-select --install fails while an install it started is still pending.
+@test "re-running while the Xcode tools install is pending waits for it instead of stopping" {
+    mise_stub
+    stub xcode-select '
+case $1 in
+    -p) [ -e "$HOME/xcode-done" ] ;;
+    --install) touch "$HOME/xcode-done"; echo "already requested" >&2; exit 1 ;;
+esac'
+    stub sleep 'exit 0'
+    bootload
+    [ "$status" -eq 0 ]
+    grep -qx "mise bootstrap" "$CALLS"
+}

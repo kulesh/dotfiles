@@ -67,13 +67,16 @@ if gh auth status &>/dev/null && [[ -f $key.pub ]]; then
         echo "would write $allowed"
     else
         mkdir -p "${allowed:h}"
-        signing_keys | sed "s|^|$(git config --get user.email) namespaces=\"git\" |" > "$allowed"
+        # Fetched first: a failed fetch leaves the old file, not an empty one.
+        keys=$(signing_keys)
+        print -r -- "$keys" | sed "s|^|$(git config --get user.email) namespaces=\"git\" |" > "$allowed"
     fi
 fi
 
 # Projects left in the flat layout, ~/dev/<repo>, from before ADR-013. Their
 # own mise config marks them (an org directory has mise.toml, no dot).
 flat=($PROJECT_DIR/*/{.mise.toml,.tool-versions}(N.:h))
+flat=(${(u)flat})   # a project with both files once
 if (( ${#flat} )); then
     echo "${#flat} project(s) in ~/dev/<repo> predate ~/dev/<org>/<repo>. Move them: mise -C / run project:migrate --dry-run"
 fi

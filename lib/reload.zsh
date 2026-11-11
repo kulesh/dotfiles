@@ -7,6 +7,7 @@
 # the exported environment; it drops what was set only in this shell.
 
 zmodload -F zsh/stat b:zstat
+zmodload zsh/parameter   # $jobstates
 autoload -Uz add-zsh-hook
 
 # The files this shell loaded, with their modification times, in REPLY.
@@ -30,6 +31,14 @@ _dotfiles_reload() {
 _dotfiles_reload_if_changed() {
     _dotfiles_shell_signature
     [[ $REPLY == $_dotfiles_loaded ]] && return
+    # exec would orphan background and suspended jobs (^Z): wait until they're
+    # done, saying so once, and reload at the first prompt after.
+    if (( ${#jobstates} )); then
+        [[ $_dotfiles_waiting == $REPLY ]] ||
+            print -P "%F{243}Shell config changed; reloading after your jobs finish.%f"
+        _dotfiles_waiting=$REPLY
+        return
+    fi
     # Recorded first: if exec fails, the shell says so once, not every prompt.
     _dotfiles_loaded=$REPLY
     _dotfiles_reload

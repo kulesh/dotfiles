@@ -185,7 +185,7 @@ if [ "$(cd -P "$HOME/.dotfiles" 2>/dev/null && pwd)" = "$(pwd -P)" ]; then
     git ls-files --others --ignored --exclude-standard --directory -- claude | while IFS= read -r entry; do
         entry=${entry%/}
         target=$HOME/${entry#claude/}
-        count=$(find "$entry" -type f | wc -l | tr -d ' ')
+        count=$(find "$entry" ! -type d | wc -l | tr -d ' ')
         [ "$count" = 1 ] && files="1 file" || files="$count files"
         echo "Claude Code state back home: ~/${entry#claude/} ($files)"
         if [ ! -d "$entry" ]; then home_it "$entry" "$target"; continue; fi
@@ -198,7 +198,7 @@ if [ "$(cd -P "$HOME/.dotfiles" 2>/dev/null && pwd)" = "$(pwd -P)" ]; then
             rm -f "$target"
             mv "$entry" "$target"
         else
-            (cd "$entry" && find . -type f) | while IFS= read -r file; do
+            (cd "$entry" && find . ! -type d) | while IFS= read -r file; do
                 home_it "$entry/${file#./}" "$target/${file#./}"
             done
             find "$entry" -depth -type d -empty -delete

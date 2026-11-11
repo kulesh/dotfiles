@@ -20,4 +20,8 @@ export _ZO_DATA_DIR=$XDG_CONFIG_HOME/zoxide/
 export HOMEBREW_AUTO_UPDATE_SECS=86400
 
 # uv
-export PATH="$HOME/.local/bin:$PATH"
+# Each directory once: the shell reloads itself (lib/reload.zsh), and every
+# reload would otherwise prepend the same directories again. -U holds for
+# assignments to the path array, not to the PATH string.
+typeset -U path
+path=($HOME/.local/bin $path)

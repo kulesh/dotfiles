@@ -255,6 +255,14 @@ STUB
     [[ "$output" == *"project:migrate"* ]]
 }
 
+@test "a flat project with two config files is counted once" {
+    mkdir -p "$TARGET/dev/alpha"
+    : > "$TARGET/dev/alpha/.mise.toml"
+    : > "$TARGET/dev/alpha/.tool-versions"
+    preview
+    [[ "$output" == *"1 project(s) in ~/dev/<repo>"* ]]
+}
+
 @test "creates ~/.ssh as a private real directory, with our settings in a real config file" {
     preview
     [ "$status" -eq 0 ]
@@ -427,6 +435,20 @@ claude_state_in_repo() {   # $1 = repo
     [ "$(cat "$TARGET/.claude/plugins/p/notes.md")" = "newer" ]
     [ "$(cat "$TARGET/.claude/plugins/p/notes.md.from-dotfiles")" = "older" ]
     [ ! -e "$repo/claude/.claude/plugins" ]
+}
+
+@test "symlinks in agent state go home too" {
+    local repo=$(repo_copy)
+    mkdir -p "$repo/claude/.claude/debug"
+    echo log > "$repo/claude/.claude/debug/run.txt"
+    ln -s run.txt "$repo/claude/.claude/debug/latest"
+    mkdir -p "$TARGET/.claude/debug" && echo mine > "$TARGET/.claude/debug/other.txt"
+    ln -s "$repo" "$TARGET/.dotfiles"
+    preview "$repo"
+    [ "$status" -eq 0 ]
+    [ -L "$TARGET/.claude/debug/latest" ]
+    [ ! -e "$repo/claude/.claude/debug" ]
+    [[ "$output" == *"~/.claude/debug (2 files)"* ]]
 }
 
 @test "a preview never moves agent state out of a checkout that isn't ~/.dotfiles" {
