@@ -2,6 +2,8 @@
 #MISE description="Install Python via mise"
 #MISE dir="{{cwd}}"
 
+set -eo pipefail   # a failed step stops the template; mkproject reports it
+
 mise use python@latest
 mise use uv@latest
 

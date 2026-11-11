@@ -110,6 +110,16 @@ completions() {   # the candidates zsh would offer for a command line
     [ -z "$(ls -A "$DEV")" ]
 }
 
+@test "a template step that fails stops mkproject, which says so instead of Created" {
+    local git=$(command -v git)
+    printf '#!/bin/sh\n[ "$1" = init ] && { echo "git init: failed" >&2; exit 1; }\nexec %s "$@"\n' "$git" > "$HOME/stubs/git"
+    chmod +x "$HOME/stubs/git"
+    project new demo
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"mkproject:base failed"* ]]
+    [[ "$output" != *"Created"* ]]
+}
+
 @test "mkproject --dry-run describes the project and creates nothing" {
     project new demo python --dry-run
     [ "$status" -eq 0 ]

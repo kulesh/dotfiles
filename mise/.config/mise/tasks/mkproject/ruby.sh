@@ -3,6 +3,8 @@
 #MISE dir="{{cwd}}"
 #MISE depends=["mkproject:base", "mkproject:tools:ruby"]
 
+set -eo pipefail   # a failed step stops the template; mkproject reports it
+
 source "${0:a:h}/_shared/template_helpers.sh"
 
 echo "Setting up Ruby project..."

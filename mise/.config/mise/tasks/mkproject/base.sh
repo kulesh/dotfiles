@@ -2,6 +2,8 @@
 #MISE description="Initialize basic project structure"
 #MISE dir="{{cwd}}"
 
+set -eo pipefail   # a failed step stops the template; mkproject reports it
+
 source "${0:a:h}/_shared/template_helpers.sh"
 
 echo "Initializing project in: $PWD"
