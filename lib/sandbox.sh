@@ -1,173 +1,85 @@
 #!/usr/bin/env zsh
-# sandbox.sh — macOS sandbox-exec lifecycle and hooks
-# Manages sandbox entry, exit, chpwd hooks, and logging
+# sandbox.sh — enter and leave the per-project macOS sandbox (workon -s)
+#
+# A project with a .sandbox marker opens a sandboxed shell inside this one,
+# whenever this shell arrives there (chpwd, or a terminal opening there). The
+# sandboxed shell ends when you leave the project or type exit:
+#
+#   outer shell ──cd project──▶ sandbox-exec zsh ──cd elsewhere──▶ outer shell
+#                                     │                            goes there too
+#                                     └──exit──▶ outer shell closes too
+#
+# The two shells talk through one file the outer shell makes and passes in
+# ($SANDBOX_EXIT_FILE): the sandboxed shell writes "entered" when it starts,
+# and the directory it left for, if it left. Empty means it never started.
 
-# =============================================================================
-# Sandbox configuration (macOS sandbox-exec)
-# =============================================================================
-typeset -g SANDBOX_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/sandbox"
-typeset -g SANDBOX_PROFILES_DIR="${SANDBOX_CONFIG_DIR}/profiles"
-typeset -g SANDBOX_LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/sandbox/logs"
+typeset -g SANDBOX_PROFILE=${XDG_CONFIG_HOME:-$HOME/.config}/sandbox/profiles/default.sb
+typeset -g SANDBOX_LOG_DIR=${XDG_STATE_HOME:-$HOME/.local/state}/sandbox/logs
 
-# Get the real path to ~/.ssh (resolving symlinks)
-function _sandbox_get_ssh_real() {
-    local _p="$HOME/.ssh"
-    echo "${_p:A}"
+_sandbox_is_project() { [[ -f $1/.sandbox && -f $1/.mise.toml ]]; }
+
+_sandbox_log() {   # _sandbox_log <project> <event> <message>; never fails
+    mkdir -p "$SANDBOX_LOG_DIR" 2>/dev/null || return 0
+    print -r -- "$(date -u +%Y-%m-%dT%H:%M:%SZ) [$2] $3" >> "$SANDBOX_LOG_DIR/$1.log" 2>/dev/null
 }
 
-# Return path to sandbox profile template
-function _sandbox_get_profile() {
-    echo "${SANDBOX_PROFILES_DIR}/default.sb"
-}
+if [[ -z $IN_SANDBOX ]]; then
+    # Run the project's sandboxed shell, then follow it: to where it left for,
+    # or close this shell too if you exited it. If it can't start, say why
+    # and stay here.
+    _workon_sandboxed() {   # _workon_sandboxed <project dir>
+        local dir=$1 name=${1:t}
+        [[ -f $SANDBOX_PROFILE ]] || { print -r -- "Sandbox profile not found: $SANDBOX_PROFILE; staying unsandboxed" >&2; return 1; }
+        local exit_file
+        exit_file=$(mktemp "${TMPDIR:-/tmp}/sandbox-exit.XXXXXX") || return 1
 
-# Log sandbox events to audit file
-function _sandbox_log() {
-    local project_name="$1"
-    local event_type="$2"
-    local message="$3"
-    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        _sandbox_log "$name" ENTER "pid=$$ dir=$dir"
+        print -P "%B%F{green}▸ sandbox entered%f%b: %F{cyan}[$name]%f"
+        print -P "  %F{8}project%f  $dir"
+        print -P "  %F{8}network%f  outbound allowed"
 
-    # Silently fail if we can't create log dir (e.g., inside sandbox)
-    mkdir -p "${SANDBOX_LOG_DIR}" 2>/dev/null || return 0
-    local log_file="${SANDBOX_LOG_DIR}/${project_name}.log"
+        _SANDBOX_SPAWNING=1   # this cd mustn't start another sandbox
+        builtin cd -- "$dir"
+        sandbox-exec -f "$SANDBOX_PROFILE" \
+            -D "HOME=$HOME" -D "PROJECT_DIR=$dir" -D "SSH_REAL=${${:-$HOME/.ssh}:A}" \
+            env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$name" SANDBOX_PROJECT_DIR="$dir" \
+                SANDBOX_EXIT_FILE="$exit_file" /bin/zsh -i
+        local code=$? said=$(<"$exit_file")
+        rm -f "$exit_file"
+        unset _SANDBOX_SPAWNING
 
-    echo "${timestamp} [${event_type}] ${message}" >> "${log_file}" 2>/dev/null
-}
+        print -P "%B%F{red}▸ sandbox exited%f%b: %F{cyan}[$name]%f"
+        case $said in
+            '')
+                _sandbox_log "$name" EXIT "pid=$$ never started ($code)"
+                print -r -- "The sandbox didn't start (sandbox-exec exited $code); staying unsandboxed" >&2
+                return 1 ;;
+            entered)
+                _sandbox_log "$name" EXIT "pid=$$ exit ($code)"
+                exit $code ;;
+            *)
+                _sandbox_log "$name" EXIT "pid=$$ left for $said"
+                cd -- "$said" ;;   # into another sandboxed project: its sandbox starts
+        esac
+    }
 
-# =============================================================================
-# Sandbox entry hook (runs in non-sandbox shells on every cd)
-# =============================================================================
-# This replaces mise hooks for sandbox entry - zsh chpwd gives us better control
-# and avoids race conditions with marker files.
-if [[ -z "$IN_SANDBOX" ]]; then
     _sandbox_entry_chpwd() {
-        # Skip if currently spawning/exiting a sandbox (prevents re-entry during cd)
-        [[ -n "$_SANDBOX_SPAWNING" ]] && return 0
-
-        # Check if current directory is a sandboxed project
-        [[ -f ".sandbox" && -f ".mise.toml" ]] || return 0
-
-        # Enter sandbox
-        _workon_sandboxed "$(basename "$PWD")" "$PWD"
-        local sandbox_exit=$?
-
-        # Explicit exit (not 42) = exit the shell entirely
-        if [[ $sandbox_exit -ne 42 ]]; then
-            exit $sandbox_exit
-        fi
-        # Implicit exit (42) - already cd'd to destination by _workon_sandboxed
+        [[ -z $_SANDBOX_SPAWNING ]] && _sandbox_is_project "$PWD" && _workon_sandboxed "$PWD"
+        return 0
     }
     chpwd_functions+=(_sandbox_entry_chpwd)
-fi
 
-
-# Enter sandboxed environment using macOS sandbox-exec
-function _workon_sandboxed() {
-    local projname="$1"
-    local projdir="$2"
-
-    # Prevent nested sandboxes
-    [[ -n "$IN_SANDBOX" ]] && return 0
-
-    # Set spawning guard - prevents _sandbox_entry_chpwd from re-entering during cd
-    _SANDBOX_SPAWNING=1
-
-    # Get profile path and resolve SSH real path
-    local profile_path
-    profile_path=$(_sandbox_get_profile)
-    if [[ ! -f "$profile_path" ]]; then
-        unset _SANDBOX_SPAWNING
-        echo "Error: Sandbox profile not found: $profile_path" >&2
-        return 1
-    fi
-    local ssh_real
-    ssh_real=$(_sandbox_get_ssh_real)
-
-    _sandbox_log "$projname" "ENTER" "pid=$$ profile=default dir=$projdir"
-
-    # Pretty sandbox banner
-    local cyan='\033[36m'
-    local green='\033[1;92m'
-    local dim='\033[2m'
-    local reset='\033[0m'
-
-    echo -e "${green}▸ sandbox entered${reset}: ${cyan}[$projname]${reset}"
-    echo -e "  ${dim}project${reset}  $projdir"
-    echo -e "  ${dim}tools${reset}    mise, homebrew, docker"
-    echo -e "  ${dim}network${reset}  outbound allowed"
-
-    # cd to project directory (no marker files needed - _SANDBOX_SPAWNING guards us)
-    cd "$projdir"
-
-    # Launch sandboxed shell with env vars for starship indicator and chpwd hook
-    sandbox-exec -f "$profile_path" \
-        -D "HOME=$HOME" \
-        -D "PROJECT_DIR=$projdir" \
-        -D "SSH_REAL=$ssh_real" \
-        env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$projname" SANDBOX_PROJECT_DIR="$projdir" SANDBOX_PARENT_PID=$$ /bin/zsh -i
-    local exit_code=$?
-
-    # Handle sandbox exit
-    local dest_file="${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$$"
-
-    # Show exit message for all exits
-    local red='\033[1;91m'
-    echo -e "${red}▸ sandbox exited${reset}: ${cyan}[$projname]${reset}"
-
-    if [[ $exit_code -eq 42 && -f "$dest_file" ]]; then
-        # Implicit exit - go to intended destination
-        local destination=$(<"$dest_file")
-        rm -f "$dest_file"
-        _sandbox_log "$projname" "EXIT" "pid=$$ implicit dest=$destination"
-        cd "$destination"
-    elif [[ $exit_code -eq 42 ]]; then
-        # Implicit exit but no dest file - stay at project dir
-        _sandbox_log "$projname" "EXIT" "pid=$$ implicit (no dest)"
-    else
-        # Explicit exit - caller handles shell exit
-        _sandbox_log "$projname" "EXIT" "pid=$$ explicit"
-    fi
-
-    # Clear spawning guard - NOW chpwd hooks can fire again
-    unset _SANDBOX_SPAWNING
-
-    # Scenario 5: If we landed in ANOTHER sandboxed project, enter it
-    if [[ $exit_code -eq 42 && -f ".sandbox" && -f ".mise.toml" ]]; then
-        _workon_sandboxed "$(basename "$PWD")" "$PWD"
-        return $?
-    fi
-
-    return $exit_code
-}
-
-# =============================================================================
-# Sandbox auto-exit hook (runs when this file is sourced inside sandbox)
-# =============================================================================
-if [[ -n "$IN_SANDBOX" && -n "$SANDBOX_PROJECT_DIR" ]]; then
+    # A terminal that opens in a sandboxed project starts there without a cd.
+    _sandbox_entry_chpwd
+else
+    # Inside the sandbox: tell the outer shell this one started, and where it
+    # went when it leaves the project.
+    [[ -n $SANDBOX_EXIT_FILE ]] && print entered > "$SANDBOX_EXIT_FILE"
     _sandbox_chpwd() {
-        # Exit sandbox if we've left the project directory
-        if [[ "$PWD" != "$SANDBOX_PROJECT_DIR"* ]]; then
-            # Save destination for parent shell (use parent PID for file), exit with sentinel code 42
-            echo "$PWD" > "${XDG_CACHE_HOME:-$HOME/.cache}/sandbox/.exit-dest-$SANDBOX_PARENT_PID"
-            exit 42
+        if [[ $PWD != $SANDBOX_PROJECT_DIR && $PWD != $SANDBOX_PROJECT_DIR/* ]]; then
+            print -r -- "$PWD" > "$SANDBOX_EXIT_FILE"
+            exit
         fi
     }
     chpwd_functions+=(_sandbox_chpwd)
-fi
-
-# =============================================================================
-# Auto-enter sandbox on shell startup
-# =============================================================================
-# Mise hooks only fire on directory change, not shell startup. When a new
-# terminal opens directly in a sandboxed project (via Ghostty auto-cd), we
-# need to detect the .sandbox marker and enter sandbox mode automatically.
-# Skip if _SANDBOX_HOOK is set (we're being sourced by a mise hook, not shell init).
-
-if [[ -z "$_SANDBOX_HOOK" && -z "$IN_SANDBOX" && -f ".sandbox" && -f ".mise.toml" ]]; then
-    _workon_sandboxed "$(basename "$PWD")" "$PWD"
-    local sandbox_exit=$?
-    if [[ $sandbox_exit -ne 42 ]]; then
-        exit $sandbox_exit  # Explicit exit - close terminal
-    fi
-    # Implicit exit (42) - already cd'd to destination by _workon_sandboxed
 fi

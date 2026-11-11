@@ -23,7 +23,7 @@ Mise hooks had race conditions and ordering issues:
 
 Zsh `chpwd` gives direct control over timing:
 - `_sandbox_entry_chpwd` fires in the parent (non-sandbox) shell and spawns the sandbox immediately.
-- `_sandbox_chpwd` fires inside the sandbox and triggers exit (code 42) when the user leaves the project directory.
+- `_sandbox_chpwd` fires inside the sandbox and exits it when the user leaves the project directory, writing the destination to a file the outer shell made (`$SANDBOX_EXIT_FILE`), which then follows. (Before 2026-11: exit code 42 and a file in `~/.cache/sandbox`, which nothing created.)
 - A `_SANDBOX_SPAWNING` guard variable prevents re-entry during the spawn sequence — simpler than marker files.
 
 ## Consequences

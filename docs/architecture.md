@@ -175,9 +175,10 @@ cd ~/dev/sandboxed-project   (or: workon project -s)
          ▼
 ┌───────────────────────────────────────────┐
 │ _workon_sandboxed                         │
+│   makes $SANDBOX_EXIT_FILE (mktemp)       │
 │   sandbox-exec -f default.sb              │
 │     -D HOME=$HOME                         │
-│     -D PROJECT_DIR=~/dev/project          │
+│     -D PROJECT_DIR=~/dev/org/project      │
 │     -D SSH_REAL=/real/path/to/.ssh        │
 │   → spawns /bin/zsh -i inside sandbox     │
 └────────┬──────────────────────────────────┘
@@ -185,14 +186,16 @@ cd ~/dev/sandboxed-project   (or: workon project -s)
          ▼
 ┌───────────────────────────────────────────┐
 │ Inside sandbox:                           │
-│   _sandbox_chpwd monitors PWD             │
-│   cd outside project → exit 42            │
-│   explicit exit → exit 0                  │
+│   writes "entered" to the exit file       │
+│   cd outside project → writes the dir,    │
+│     exits; the outer shell goes there     │
+│   exit → the outer shell closes too       │
+│   never started (file empty) → the outer  │
+│     shell stays, unsandboxed, and says so │
 │                                           │
-│ Writes allowed: project dir, ~/.cache,    │
-│   ~/.config, ~/.local, /tmp               │
-│ Writes blocked: ~/.ssh, ~/.zshrc,         │
-│   ~/.gitconfig, /opt/homebrew, /System    │
+│ Writes: allowed, except what the Mac runs │
+│   later (ADR-002): shell startup, the     │
+│   dotfiles, tool configs, .git hooks      │
 │ Reads blocked: SSH private keys, ~/.aws,  │
 │   browser data                            │
 └───────────────────────────────────────────┘
