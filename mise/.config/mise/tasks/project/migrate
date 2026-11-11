@@ -9,13 +9,10 @@ source "${0:A:h}/_lib.zsh"
 staging=$projects_dir/.migrating
 [[ -e $staging ]] && die "A migration stopped partway: its projects are in $staging. Move them to ~/dev/<org>/<repo>, remove $staging, and run again."
 
-# The flat layout's projects sit directly in ~/dev. An org directory is never
-# one of them: its mise.toml makes it a monorepo root. A cloned project goes
-# under its GitHub owner, a local one under your login.
+# The flat layout's projects sit directly in ~/dev (flat_projects). A cloned
+# project goes under its GitHub owner, a local one under your login.
 typeset -A moves   # repo -> org
-for dir in $projects_dir/*(N/); do
-    is_project "$dir" || continue
-    is_org "$dir" && continue
+for dir in ${(f)"$(flat_projects)"}; do
     if slug=$(github_slug "$dir"); then
         moves[${dir:t}]=${${slug%%/*}:l}
     else
@@ -40,9 +37,10 @@ confirm "Move ${#moves} project(s)? [y/N]" n || { print "Cancelled"; exit 0; }
 mkdir "$staging"
 for repo in ${(k)moves}; do mv "$projects_dir/$repo" "$staging/$repo"; done
 for repo in ${(k)moves}; do
-    target=$(org_dir "${moves[$repo]}")/$repo
+    mkdir -p "$projects_dir/${moves[$repo]}"
+    target=$projects_dir/${moves[$repo]}/$repo
     [[ -e $target ]] && die "$target already exists; $repo stays in $staging."
     mv "$staging/$repo" "$target"
 done
 rmdir "$staging"
-print -r -- "Moved ${#moves} project(s). Each org in $projects_dir is now a mise monorepo."
+print -r -- "Moved ${#moves} project(s) into $projects_dir/<org>/<repo>."

@@ -51,7 +51,7 @@ showproject
 
 ## Commands
 
-Projects live at `~/dev/<org>/<repo>`: a clone under its GitHub owner, a new project under your GitHub login or the org you name. Each org directory is a mise monorepo: from anywhere in `~/dev/<org>`, `mise run '//...:test'` runs `test` in every repo, and tools and `[env]` in `~/dev/<org>/mise.toml` reach all of them. Moving from the old flat `~/dev/<repo>`: `mise -C / run project:migrate --dry-run`, then without `--dry-run`. See [ADR-013](docs/adrs/013-projects-grouped-by-org.md).
+Projects live at `~/dev/<org>/<repo>`: a clone under its GitHub owner, a new project under your GitHub login or the org you name. An org directory is a plain folder; tools and `[env]` you put in `~/dev/<org>/mise.toml` reach all its repos. Moving from the old flat `~/dev/<repo>`: `mise -C / run project:migrate --dry-run`, then without `--dry-run`. See [ADR-013](docs/adrs/013-projects-grouped-by-org.md).
 
 Each command is a mise task (`mise tasks ls`), so `<command> --help` explains it and Tab completes project names, templates and flags. Commands that move you (`mkproject`, `cloneproject`, `workon`, `cdproject`, and `rmproject` from inside the project) take effect at the next prompt. See [ADR-011](docs/adrs/011-project-commands-as-mise-tasks.md).
 

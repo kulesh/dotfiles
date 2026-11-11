@@ -211,27 +211,23 @@ completions() {   # the candidates zsh would offer for a command line
 }
 
 # =============================================================================
-# An org is a mise monorepo: ~/dev/<org>/mise.toml
+# An org is a plain folder; config you put in it reaches all its repos
 # =============================================================================
 
-@test "an org's first project makes the org a monorepo: a task runs in every repo" {
+@test "an org is a plain folder: its first project writes no config into it" {
     project new demo
     github_repo kulesh/alpha
     project clone kulesh/alpha
-    grep -q '^monorepo_root = true' "$MINE/mise.toml"
-    printf '[tasks.hello]\nrun = "echo hello from demo"\n' >> "$MINE/demo/.mise.toml"
-    printf '[tasks.hello]\nrun = "echo hello from alpha"\n' >> "$MINE/alpha/.mise.toml"
-    run mise -C "$MINE" run '//...:hello'
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"hello from demo"* ]]
-    [[ "$output" == *"hello from alpha"* ]]
+    [ -z "$(ls -A "$MINE" | grep -v -x -e demo -e alpha)" ]
 }
 
-@test "an org's mise.toml is left alone once it exists" {
+@test "config you put in an org reaches every repo in it, and is left alone" {
     mkdir -p "$MINE"
-    printf '# mine\n' > "$MINE/mise.toml"
+    printf '[env]\nORG_WIDE = "yes"\n' > "$MINE/mise.toml"
     project new demo
-    [ "$(cat "$MINE/mise.toml")" = "# mine" ]
+    [ "$(cat "$MINE/mise.toml")" = $'[env]\nORG_WIDE = "yes"' ]
+    run mise -C "$MINE/demo" env -s bash
+    [[ "$output" == *"ORG_WIDE=yes"* ]]
 }
 
 # =============================================================================
@@ -530,10 +526,25 @@ old_layout() {   # projects as the flat layout left them, one per kind
     [ -f "$DEV/kulesh/kulesh/.sandbox" ]
     [ -d "$DEV/crmne/ruby_llm/.git" ]
     [ -f "$DEV/kulesh/scratchpad/.mise.toml" ]
-    grep -q '^monorepo_root = true' "$DEV/kulesh/mise.toml"
-    grep -q '^monorepo_root = true' "$DEV/crmne/mise.toml"
+    [ ! -e "$DEV/kulesh/mise.toml" ] && [ ! -e "$DEV/crmne/mise.toml" ]
     [ ! -e "$DEV/alpha" ]
     [ ! -e "$DEV/ruby_llm" ]
+}
+
+@test "migrate leaves an org alone, whatever config it has, and moves a flat repo with packages" {
+    project new demo
+    : > "$MINE/.mise.toml"   # org-wide config, dotted
+    github_repo kulesh/mono
+    git clone -q git@github.com:kulesh/mono.git "$DEV/mono"
+    mkdir -p "$DEV/mono/frontend"
+    : > "$DEV/mono/.mise.toml"
+    : > "$DEV/mono/frontend/.mise.toml"   # a package of the repo, not a project
+    project migrate
+    [ "$status" -eq 0 ]
+    [ -d "$MINE/demo/.git" ] && [ -f "$MINE/.mise.toml" ]
+    [ -d "$MINE/mono/frontend" ]
+    project migrate
+    [[ "$output" == *"Nothing to migrate"* ]]
 }
 
 @test "migrate --dry-run lists the moves and moves nothing" {

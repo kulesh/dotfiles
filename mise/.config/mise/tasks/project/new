@@ -37,7 +37,6 @@ if [[ ${usage_dry_run:-false} == true ]]; then
 fi
 
 print -r -- "Creating $template project $org/$name"
-org_dir "$org" >/dev/null
 mkdir -p "$dir"
 : > "$dir/.mise.toml"
 

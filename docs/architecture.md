@@ -135,11 +135,11 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 mkproject "api" "fastapi"
         │
         ▼
-┌──────────────────────┐     ┌───────────────────────────────┐
-│ ~/dev/<login>/api    │────▶│ ~/dev/<login>/mise.toml       │
-│ (mkproject org/api:  │     │ (monorepo root, first project │
-│  ~/dev/org/api)      │     │  of the org; trusted by path) │
-└────────┬─────────────┘     └───────────────────────────────┘
+┌──────────────────────┐
+│ ~/dev/<login>/api    │   inherits ~/dev/<login>/mise.toml,
+│ (mkproject org/api:  │   if you wrote one, and ~/dev/.mise.toml;
+│  ~/dev/org/api)      │   trusted by path
+└────────┬─────────────┘
          │
          ▼
 ┌─────────────────────────────────────────┐

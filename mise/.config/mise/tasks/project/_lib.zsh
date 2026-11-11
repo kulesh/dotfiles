@@ -5,8 +5,8 @@
 #
 # A project is a repo at ~/dev/<org>/<repo> with a mise config (.mise.toml
 # or .tool-versions). An org is a GitHub user or organization: a cloned repo
-# lives under its owner, a created one under your GitHub login. Each org
-# directory is a mise monorepo (org_dir), so a task can run in all its repos.
+# lives under its owner, a created one under your GitHub login. An org
+# directory is a plain folder; a mise.toml you put there reaches all its repos.
 
 projects_dir=$HOME/dev
 templates_dir=${${(%):-%x}:A:h:h}/mkproject
@@ -38,8 +38,24 @@ is_project() { [[ -e $1/.mise.toml || -e $1/.tool-versions ]]; }
 # are ours), so a name can't reach outside ~/dev or into its own parts.
 valid_name() { [[ $1 =~ '^[A-Za-z0-9_][A-Za-z0-9_.-]*$' ]]; }
 
-# An org directory's mise.toml makes it a monorepo root, never a project.
-is_org() { [[ -f $1/mise.toml ]] && grep -q '^monorepo_root = true' "$1/mise.toml"; }
+# An org is a directory of projects that isn't a repo itself (no .git of its
+# own). Whatever config it holds, such as org-wide [env] or [tools], doesn't
+# make it a project; a repo whose packages have configs is still one project.
+is_org() {
+    [[ ! -e $1/.git ]] || return 1
+    local child
+    for child in $1/*(N/); do is_project "$child" && return 0; done
+    return 1
+}
+
+# Projects still in the flat layout, ~/dev/<repo>, from before ADR-013.
+flat_projects() {
+    local dir
+    for dir in $projects_dir/*(N/); do
+        is_project "$dir" && ! is_org "$dir" && print -r -- "$dir"
+    done
+    return 0
+}
 
 # The GitHub login gh uses here, in lowercase: the org for projects you
 # create. gh keeps it in its own config, so this works offline.
@@ -49,24 +65,6 @@ own_org() {
     [[ -n $login ]] || login=$(gh api user --jq .login 2>/dev/null) || return 1
     [[ -n $login ]] || return 1
     print -r -- "${login:l}"
-}
-
-# ~/dev/<org>, made a mise monorepo the first time a project lands in it. An
-# existing mise.toml is the org's own and stays as it is.
-org_dir() {   # org_dir <org>
-    local dir=$projects_dir/$1
-    mkdir -p "$dir"
-    [[ -e $dir/mise.toml ]] || cat > "$dir/mise.toml" <<EOF
-# The $1 projects, one repo each, as a mise monorepo:
-#   mise run '//...:test'     runs test in every $1 repo
-#   mise run //<repo>:test    runs it in one, from anywhere in $1
-# Tools and [env] here reach every $1 repo.
-monorepo_root = true
-
-[monorepo]
-config_roots = ["*"]
-EOF
-    print -r -- "$dir"
 }
 
 # The project you're in. Within ~/dev it's the repo, ~/dev/<org>/<repo>: a

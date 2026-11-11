@@ -263,6 +263,41 @@ STUB
     [[ "$output" == *"1 project(s) in ~/dev/<repo>"* ]]
 }
 
+@test "an org with config of its own isn't counted as a flat project" {
+    mkdir -p "$TARGET/dev/kulesh/app/.git"
+    : > "$TARGET/dev/kulesh/app/.mise.toml"
+    : > "$TARGET/dev/kulesh/.mise.toml"
+    preview
+    [[ "$output" != *"predate"* ]]
+}
+
+# The monorepo root ~/dev/<org>/mise.toml that mkproject, cloneproject and
+# migrate wrote before ADR-013 dropped it; removed while it's unedited.
+generated_org_config() {   # generated_org_config <org>
+    cat <<EOF
+# The $1 projects, one repo each, as a mise monorepo:
+#   mise run '//...:test'     runs test in every $1 repo
+#   mise run //<repo>:test    runs it in one, from anywhere in $1
+# Tools and [env] here reach every $1 repo.
+monorepo_root = true
+
+[monorepo]
+config_roots = ["*"]
+EOF
+}
+
+@test "removes the org config mkproject used to generate, but not one you've edited" {
+    mkdir -p "$TARGET/dev/acme/app" "$TARGET/dev/beta/app"
+    : > "$TARGET/dev/acme/app/.mise.toml"
+    : > "$TARGET/dev/beta/app/.mise.toml"
+    generated_org_config acme > "$TARGET/dev/acme/mise.toml"
+    { generated_org_config beta; printf '[env]\nMINE = "1"\n'; } > "$TARGET/dev/beta/mise.toml"
+    preview
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: rm $TARGET/dev/acme/mise.toml"* ]]
+    [[ "$output" != *"dev/beta/mise.toml"* ]]
+}
+
 @test "creates ~/.ssh as a private real directory, with our settings in a real config file" {
     preview
     [ "$status" -eq 0 ]

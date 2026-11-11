@@ -20,7 +20,6 @@ dir=$projects_dir/$owner/$name
 # Clone first: a failed clone leaves nothing behind, git's own error is
 # visible, and the repo's default branch is whatever it is.
 git clone "$url" "$dir" || exit 1
-org_dir "$owner" >/dev/null
 # A mise config is what makes a directory a project.
 is_project "$dir" || : > "$dir/.mise.toml"
 

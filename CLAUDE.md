@@ -55,7 +55,7 @@ cdproject                         # cd to current mise project root
 mise -C / run project:migrate     # once: ~/dev/<repo> → ~/dev/<org>/<repo> (--dry-run first)
 ```
 
-Projects are `~/dev/<org>/<repo>`; each org directory is a mise monorepo (`mise run '//...:task'` across its repos; its `mise.toml` tools and `[env]` reach every repo). See ADR-013.
+Projects are `~/dev/<org>/<repo>`; an org directory is a plain folder, and a `mise.toml` you put there (tools, `[env]`) reaches every repo in it. See ADR-013.
 
 ### Architecture
 
