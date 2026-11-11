@@ -80,3 +80,23 @@ EOF
     [ "$status" -eq 0 ]
     [[ "$output" != *"_API_KEY"* ]]
 }
+
+@test "task output hides secret-looking values from every project under ~/dev" {
+    command -v mise >/dev/null || skip "mise not installed"
+    export HOME=$(scratch)
+    export MISE_CONFIG_DIR=$HOME/.config/mise MISE_STATE_DIR=$HOME/.state
+    export MISE_DATA_DIR=$HOME/.data MISE_CACHE_DIR=$HOME/.cache
+    export MISE_OFFLINE=1 MISE_AUTO_INSTALL=0 MISE_TRUSTED_CONFIG_PATHS=$HOME/dev
+    mkdir -p "$HOME/dev/acme/app"
+    ln -s "$DOTFILES_ROOT/dev/dev/.mise.toml" "$HOME/dev/.mise.toml"
+    cat > "$HOME/dev/acme/app/.mise.toml" <<'EOF'
+[env]
+AWS_SECRET_ACCESS_KEY = "aws-value"
+STRIPE_SECRET_KEY = "stripe-value"
+DB_PASSWORD = "db-value"
+[tasks.show]
+run = "echo $AWS_SECRET_ACCESS_KEY $STRIPE_SECRET_KEY $DB_PASSWORD"
+EOF
+    run mise -C "$HOME/dev/acme/app" run show
+    [[ "$output" != *"aws-value"* && "$output" != *"stripe-value"* && "$output" != *"db-value"* ]]
+}

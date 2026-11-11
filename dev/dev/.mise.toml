@@ -1,5 +1,6 @@
 ## PLEASE DO NOT PUT SENSITIVE VALUES IN THIS FILE ##
-redactions = ["SECRET_*", "*_TOKEN", "*_API_KEY", "PASSWORD"]
+# Values of these hidden in task output (mise run), in every project here.
+redactions = ["*SECRET*", "*TOKEN*", "*PASSWORD*", "*_KEY", "*_API_KEY", "*CREDENTIAL*"]
 
 [tools]
 python = "latest"

@@ -324,6 +324,28 @@ EOF
     [[ "$output" != *"dev/beta/mise.toml"* ]]
 }
 
+# accept-new would trust whatever answers first as github.com on a new Mac.
+@test "records GitHub's published host keys before the first ssh to it" {
+    cat > "$STUBS/gh" <<'STUB'
+#!/bin/sh
+case "$*" in
+  "auth status"*) exit 0 ;;
+  "api meta --jq .ssh_keys[]") printf 'ssh-ed25519 AAAAED\necdsa-sha2-nistp256 AAAAEC\n' ;;
+  *) echo "gh $*" ;;
+esac
+STUB
+    echo "example.com ssh-rsa KEEP" > "$TARGET/known_hosts.seed"
+    mkdir -p -m 700 "$TARGET/.ssh"
+    cp "$TARGET/known_hosts.seed" "$TARGET/.ssh/known_hosts"
+    preview
+    [ "$status" -eq 0 ]
+    grep -qx "github.com ssh-ed25519 AAAAED" "$TARGET/.ssh/known_hosts"
+    grep -qx "github.com ecdsa-sha2-nistp256 AAAAEC" "$TARGET/.ssh/known_hosts"
+    grep -qx "example.com ssh-rsa KEEP" "$TARGET/.ssh/known_hosts"
+    preview
+    [ "$(grep -c '^github.com ssh-ed25519' "$TARGET/.ssh/known_hosts")" -eq 1 ]
+}
+
 @test "creates ~/.ssh as a private real directory, with our settings in a real config file" {
     preview
     [ "$status" -eq 0 ]

@@ -100,6 +100,20 @@ for config in $PROJECT_DIR/*/mise.toml(N.); do
     if [[ "$(<$config)" == "$(generated_org_config ${config:h:t})" ]]; then run rm "$config"; fi
 done
 
+# GitHub's host keys as GitHub publishes them, before the first ssh to it
+# (the clones below, git push): ssh's accept-new would otherwise trust
+# whatever answered first as github.com on a new Mac.
+if gh auth status &>/dev/null; then
+    hostkeys=$(gh api meta --jq '.ssh_keys[]' 2>/dev/null || true)
+    if [[ -n $hostkeys ]]; then
+        known=$HOME/.ssh/known_hosts
+        touch "$known"
+        for hostkey in ${(f)hostkeys}; do
+            grep -qxF "github.com $hostkey" "$known" || print -r -- "github.com $hostkey" >> "$known"
+        done
+    fi
+fi
+
 # Trust: mise loads a project's config without asking only for repos you or
 # your GitHub orgs own (~/dev/<owner>/...); anyone else's clone asks first,
 # since a config can run commands. Per Mac, as the login differs, so it's a
