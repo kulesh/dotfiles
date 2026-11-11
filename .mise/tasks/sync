@@ -99,8 +99,20 @@ if [[ $applied == $head ]]; then
     echo "Already up to date with your other Macs."
     exit 0
 fi
+# What's about to run here: bootstrap does what the repo says (its
+# pre-dotfiles hook is plain shell), and anything that could push to the repo
+# could write it. Show the commits and the files they change, and ask.
 if [[ -n $applied ]] && git merge-base --is-ancestor "$applied" HEAD 2>/dev/null; then
     git log --oneline "$applied..HEAD"
+    git diff --stat "$applied" HEAD
+else
+    echo "This Mac hasn't applied any commit yet; applying $(git log --oneline -1)"
+fi
+print -n "Apply these to this Mac? [Y/n] " >&2
+read -r reply || reply=y
+if [[ $reply == [nN]* ]]; then
+    echo "Not applied. Review with git log -p, then run dsync again to apply."
+    exit 0
 fi
 
 # The config can need a newer mise than this Mac has (min_version in
