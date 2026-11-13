@@ -19,7 +19,7 @@ Every project command is a global task in `~/.config/mise/tasks/project/` (linke
 | `cloneproject <user/repo or URL>` | `project:clone` | to the clone |
 | `workon <name> [-s]` | `project:workon` | to the project |
 | `cdproject` | `project:root` | to the project root |
-| `rmproject <name> [--delete]` | `project:remove` | to `~/dev`, if you were inside it |
+| `rmproject <name> [--delete]` | `project:remove` | to its org, if you were inside it |
 | `lsprojects [--type] [--tools]`, `showproject`, `updateproject [name]`, `list_project_types` | `project:list`, `show`, `update`, `types` | no |
 
 Three mechanisms make tasks fit where functions used to:
@@ -33,7 +33,7 @@ The sandbox stays in zsh (`lib/sandbox.sh`), and [ADR-003](003-chpwd-over-mise-h
 ## Consequences
 
 - `<command> --help` works for every command, and Tab completes project names, template names and flags.
-- 416 lines of tasks, helpers and `follow.zsh` replace about 1,550 lines of shell functions; `lib/` keeps only what has to run inside the shell.
+- A few hundred lines of tasks, helpers and `follow.zsh` replace about 1,550 lines of shell functions; `lib/` keeps only what has to run inside the shell.
 - Each command starts a `mise run` (tens of milliseconds) instead of calling a function.
 - The aliases exist only in shells where mise is activated. Scripts call the tasks directly: `mise -C / run project:clone kulesh/foo`.
 - `cloneproject user/repo` replaces `cloneproject gh user/repo` (the old form was dropped on 2026-11-13).

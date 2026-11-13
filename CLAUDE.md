@@ -58,37 +58,14 @@ Projects are `~/dev/<org>/<repo>`; an org directory is a plain folder, and a `mi
 
 ### Architecture
 
-```
-~/.dotfiles/
-├── mise.sh                   # Bootloader: Xcode CLI tools, Homebrew, clone, mise (if below the floor), mise bootstrap
-├── .mise.toml                # Bootstrap config: packages, dotfile groups, login shell
-├── .mise/tasks/bootstrap     # Bootstrap task: GitHub, signing, Claude Code, clones
-├── .mise/tasks/preview       # Link into a scratch home; print machine-level steps
-├── .mise/tasks/sync          # dsync: reconcile this Mac with GitHub
-├── include/shared_vars.sh    # Shared configuration variables
-├── lib/enclave.zsh           # GitHub keys in the Secure Enclave (ADR-015)
-├── lib/follow.zsh            # Shell follows a command to a new directory
-├── lib/reload.zsh            # Shell reloads when a file it loaded changes
-├── lib/sandbox.sh            # Per-project macOS sandbox (chpwd)
-├── mise/.config/mise/
-│   ├── config.toml           #   Runtime config: settings, tools (linked)
-│   └── tasks/                #   project:* commands, mkproject:* templates
-├── sandbox/.config/sandbox/  # macOS sandbox-exec profiles
-├── <tool>/                   # Per-tool configurations (linked into $HOME)
-│   └── .config/<tool>/
-└── dev/                      # Dev directory structure template
-```
-
-**Dotfile groups** (`[bootstrap] dotfile_groups` in `.mise.toml`): bin, claude, dev, ghostty, git, homebrew (tap trust), mise, nvim, pi, sandbox, starship, yazi, zsh. `ssh/.ssh/config` is a marked block in `~/.ssh/config`.
-
-**Project templates** (`mise/.config/mise/tasks/mkproject/`): base, python, fastapi, ruby, rails, rust, typescript, convex
+The component map, bootstrap, sync, project and sandbox flows are in [docs/architecture.md](docs/architecture.md); why each piece is the way it is, in [docs/adrs/](docs/adrs/). The dotfile groups are listed in `.mise.toml` (`dotfile_groups`), the templates by `list_project_types`.
 
 ### Key Configuration
 
 | File | Purpose |
 |------|---------|
 | `.mise.toml` | Bootstrap config: `[bootstrap.packages]`, dotfile groups, pre-dotfiles hook, `[bootstrap.user]`, taps |
-| `.mise/tasks/bootstrap` | GitHub login, Secure Enclave keys (`lib/enclave.zsh`), Claude Code, clones, missing secrets |
+| `.mise/tasks/bootstrap` | GitHub login, host keys, Secure Enclave keys (`lib/enclave.zsh`), mise trust, Claude Code, clones, missing secrets |
 | `mise/.config/mise/config.toml` | Runtime config: `[settings]`, `[tools]` (linked) |
 | `include/shared_vars.sh` | `PROJECT_DIR` (`~/dev`), exported: where bootstrap clones and the project commands look |
 | `mise/.config/mise/tasks/project/` | Project commands as tasks; `_lib.zsh` holds shared helpers |

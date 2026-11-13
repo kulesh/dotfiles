@@ -1,6 +1,6 @@
 # ADR-005: Bootstrap Leaves the Machine Ready for Development
 
-**Status:** Accepted
+**Status:** Accepted; its keys and signing section superseded by [ADR-015](015-github-keys-in-the-secure-enclave.md)
 **Date:** 2026-10-24
 
 ## Context

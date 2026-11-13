@@ -13,7 +13,7 @@ Everything runs on [mise-en-place](https://mise.jdx.dev/): system packages, deve
 bash <(curl -fsSL https://raw.githubusercontent.com/kulesh/dotfiles/main/mise.sh)
 ```
 
-This installs Xcode CLI tools, Homebrew, and mise, clones the repo to `~/.dotfiles`, then runs `mise bootstrap`: system packages, login shell, dotfile symlinks, global tools, Claude Code, and macOS settings. It finishes by logging you in to GitHub in the browser, which creates an SSH key and adds it to your account for pushing and for signing commits, then clones every repo you own (no forks or archived repos) into `~/dev/<owner>/<repo>` as a managed project.
+This installs Xcode CLI tools, Homebrew, and mise, clones the repo to `~/.dotfiles`, then runs `mise bootstrap`: system packages, login shell, dotfile symlinks, global tools, Claude Code, and macOS settings. It finishes by logging you in to GitHub in the browser, making this Mac's two GitHub keys in its Secure Enclave (one signs you in, one signs commits; see [GitHub keys](#github-keys)), and cloning every repo you own (no forks or archived repos) into `~/dev/<owner>/<repo>` as a managed project.
 
 To re-run on an existing machine:
 
@@ -28,7 +28,7 @@ To see what bootstrap would do without touching your real home, preview it. The 
 mise -C ~/.dotfiles run preview
 ```
 
-Each top-level directory (`zsh/`, `git/`, `nvim/`…) mirrors `$HOME` and is linked into it file by file, so `~/dev`, `~/.ssh` and `~/.claude` are always real directories. A Mac set up with GNU Stow moves over on its next bootstrap. See [ADR-010](docs/adrs/010-mise-links-dotfiles.md), and `mise -C ~/.dotfiles dot status` to check the links.
+Each top-level directory (`zsh/`, `git/`, `nvim/`…) mirrors `$HOME` and is linked into it file by file, so `~/dev`, `~/.ssh` and `~/.claude` are always real directories. See [ADR-010](docs/adrs/010-mise-links-dotfiles.md), and `mise -C ~/.dotfiles dot status` to check the links.
 
 ## Quick Start
 
@@ -95,6 +95,10 @@ dsync
 
 It offers to commit this Mac's changes, rebases them onto GitHub's, pushes, and re-runs `mise bootstrap` if anything came in. If another Mac changed the same lines, it lists the files and opens lazygit. Resolve or abort there; if you leave it unresolved, run `dsync` again later. New shells say when this Mac is out of step (`dotfiles: 2 from other Macs. Run dsync.`). Open shells pick up what dsync brought in by themselves: when a file the shell loaded has changed, it reloads before the next prompt (`lib/reload.zsh`), keeping its directory and exported environment. See [ADR-009](docs/adrs/009-dsync-reconciles-macs.md).
 
+## GitHub keys
+
+Each Mac has two keys, made in its Secure Enclave by bootstrap: one signs you in to GitHub, one signs your commits. The private keys can't leave the chip, so a copied disk or home folder yields nothing usable. Neither asks for Touch ID: agents make most commits. Bootstrap renews them before their one-year certificate lapses, and offers to retire an old `~/.ssh/id_ed25519` once the new key signs in. ssh talks to GitHub only with post-quantum key exchange, and only to the host keys GitHub publishes. See [ADR-015](docs/adrs/015-github-keys-in-the-secure-enclave.md).
+
 ## Secrets
 
 API keys live in the macOS Keychain, not in files.
@@ -123,7 +127,7 @@ Projects can run in a macOS sandbox that restricts filesystem access—useful fo
 
 ```sh
 workon myproject -s    # First time enables sandbox for project
-workon myproject       # Subsequent runs auto-enter sandbox
+workon myproject       # Subsequent runs auto-enter sandbox, as does any cd into it
 ```
 
 ### What's Restricted
@@ -131,7 +135,7 @@ workon myproject       # Subsequent runs auto-enter sandbox
 | Access | Allowed | Blocked |
 |--------|---------|---------|
 | **Read** | Everything except credentials | SSH private keys, `~/.aws`, `~/.netrc`, GPG keys, browser data |
-| **Write** | Everything else: the project, tool state, caches | Whatever your Mac runs later outside the sandbox: shell startup files, `~/Library/LaunchAgents`, the `~/.dotfiles` checkout (agent settings aside), configs that run commands (`~/.config/mise`, `git`, `gh`, `starship`, `ghostty`, `homebrew`, `nvim`, `yazi`, `sandbox`), `~/.local/bin`, `/usr/local`, the project's `.git/hooks` and `.git/config`; plus `~/.ssh`, GPG and AWS keys and system dirs |
+| **Write** | Everything else: the project, tool state, caches | Whatever your Mac runs later outside the sandbox: shell startup files, `~/Library/LaunchAgents`, the dotfiles checkout (agent settings aside), other projects, configs that run commands (`~/.config/mise`, `git`, `gh`, `starship`, `ghostty`, `homebrew`, `nvim`, `yazi`, `sandbox`), `~/.local/bin`, `/usr/local`, the project's own mise config and tasks, `.git/hooks` and `.git/config`; plus `~/.ssh`, GPG and AWS keys and system dirs |
 | **Network** | All outbound | — |
 
 The Keychain stays readable (git's credential helper needs it), so secrets stored with `secret` are reachable from inside the sandbox. Inside it, push without `-u`: the project's `.git/config` is read-only. Still open: Claude Code's `settings.json` (its hooks), `~/.claude/plugins`, and tools installed under `~/.local/share`. See [ADR-002](docs/adrs/002-sandbox-exec-for-agents.md).
@@ -210,12 +214,10 @@ When you run `mkproject my-api fastapi`:
    #MISE dir="{{cwd}}"
    #MISE depends=["mkproject:base"]
 
-   echo "Setting up custom project..."
+   set -eo pipefail   # a failed step stops the template; mkproject reports it
+   source "${0:a:h}/_shared/template_helpers.sh"
 
-   TEMPLATE_DIR="${0:a:h}/mytemplate/files"
-   if [[ -d "$TEMPLATE_DIR" ]]; then
-       cp -r "$TEMPLATE_DIR"/. "$PWD/"
-   fi
+   copy_template_files "mytemplate" "mytemplate"
    ```
 
 4. Test: `mkproject test-project mytemplate`
@@ -234,4 +236,16 @@ The full list is `[bootstrap.packages]` in `.mise.toml`. Highlights:
 
 - [Architecture](docs/architecture.md): components and data flows
 - [Decision records](docs/adrs/): why things are the way they are
-- [Clean sheet on mise](docs/mise-native.md): the plan for moving hand-written setup onto mise features
+- [Clean sheet on mise](docs/mise-native.md): how hand-written setup moved onto mise features (a record; one phase open)
+
+## FAQ
+
+**What would bootstrap do to this Mac?** `mise -C ~/.dotfiles run preview` links into a scratch home and prints every machine-level step instead of running it.
+
+**Another Mac changed something. How do I get it?** `dsync`. It shows the incoming commits and files and asks before applying them.
+
+**Where do API keys go?** In the Keychain (`secret set NAME`), named by each project that uses them. See [Secrets](#secrets).
+
+**Why two GitHub keys per Mac?** A signing key has to stay on GitHub for its commits to stay Verified; a sign-in key should be easy to revoke. One key can't be both. See [ADR-015](docs/adrs/015-github-keys-in-the-secure-enclave.md).
+
+**A command misbehaves inside the sandbox.** It may be writing somewhere the profile protects; see [What's Restricted](#whats-restricted), and run it from an unsandboxed shell (`cd` out of the project and back without the marker, or a new terminal elsewhere).

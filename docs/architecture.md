@@ -26,8 +26,9 @@ bash <(curl -fsSL .../mise.sh)
 │ mise.sh (bootloader)                      │
 │   1. Xcode CLI tools (waits for dialog)   │
 │   2. Homebrew                             │
-│   3. mise (via brew)                      │
-│   4. git clone → ~/.dotfiles              │
+│   3. git clone → ~/.dotfiles              │
+│   4. mise (via brew), at least the floor  │
+│      the checkout's .mise.toml names      │
 │   5. mise trust && mise bootstrap         │
 └────────┬──────────────────────────────────┘
          │
@@ -37,16 +38,22 @@ bash <(curl -fsSL .../mise.sh)
 │   1. [bootstrap.packages] → formulae,     │
 │      casks, fonts                         │
 │   2. pre-dotfiles hook: refuse keys or    │
-│      projects inside the repo, remove     │
-│      Stow's links, mkdir ~/.ssh (700)     │
+│      projects inside the repo, make way   │
+│      for the linked trust.json, mkdir     │
+│      ~/.ssh (700)                         │
 │   3. dotfile groups → links into $HOME;   │
 │      ~/.ssh/config gets a marked block    │
 │   4. [bootstrap.user] → chsh to zsh       │
 │   5. .mise/tasks/bootstrap                │
 │      mise install → Claude Code           │
 │      → macOS defaults                     │
-│      → gh auth login (SSH key → GitHub)   │
+│      → gh auth login (no key of its own)  │
+│      → GitHub's host keys                 │
+│      → Secure Enclave keys: auth + sign   │
+│        (lib/enclave.zsh, ADR-015)         │
+│      → allowed_signers, mise trust list   │
 │      → clone own repos: ~/dev/<owner>/…   │
+│      → secrets projects name but lack     │
 └───────────────────────────────────────────┘
 ```
 
@@ -95,7 +102,8 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 ├── .mise/tasks/sync           dsync: commit, pull --rebase, push, re-bootstrap
 ├── include/shared_vars.sh     PROJECT_DIR
 │
-├── lib/                       The parts that must run inside your shell
+├── lib/                       Shell libraries
+│   ├── enclave.zsh            GitHub keys in the Secure Enclave (bootstrap)
 │   ├── follow.zsh             Go where a command says, before the next prompt
 │   ├── reload.zsh             Reload when the shell's own config changes
 │   └── sandbox.sh             macOS sandbox-exec lifecycle and chpwd hooks
@@ -103,7 +111,8 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 ├── mise/.config/mise/
 │   ├── config.toml            Runtime config: settings, tools, [shell_alias] (linked)
 │   ├── tasks/project/         Project commands: new, clone, list, show, update,
-│   │                          remove, workon, root, types; _lib.zsh helpers
+│   │                          remove, workon, root, types; names (completion,
+│   │                          hidden); _lib.zsh helpers
 │   └── tasks/mkproject/       Project templates
 │           ├── _shared/       AGENTS.md header
 │           ├── base.sh        Git init, README, .gitignore
@@ -126,7 +135,7 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 │   ├── architecture.md        This file
 │   └── adrs/                  Architecture Decision Records
 │
-└── tests/                     bats-core tests for shell libraries
+└── tests/                     bats acceptance tests (bats tests/)
 ```
 
 ## Data Flow: Project Lifecycle
@@ -164,22 +173,21 @@ mkproject "api" "fastapi"
 ## Data Flow: Sandbox Entry
 
 ```
-cd ~/dev/sandboxed-project   (or: workon project -s)
+cd ~/dev/org/project/src   (anywhere inside; or: workon project -s)
         │
         ▼
-┌───────────────────────────────┐
-│ _sandbox_entry_chpwd          │
-│   detects .sandbox + .mise.toml│
-└────────┬──────────────────────┘
+┌──────────────────────────────────┐
+│ _sandbox_entry_chpwd             │
+│   walks up to the .sandbox marker│
+└────────┬─────────────────────────┘
          │
          ▼
 ┌───────────────────────────────────────────┐
 │ _workon_sandboxed                         │
 │   makes $SANDBOX_EXIT_FILE (mktemp)       │
 │   sandbox-exec -f default.sb              │
-│     -D HOME=$HOME                         │
-│     -D PROJECT=~/dev/org/project          │
-│     -D SSH_REAL=/real/path/to/.ssh        │
+│     -D HOME, PROJECT, PROJECTS (~/dev),   │
+│        DOTFILES, SSH_REAL: real paths     │
 │   → spawns /bin/zsh -i inside sandbox     │
 └────────┬──────────────────────────────────┘
          │
@@ -189,13 +197,15 @@ cd ~/dev/sandboxed-project   (or: workon project -s)
 │   writes "entered" to the exit file       │
 │   cd outside project → writes the dir,    │
 │     exits; the outer shell goes there     │
+│     (a cd in a subshell doesn't count)    │
 │   exit → the outer shell closes too       │
 │   never started (file empty) → the outer  │
 │     shell stays, unsandboxed, and says so │
 │                                           │
 │ Writes: allowed, except what the Mac runs │
 │   later (ADR-002): shell startup, the     │
-│   dotfiles, tool configs, .git hooks      │
+│   dotfiles, other projects, tool configs, │
+│   the project's mise config and .git hooks│
 │ Reads blocked: SSH private keys, ~/.aws,  │
 │   browser data                            │
 └───────────────────────────────────────────┘

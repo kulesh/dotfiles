@@ -1,6 +1,6 @@
 # Clean Sheet: Dotfiles on mise Alone
 
-**Status:** Proposed, 2026-10-31; decisions recorded 2026-10-31. Researched against mise 2026.10.25 docs (main branch) and binary.
+**Status:** Implemented but for phase 4, which waits on a fresh Mac. Proposed 2026-10-31, against mise 2026.10.25. A record of the move: the "today" columns describe the repo as it was then (GNU Stow, keys exported to every project), and the code and ADRs are where it is now.
 
 This document asks what this repo would look like if we designed it today, on mise alone. It keeps every feature we rely on and drops any of our implementations that mise now provides. Each claim below is marked **Tested** (run against the 2026.10.25 binary on Linux), **Docs** (read, not run), or **Mac** (needs a test on macOS before we depend on it).
 
@@ -125,7 +125,7 @@ Each phase ships on its own and leaves a working system.
 
 | Phase | Change | Removes | Proves first |
 |---|---|---|---|
-| 0. Mac spike | `bash tests/spike/mise-native.sh` on one Mac (scratch mise, scratch homes, previews only) | Nothing | `brew:` without Homebrew; groups from a fresh home and from Stow; Pi merge; `~` in macOS defaults |
+| 0. Mac spike (done) | A script run on one Mac (scratch mise, scratch homes, previews only); results above, the script since removed | Nothing | `brew:` without Homebrew; groups from a fresh home and from Stow; Pi merge; `~` in macOS defaults |
 | 1. Trust and upgrades (done) | `trusted_config_paths`; `mup` upgrades packages and tools | Four `mise trust` calls | `tests/bootstrap.bats`, `tests/project.bats` |
 | 2. Groups replace Stow (done) | `dotfile_groups`, nvim whole-dir entry, ssh config block; a pre-dotfiles hook unstows existing Macs and creates `~/.ssh`; `mise run preview`; ADR-010 supersedes ADR-001 | `stow` package, stow loop, mkdirs, chmod, `_DOTFILES_INFRA`, `HOME_DIR` | `tests/bootstrap.bats` through `preview` |
 | 3. Projects as tasks (done) | Every project command a task with `#USAGE`, completion and `--help`; `[shell_alias]`; a prompt hook follows commands that move you ([ADR-011](adrs/011-project-commands-as-mise-tasks.md)) | `lib/` down to `follow.zsh` and `sandbox.sh`; ADR-003 stands (the sandbox needs `chpwd`) | `tests/project.bats` through `mise run` |

@@ -24,16 +24,16 @@ Mise hooks had race conditions and ordering issues:
 Zsh `chpwd` gives direct control over timing:
 - `_sandbox_entry_chpwd` fires in the parent (non-sandbox) shell and spawns the sandbox immediately.
 - `_sandbox_chpwd` fires inside the sandbox and exits it when the user leaves the project directory, writing the destination to a file the outer shell made (`$SANDBOX_EXIT_FILE`), which then follows. (Before 2026-11: exit code 42 and a file in `~/.cache/sandbox`, which nothing created.)
-- A `_SANDBOX_SPAWNING` guard variable prevents re-entry during the spawn sequence — simpler than marker files.
+- Entry walks up from the directory you arrived in to the project's `.sandbox` marker (written by `workon -s`), so landing in a subdirectory sandboxes the whole project. The sandboxed shell starts where you are; nothing `cd`s during the spawn, so nothing can re-enter. Inside, a `cd` in a subshell is ignored: zsh runs `chpwd` there too.
 
 ## Consequences
 
 **Benefits:**
 - Single mechanism for entry and exit.
-- No marker files or state on disk.
+- State on disk is the `.sandbox` marker per project and the exit file for the life of one sandboxed shell; nothing else.
 - Works on shell startup (via the auto-enter block at the end of sandbox.sh).
 
 **Tradeoffs:**
-- Runs on every `cd`, even for non-sandboxed projects (guard clause is cheap: two file existence checks).
+- Runs on every `cd`, even for non-sandboxed projects (the walk up is cheap: one file test per directory level).
 - Couples sandbox behavior to zsh specifically (not portable to bash/fish, but this system is zsh-only).
 - `~/dev/.mise.toml` declares no mise hooks; the no-op `enter`/`leave` it once carried started a process on every `cd` and kept nothing from complaining.
