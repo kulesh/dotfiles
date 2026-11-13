@@ -493,6 +493,20 @@ EOF
 
 # Fetching never touches your branch or your files; only the merge needs a
 # clean tree, and only when there's something to merge.
+# git allows a / in a remote's name, so the remote can't be read off the
+# upstream's name (team/fork/main).
+@test "updateproject follows a branch whose remote has a slash in its name" {
+    github_repo kulesh/alpha
+    project clone kulesh/alpha
+    git -C "$MINE/alpha" remote add team/fork "$HOME/github/kulesh/alpha.git"
+    git -C "$MINE/alpha" fetch -q team/fork
+    git -C "$MINE/alpha" checkout -q -b work --track team/fork/main
+    push_commit kulesh/alpha second
+    project update alpha
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "second" ]
+}
+
 @test "updateproject fetches a project with uncommitted changes, but won't merge into it" {
     github_repo kulesh/alpha
     project clone kulesh/alpha

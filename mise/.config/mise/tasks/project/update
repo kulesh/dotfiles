@@ -7,62 +7,29 @@
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
-# Why a repo has nothing to pull from; nothing when it has. Uncommitted
-# changes don't stop a fetch, which never touches the branch or its files;
-# they stop only the merge (dirty).
-unready() {   # unready <repo dir>
-    [[ -e $1/.git ]] || { print "isn't a git repository"; return; }
-    [[ -n $(git -C "$1" branch --show-current) ]] || { print "isn't on a branch"; return; }
-    git -C "$1" rev-parse -q --verify '@{upstream}' &>/dev/null || print "has no upstream to pull from"
-}
+# Bring repos up to date, fast-forward only: fetch them all, show what each
+# would do, ask once, fast-forward. A fetch never touches a branch or its
+# files, so every repo with an upstream is fetched; uncommitted changes or
+# history of its own only keep a repo from moving. One repo shows the
+# commits coming and stops at what blocks it; an org shows a table and
+# leaves blocked repos as they are.
+update() {   # update <what> <repo dir>...
+    local what=$1 dir failed line
+    shift
+    local -a repos=($@) ready=() behind=() stuck=()
+    local -A why incoming   # repo dir -> what keeps it from moving / commits coming
 
-dirty() { [[ -n $(git -C "$1" status --porcelain --untracked-files=no) ]]; }
-
-# One project: show what's coming, ask, fast-forward.
-update_one() {   # update_one <project dir>
-    local dir=$1 name=$(project_label "$1") reason upstream incoming
-    reason=$(unready "$dir")
-    case $reason in
-        '') ;;
-        *upstream*) die "$name's branch $(git -C "$dir" branch --show-current) has no upstream to pull from (git branch -u <remote>/<branch>)" ;;
-        *) die "$name $reason" ;;
-    esac
-    cd "$dir"
-    # The branch's own upstream, wherever it points (origin/main, upstream/main).
-    upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}')
-    print -r -- "Updating $name from $upstream"
-    git fetch -q "${upstream%%/*}"
-    incoming=$(git rev-list --count 'HEAD..@{upstream}')
-    if (( incoming == 0 )); then
-        print -r -- "Already up to date"
-        return 0
-    fi
-    git log --oneline 'HEAD..@{upstream}' | head -10
-    if dirty .; then
-        git status --short --untracked-files=no >&2
-        die "$name has uncommitted changes; commit or stash them, then run updateproject again"
-    fi
-    confirm "Pull $incoming commit(s)? [Y/n]" y || { print "Cancelled"; return 0; }
-    git merge -q --ff-only '@{upstream}' || die "$name has diverged from $upstream; merge or rebase it yourself"
-    print -r -- "Updated $name"
-}
-
-# Every repo in an org: fetch them all, list what each will do, ask once,
-# fast-forward. A repo that can't fast-forward is listed with the reason
-# and left as it is, fetched all the same.
-update_org() {   # update_org <org dir>
-    local org=${1:t} dir reason incoming outgoing failed
-    local -a ready=() behind=() merged=() stuck=()
-    local -A note   # repo dir -> what happens to it
-    for dir in $1/*(N/); do
-        is_project "$dir" || continue
-        reason=$(unready "$dir")
-        if [[ -n $reason ]]; then note[$dir]="${c[yellow]}skipped${c[reset]}: $reason"; else ready+=("$dir"); fi
+    for dir in $repos; do
+        if [[ ! -e $dir/.git ]]; then why[$dir]="isn't a git repository"
+        elif [[ -z $(git -C "$dir" branch --show-current) ]]; then why[$dir]="isn't on a branch"
+        elif ! git -C "$dir" rev-parse -q --verify '@{upstream}' &>/dev/null; then
+            why[$dir]="has no upstream to pull from (git branch -u <remote>/<branch>)"
+        else ready+=("$dir"); fi
     done
-    (( ${#note} + $#ready )) || { print -r -- "No projects in $org"; return 0; }
 
-    print -r -- "Fetching ${#ready} repo(s) in $org"
-    # Eight at a time: GitHub turns away a burst of SSH connections.
+    # Eight fetches at a time: GitHub turns away a burst of SSH connections.
+    # A plain fetch fetches the branch's own remote.
+    (( $#ready > 1 )) && print -r -- "Fetching ${#ready} repo(s) in $what"
     failed=$(mktemp "${TMPDIR:-/tmp}/updateproject.XXXXXX")
     trap "rm -f ${(q)failed}" EXIT
     local -i n=0
@@ -74,51 +41,64 @@ update_org() {   # update_org <org dir>
     local -a fetch_failed=(${(f)"$(<$failed)"})
 
     for dir in $ready; do
-        if (( ${fetch_failed[(Ie)$dir]} )); then
-            note[$dir]="${c[red]}fetch failed${c[reset]}"
-            continue
-        fi
-        incoming=$(git -C "$dir" rev-list --count 'HEAD..@{upstream}')
-        outgoing=$(git -C "$dir" rev-list --count '@{upstream}..HEAD')
-        if (( incoming == 0 )); then
-            note[$dir]="${c[dim]}up to date${c[reset]}"
-            continue
-        fi
-        note[$dir]="${c[green]}$incoming new commit(s)${c[reset]}"
-        if (( outgoing > 0 )); then
-            note[$dir]+=", ${c[yellow]}skipped${c[reset]}: has diverged from its upstream"
-        elif dirty "$dir"; then
-            note[$dir]+=", ${c[yellow]}skipped${c[reset]}: has uncommitted changes"
+        if (( ${fetch_failed[(Ie)$dir]} )); then why[$dir]="couldn't fetch"; continue; fi
+        incoming[$dir]=$(git -C "$dir" rev-list --count 'HEAD..@{upstream}')
+        (( incoming[$dir] )) || continue
+        if (( $(git -C "$dir" rev-list --count '@{upstream}..HEAD') )); then
+            why[$dir]="has diverged from its upstream; merge or rebase it yourself"
+        elif [[ -n $(git -C "$dir" status --porcelain --untracked-files=no) ]]; then
+            why[$dir]="has uncommitted changes; commit or stash them, then run updateproject again"
         else
             behind+=("$dir")
         fi
     done
 
-    local -i width=0
-    for dir in ${(k)note}; do (( ${#dir:t} > width )) && width=${#dir:t}; done
-    for dir in ${(ko)note}; do print -r -- "  ${(r:width:)${dir:t}}  ${note[$dir]}"; done
+    if (( $#repos == 1 )); then
+        dir=$repos[1]
+        (( ${incoming[$dir]:-0} )) && git -C "$dir" log --oneline 'HEAD..@{upstream}' | head -10
+        [[ -n ${why[$dir]:-} ]] && die "$what ${why[$dir]}"
+        (( $#behind )) || { print -r -- "$what is up to date"; return 0; }
+        confirm "Pull ${incoming[$dir]} commit(s)? [Y/n]" y || { print "Cancelled"; return 0; }
+    else
+        local -i width=0
+        for dir in $repos; do (( ${#dir:t} > width )) && width=${#dir:t}; done
+        for dir in ${(o)repos}; do
+            line=
+            (( ${incoming[$dir]:-0} )) && line="${c[green]}${incoming[$dir]} new commit(s)${c[reset]}"
+            [[ -n ${why[$dir]:-} ]] && line+="${line:+, }${c[yellow]}skipped${c[reset]}: ${why[$dir]%%[;(]*}"
+            print -r -- "  ${(r:width:)${dir:t}}  ${line:-${c[dim]}up to date${c[reset]}}"
+        done
+        (( $#behind )) || { print -r -- "Nothing to update in $what"; return 0; }
+        confirm "Fast-forward ${#behind} repo(s)? [Y/n]" y || { print "Cancelled"; return 0; }
+    fi
 
-    (( $#behind )) || { print -r -- "Nothing to update in $org"; return 0; }
-    confirm "Fast-forward ${#behind} repo(s)? [Y/n]" y || { print "Cancelled"; return 0; }
     for dir in $behind; do
-        if git -C "$dir" merge -q --ff-only '@{upstream}' 2>/dev/null; then merged+=("$dir"); else stuck+=("${dir:t}"); fi
+        git -C "$dir" merge -q --ff-only '@{upstream}' 2>/dev/null || stuck+=("${dir:t}")
     done
-    print -r -- "Updated ${#merged} repo(s) in $org"
     (( $#stuck == 0 )) || die "Could not fast-forward: ${(j:, :)stuck}"
+    if (( $#repos == 1 )); then print -r -- "Updated $what"; else print -r -- "Updated ${#behind} repo(s) in $what"; fi
+}
+
+org_update() {   # org_update <org dir>
+    local dir
+    local -a repos=()
+    for dir in $1/*(N/); do is_project "$dir" && repos+=("$dir"); done
+    (( $#repos )) || { print -r -- "No projects in ${1:t}"; return 0; }
+    update "${1:t}" $repos
 }
 
 if [[ ${usage_name:-} == */ ]]; then
     org=${${usage_name%/}:l}
     valid_name "$org" || die "Not an org name: $usage_name"
     [[ -d $projects_dir/$org ]] || die "No org '$org' in $projects_dir"
-    update_org "$projects_dir/$org"
+    org_update "$projects_dir/$org"
 elif [[ -n ${usage_name:-} ]]; then
     dir=$(project_dir "$usage_name") || exit 1
-    update_one "$dir"
+    update "$(project_label "$dir")" "$dir"
 elif dir=$(project_root "$here"); then
-    update_one "$dir"
+    update "$(project_label "$dir")" "$dir"
 elif [[ ${here:A:h} == ${projects_dir:A} ]] && valid_name "${here:A:t}"; then
-    update_org "${here:A}"
+    org_update "${here:A}"
 else
     die "Not in a project or an org; name one: updateproject <name>, or <org>/ for all its repos"
 fi
