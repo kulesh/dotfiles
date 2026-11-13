@@ -487,14 +487,22 @@ EOF
     [[ "$output" == *"no upstream"* ]]
 }
 
-@test "updateproject refuses a project with uncommitted changes" {
+# Fetching never touches your branch or your files; only the merge needs a
+# clean tree, and only when there's something to merge.
+@test "updateproject fetches a project with uncommitted changes, but won't merge into it" {
     github_repo kulesh/alpha
     project clone kulesh/alpha
     echo change > "$MINE/alpha/file"
     git -C "$MINE/alpha" add file
     project update alpha
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"up to date"* ]]
+    push_commit kulesh/alpha second
+    project update alpha
     [ "$status" -ne 0 ]
     [[ "$output" == *"uncommitted"* ]]
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s origin/main)" = "second" ]
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "init" ]
 }
 
 @test "updateproject on a project with no remote says so" {
@@ -521,8 +529,9 @@ EOF
     [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "second" ]
     [ "$(git -C "$MINE/beta" log -1 --format=%s)" = "second" ]
     [ "$(git -C "$MINE/dirty" log -1 --format=%s)" = "init" ]
+    [ "$(git -C "$MINE/dirty" log -1 --format=%s origin/main)" = "second" ]   # fetched all the same
     [ "$(git -C "$DEV/acme/other" log -1 --format=%s)" = "init" ]
-    [[ "$output" == *"dirty"*"uncommitted"* ]]
+    [[ "$output" == *"dirty"*"1 new commit"*"uncommitted"* ]]
     [[ "$output" == *"demo"*"no upstream"* ]]
     [[ "$output" == *"Updated 2"* ]]
 }
@@ -551,10 +560,12 @@ EOF
 @test "updateproject on an org that's up to date says so and asks nothing" {
     github_repo kulesh/alpha
     project clone kulesh/alpha
+    echo change > "$MINE/alpha/README"   # changes of your own, nothing incoming
+    git -C "$MINE/alpha" add README
     project update kulesh/
     [ "$status" -eq 0 ]
     [[ "$output" == *"up to date"* ]]
-    [[ "$output" != *"Fast-forward"* ]]
+    [[ "$output" != *"skipped"* && "$output" != *"Fast-forward"* ]]
 }
 
 @test "updateproject on an org that doesn't exist says so" {

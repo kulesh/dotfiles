@@ -8,13 +8,16 @@
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
-# Why a repo can't be fast-forwarded as it stands; nothing when it can.
+# Why a repo has nothing to pull from; nothing when it has. Uncommitted
+# changes don't stop a fetch, which never touches the branch or its files;
+# they stop only the merge (dirty).
 unready() {   # unready <repo dir>
     [[ -e $1/.git ]] || { print "isn't a git repository"; return; }
     [[ -n $(git -C "$1" branch --show-current) ]] || { print "isn't on a branch"; return; }
-    git -C "$1" rev-parse -q --verify '@{upstream}' &>/dev/null || { print "has no upstream to pull from"; return; }
-    [[ -z $(git -C "$1" status --porcelain --untracked-files=no) ]] || print "has uncommitted changes"
+    git -C "$1" rev-parse -q --verify '@{upstream}' &>/dev/null || print "has no upstream to pull from"
 }
+
+dirty() { [[ -n $(git -C "$1" status --porcelain --untracked-files=no) ]]; }
 
 # One project: show what's coming, ask, fast-forward.
 update_one() {   # update_one <project dir>
@@ -23,8 +26,6 @@ update_one() {   # update_one <project dir>
     case $reason in
         '') ;;
         *upstream*) die "$name's branch $(git -C "$dir" branch --show-current) has no upstream to pull from (git branch -u <remote>/<branch>)" ;;
-        *uncommitted*) git -C "$dir" status --short --untracked-files=no >&2
-                       die "$name has uncommitted changes; commit or stash them first" ;;
         *) die "$name $reason" ;;
     esac
     cd "$dir"
@@ -38,6 +39,10 @@ update_one() {   # update_one <project dir>
         return 0
     fi
     git log --oneline 'HEAD..@{upstream}' | head -10
+    if dirty .; then
+        git status --short --untracked-files=no >&2
+        die "$name has uncommitted changes; commit or stash them, then run updateproject again"
+    fi
     confirm "Pull $incoming commit(s)? [Y/n]" y || { print "Cancelled"; return 0; }
     git merge -q --ff-only '@{upstream}' || die "$name has diverged from $upstream; merge or rebase it yourself"
     print -r -- "Updated $name"
@@ -45,7 +50,7 @@ update_one() {   # update_one <project dir>
 
 # Every repo in an org: fetch them all, list what each will do, ask once,
 # fast-forward. A repo that can't fast-forward is listed with the reason
-# and left as it is.
+# and left as it is, fetched all the same.
 update_org() {   # update_org <org dir>
     local org=${1:t} dir reason incoming outgoing failed
     local -a ready=() behind=() merged=() stuck=()
@@ -78,10 +83,14 @@ update_org() {   # update_org <org dir>
         outgoing=$(git -C "$dir" rev-list --count '@{upstream}..HEAD')
         if (( incoming == 0 )); then
             note[$dir]="${c[dim]}up to date${c[reset]}"
-        elif (( outgoing > 0 )); then
-            note[$dir]="${c[yellow]}skipped${c[reset]}: has diverged from its upstream"
+            continue
+        fi
+        note[$dir]="${c[green]}$incoming new commit(s)${c[reset]}"
+        if (( outgoing > 0 )); then
+            note[$dir]+=", ${c[yellow]}skipped${c[reset]}: has diverged from its upstream"
+        elif dirty "$dir"; then
+            note[$dir]+=", ${c[yellow]}skipped${c[reset]}: has uncommitted changes"
         else
-            note[$dir]="${c[green]}$incoming new commit(s)${c[reset]}"
             behind+=("$dir")
         fi
     done
