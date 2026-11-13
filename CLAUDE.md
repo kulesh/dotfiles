@@ -191,5 +191,6 @@ Occasionally refer to your programming buddy by their name.
 Commands given to Kulesh are pasted into an interactive zsh, often while the shell is in `~/.dotfiles`. A pasted block once deleted every non-hidden file in the checkout. A trailing note wasn't treated as a comment, and the backticks in it ran `ls`, which handed the whole directory to `rm -rf`.
 
 - No inline comments and no backticks or apostrophes in command blocks; explain in prose instead
+- No `!` either, even in double quotes: zsh expands it from history (`event not found`)
 - Use absolute paths, never paths relative to the current directory
 - Put destructive commands (`rm`, `find -delete`, `git reset`, `git clean`) in their own block, after a read-only command that shows exactly what they will touch
