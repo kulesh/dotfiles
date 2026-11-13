@@ -68,7 +68,7 @@ Each command is a mise task (`mise tasks ls`), so `<command> --help` explains it
 | `lsprojects --tools` | List projects with mise tools |
 | `showproject` | Show current project details |
 | `cdproject` | Jump to current project root |
-| `updateproject [name]` | Pull latest changes (cloned projects) |
+| `updateproject [name \| org/]` | Pull latest changes: one project, or every repo in an org (fast-forward only, one question) |
 | `rmproject <name>` | Archive project to `~/dev/.archive/<org>` (safe removal) |
 | `rmproject <name> --delete` | Permanently delete project |
 | `rmproject` | Pick the project to archive with fzf, `showproject` beside it |

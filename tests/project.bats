@@ -504,6 +504,74 @@ EOF
     [[ "$output" == *"remote"* ]]
 }
 
+# An org name with a trailing slash, or an org folder you're in, updates
+# every repo in it: one fetch round, one table, one question, fast-forwards
+# only. A repo that can't fast-forward is listed with the reason and left as
+# it is.
+@test "updateproject <org>/ fast-forwards every repo in the org, and says why it skipped the rest" {
+    for repo in alpha beta dirty; do github_repo kulesh/$repo; project clone kulesh/$repo; done
+    github_repo acme/other
+    project clone acme/other
+    project new demo   # local, nothing to pull from
+    for repo in kulesh/alpha kulesh/beta kulesh/dirty acme/other; do push_commit $repo second; done
+    echo change > "$MINE/dirty/file"
+    git -C "$MINE/dirty" add file
+    project update kulesh/
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "second" ]
+    [ "$(git -C "$MINE/beta" log -1 --format=%s)" = "second" ]
+    [ "$(git -C "$MINE/dirty" log -1 --format=%s)" = "init" ]
+    [ "$(git -C "$DEV/acme/other" log -1 --format=%s)" = "init" ]
+    [[ "$output" == *"dirty"*"uncommitted"* ]]
+    [[ "$output" == *"demo"*"no upstream"* ]]
+    [[ "$output" == *"Updated 2"* ]]
+}
+
+@test "updateproject in an org folder updates that org" {
+    github_repo kulesh/alpha
+    project clone kulesh/alpha
+    push_commit kulesh/alpha second
+    project update --from "$MINE"
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "second" ]
+}
+
+@test "updateproject on an org leaves a diverged repo alone and updates the others" {
+    for repo in alpha beta; do github_repo kulesh/$repo; project clone kulesh/$repo; done
+    push_commit kulesh/alpha theirs
+    push_commit kulesh/beta second
+    git -C "$MINE/alpha" commit -q --allow-empty -m mine
+    project update kulesh/
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "mine" ]
+    [ "$(git -C "$MINE/beta" log -1 --format=%s)" = "second" ]
+    [[ "$output" == *"alpha"*"diverged"* ]]
+}
+
+@test "updateproject on an org that's up to date says so and asks nothing" {
+    github_repo kulesh/alpha
+    project clone kulesh/alpha
+    project update kulesh/
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"up to date"* ]]
+    [[ "$output" != *"Fast-forward"* ]]
+}
+
+@test "updateproject on an org that doesn't exist says so" {
+    project update nosuch/
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"No org 'nosuch'"* ]]
+}
+
+@test "updateproject completes orgs, with a trailing slash, as well as projects" {
+    project new demo
+    project new acme/tool
+    local candidates=$(completions 'mise -C / run project:update ')
+    [[ $'\n'"$candidates"$'\n' == *$'\n'kulesh/$'\n'* ]]
+    [[ $'\n'"$candidates"$'\n' == *$'\n'acme/$'\n'* ]]
+    [[ $'\n'"$candidates"$'\n' == *$'\n'demo$'\n'* ]]
+}
+
 # =============================================================================
 # rmproject (project:remove)
 # =============================================================================

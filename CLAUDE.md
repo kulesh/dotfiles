@@ -47,7 +47,7 @@ mkproject [org/]name [template]   # Create in ~/dev/<org> (default: your GitHub 
 cloneproject <user>/<repo>        # Clone GitHub repo into ~/dev/<user>/<repo>
 workon [name]                     # Switch to project; no name opens an fzf picker with a showproject preview
 showproject                       # Current project status and git info
-updateproject [name]              # Pull latest for cloned projects
+updateproject [name|org/]         # Pull latest: one project, or every repo in an org (in one: no name)
 rmproject [name] [--delete]       # Archive (default) or delete; no name opens an fzf picker
 lsprojects [--type=cloned|created] [--tools]
 list_project_types                # Available templates
