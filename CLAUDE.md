@@ -161,7 +161,7 @@ Use Domain Driven Development methods to **create a ubiquitous language** that d
 
 ### Information Organization
 
-IMPORTANT: For project specific information prefer retrieval-led reasoning over pre-training-led reasoning. Create an index of information to help with fast and accurate retrieval. Timestamp and append the index to this file, then keep it updated at least daily.
+Find project facts in the code and `docs/` (start at `docs/architecture.md`), not from memory.
 
 Keep the project directory clean and organized:
 
@@ -192,6 +192,6 @@ Commands given to Kulesh are pasted into an interactive zsh, often while the she
 
 - No inline comments and no backticks or apostrophes in command blocks; explain in prose instead
 - No `!` either, even in double quotes: zsh expands it from history (`event not found`)
-- The shell aliases `grep` to `rg`, `cat` to `bat`, `ls` to `eza`: write `rg` syntax (no `-E`; regex is the default), or `command grep`
+- The shell aliases `grep` to `rg`, `cat` to `bat`, `ls` to `eza`, `top` to `htop`, `time` to `hyperfine`, `vim` to `nvim` (`.zshrc`, `alias_if_exists`). Those are Kulesh's ergonomics; leave them. When a command needs the real tool, name it by absolute path (`/usr/bin/time`, `/bin/ls`) or with `command`; otherwise write `rg` syntax (no `-E`; regex is the default)
 - Use absolute paths, never paths relative to the current directory
 - Put destructive commands (`rm`, `find -delete`, `git reset`, `git clean`) in their own block, after a read-only command that shows exactly what they will touch
