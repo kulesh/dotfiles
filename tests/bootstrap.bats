@@ -374,6 +374,9 @@ STUB
     local block=$(sed -n '/^Host github.com/,/^Host /p' "$TARGET/.ssh/config")
     [[ "$block" == *"SecurityKeyProvider /usr/lib/ssh-keychain.dylib"* ]]
     [ "$(grep -m1 IdentityFile <<< "$block")" = "  IdentityFile ~/.ssh/id_enclave_auth" ]
+    # Apple's UseKeychain looks each identity file up in the Keychain before
+    # connecting, and hung there on an enclave handle (Orion, 2026-11-13).
+    ! grep -q '^ *UseKeychain' <<< "$block" || false
 }
 
 @test "ssh config has no hardcoded home directory" {
