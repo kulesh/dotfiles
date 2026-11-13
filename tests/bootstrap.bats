@@ -18,7 +18,9 @@ setup() {
 
 preview() {
     local repo=${1:-$DOTFILES_ROOT}
-    PATH="$STUBS:$PATH" run zsh "$repo/.mise/tasks/preview" "$TARGET"
+    # A scratch HOME from the start: zsh reads ~/.zshenv, which would put
+    # ~/.local/bin ahead of the stubs.
+    HOME="$TARGET" PATH="$STUBS:$PATH" run zsh "$repo/.mise/tasks/preview" "$TARGET"
 }
 
 repo_copy() {
@@ -50,7 +52,7 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
 @test "previews with a terminal attached, without stopping to ask" {
     command -v script >/dev/null || skip "script not installed"
     # Output to a terminal, input from nowhere: how mise run starts a task.
-    run in_terminal "PATH='$STUBS:$PATH' zsh '$DOTFILES_ROOT/.mise/tasks/preview' '$TARGET' </dev/null"
+    run in_terminal "HOME='$TARGET' PATH='$STUBS:$PATH' zsh '$DOTFILES_ROOT/.mise/tasks/preview' '$TARGET' </dev/null"
     [ -L "$TARGET/.zshrc" ]
 }
 
@@ -166,10 +168,12 @@ STUB
 @test "a project's .env doesn't load into the shell's environment" {
     preview
     mkdir -p "$TARGET/dev/kulesh/app"
-    : > "$TARGET/dev/kulesh/app/.mise.toml"
+    printf '[env]\nFROM_CONFIG = "1"\n' > "$TARGET/dev/kulesh/app/.mise.toml"
     printf 'PATH=/tmp/evil\nFROM_DOTENV=1\n' > "$TARGET/dev/kulesh/app/.env"
     run sh -c 'cd "$1" && HOME="$2" MISE_CONFIG_DIR="$2/.config/mise" MISE_TRUSTED_CONFIG_PATHS="$2/dev" MISE_STATE_DIR="$2/.state" MISE_DATA_DIR="$2/.data" MISE_CACHE_DIR="$2/.cache" MISE_OFFLINE=1 mise env' _ "$TARGET/dev/kulesh/app" "$TARGET"
-    [[ "$output" != *"FROM_DOTENV"* ]]
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"FROM_CONFIG"* ]]   # mise read the project; only .env stayed out
+    [[ "$output" != *"FROM_DOTENV"* && "$output" != *"/tmp/evil"* ]]
 }
 
 @test "reports a secret a project names that this Mac's Keychain lacks" {
@@ -339,7 +343,7 @@ STUB
 }
 
 @test "ssh config has no hardcoded home directory" {
-    ! grep -q '/Users/' "$DOTFILES_ROOT/ssh/.ssh/config"
+    ! grep -q '/Users/' "$DOTFILES_ROOT/ssh/.ssh/config" || false
 }
 
 enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged in to GitHub

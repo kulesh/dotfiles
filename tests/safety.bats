@@ -12,3 +12,22 @@ load test_helper
     [[ "$output" == *"skipped: mise not installed"* || "$output" == *"# skip"* ]]
     [ -f "$home/keep-me" ]
 }
+
+# zsh reads ~/.zshenv for every script, and ours puts ~/.local/bin first:
+# a test that runs a repo task with the real HOME would run the real tools
+# there (mise's installer puts mise in it) instead of the test's stubs.
+@test "tests that run the repo's tasks never reach tools in your ~/.local/bin" {
+    command -v mise >/dev/null || skip "mise not installed"
+    local home=$(scratch) bats_bin tool
+    bats_bin=$(command -v bats)
+    mkdir -p "$home/.local/bin"
+    ln -s "$DOTFILES_ROOT/zsh/.zshenv" "$home/.zshenv"
+    for tool in mise gh sc_auth lazygit; do
+        printf '#!/bin/sh\necho "%s $*" >> "%s/ran-real"\n' "$tool" "$home" > "$home/.local/bin/$tool"
+        chmod +x "$home/.local/bin/$tool"
+    done
+    run env HOME="$home" "$bats_bin" -f "applies another Mac|previews making the auth key|previews GitHub login" \
+        "$DOTFILES_ROOT/tests/sync.bats" "$DOTFILES_ROOT/tests/bootstrap.bats"
+    [ "$status" -eq 0 ]
+    [ ! -e "$home/ran-real" ] || { cat "$home/ran-real"; false; }
+}

@@ -56,7 +56,7 @@ cannot_write() {   # cannot_write <file>: the sandbox may not create it
     cannot_write "$PROJECT/.git/hooks/post-checkout"
     sandboxed git -C "$PROJECT" config core.fsmonitor "touch $HOME/owned"
     [ "$status" -ne 0 ]
-    ! grep -q fsmonitor "$PROJECT/.git/config"
+    ! grep -q fsmonitor "$PROJECT/.git/config" || false
 }
 
 @test "the dotfiles checkout is read-only, apart from the agents' linked settings" {

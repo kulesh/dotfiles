@@ -94,9 +94,12 @@ EOF
 AWS_SECRET_ACCESS_KEY = "aws-value"
 STRIPE_SECRET_KEY = "stripe-value"
 DB_PASSWORD = "db-value"
+GREETING = "plain-value"
 [tasks.show]
-run = "echo $AWS_SECRET_ACCESS_KEY $STRIPE_SECRET_KEY $DB_PASSWORD"
+run = "echo $GREETING $AWS_SECRET_ACCESS_KEY $STRIPE_SECRET_KEY $DB_PASSWORD"
 EOF
     run mise -C "$HOME/dev/acme/app" run show
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"plain-value"* ]]   # the task ran, and only secrets are hidden
     [[ "$output" != *"aws-value"* && "$output" != *"stripe-value"* && "$output" != *"db-value"* ]]
 }

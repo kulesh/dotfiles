@@ -61,7 +61,7 @@ bootload() {
     MISE_STUB_VERSION=2026.10.18 BREW_HAS_MISE=1 bootload
     [ "$status" -eq 0 ]
     grep -qx "brew upgrade mise" "$CALLS"
-    ! grep -q "brew install mise" "$CALLS"
+    ! grep -q "brew install mise" "$CALLS" || false
     [ "$(grep -n 'brew upgrade mise' "$CALLS" | cut -d: -f1)" -lt "$(grep -n 'mise bootstrap' "$CALLS" | cut -d: -f1)" ]
 }
 
@@ -71,7 +71,7 @@ bootload() {
     mise_stub
     BREW_HAS_MISE=1 bootload
     [ "$status" -eq 0 ]
-    ! grep -q "brew upgrade mise" "$CALLS" || false
+    ! grep -q "brew upgrade mise" "$CALLS" || false || false
     grep -qx "mise bootstrap" "$CALLS"
 }
 
@@ -79,7 +79,7 @@ bootload() {
     mise_stub
     bootload
     [ "$status" -eq 0 ]
-    ! grep -q "brew install mise\|brew upgrade mise" "$CALLS"
+    ! grep -q "brew install mise\|brew upgrade mise" "$CALLS" || false
     grep -qx "mise bootstrap" "$CALLS"
 }
 
@@ -97,7 +97,7 @@ bootload() {
     MISE_STUB_VERSION=2026.10.18 BREW_HAS_MISE=1 BREW_UPGRADE_FAILS=1 bootload
     [ "$status" -ne 0 ]
     [[ "$output" == *"brew link --overwrite mise"* ]]
-    ! grep -q "mise bootstrap" "$CALLS"
+    ! grep -q "mise bootstrap" "$CALLS" || false
 }
 
 @test "a mise that doesn't run stops before bootstrap and says how to fix the link" {
@@ -105,7 +105,7 @@ bootload() {
     BREW_HAS_MISE=1 bootload
     [ "$status" -ne 0 ]
     [[ "$output" == *"brew link --overwrite mise"* ]]
-    ! grep -q "mise bootstrap" "$CALLS"
+    ! grep -q "mise bootstrap" "$CALLS" || false
 }
 
 # xcode-select --install fails while an install it started is still pending.
