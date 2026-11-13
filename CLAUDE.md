@@ -191,5 +191,6 @@ Commands given to Kulesh are pasted into an interactive zsh, often while the she
 
 - No inline comments and no backticks or apostrophes in command blocks; explain in prose instead
 - No `!` either, even in double quotes: zsh expands it from history (`event not found`)
+- The shell aliases `grep` to `rg`, `cat` to `bat`, `ls` to `eza`: write `rg` syntax (no `-E`; regex is the default), or `command grep`
 - Use absolute paths, never paths relative to the current directory
 - Put destructive commands (`rm`, `find -delete`, `git reset`, `git clean`) in their own block, after a read-only command that shows exactly what they will touch
