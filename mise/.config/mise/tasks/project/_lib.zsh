@@ -79,6 +79,10 @@ project_label() {
     if [[ ${1:A} == $dev/*/* ]]; then print -r -- "${1:A:h:t}/${1:A:t}"; else print -r -- "${1:t}"; fi
 }
 
+# The templates mkproject starts from: mkproject/<name>.sh. The tool steps
+# they share (mkproject/tools) aren't templates.
+template_names() { print -rl -- $templates_dir/*.sh(N:t:r); }
+
 # Every project in ~/dev, as org/repo. .archive is hidden, so never listed.
 project_names() {
     local dir

@@ -1,0 +1,17 @@
+#!/usr/bin/env zsh
+#MISE description="Names for completion: projects, orgs as org/, or templates"
+#MISE hide=true
+#MISE quiet=true
+#USAGE flag "--orgs" help="Each org too, as org/ (updateproject)"
+#USAGE flag "--templates" help="Template names instead (mkproject)"
+set -euo pipefail
+source "${0:A:h}/_lib.zsh"
+
+if [[ ${usage_templates:-false} == true ]]; then
+    template_names
+    exit 0
+fi
+if [[ ${usage_orgs:-false} == true ]]; then
+    print -rl -- ${^${(u)${(f)"$(project_names)"}%%/*}}/
+fi
+project_short_names

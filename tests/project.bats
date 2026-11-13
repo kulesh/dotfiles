@@ -185,8 +185,8 @@ completions() {   # the candidates zsh would offer for a command line
     [[ "$candidates" != *tools:* ]]
 }
 
-@test "the templates are named once: list_project_types --names, without the tool steps" {
-    run --separate-stderr mise -C / run project:types --names
+@test "the templates are named once, by their files, without the tool steps" {
+    run --separate-stderr mise -C / run project:names --templates
     [ "$status" -eq 0 ]
     [ "$output" = $'base\nconvex\nfastapi\npython\nrails\nruby\nrust\ntypescript' ]
     project types
@@ -196,12 +196,20 @@ completions() {   # the candidates zsh would offer for a command line
     [[ "$output" == *"No template 'tools:python'"* ]]
 }
 
-@test "list_project_types lists every template" {
+@test "list_project_types lists every template with what it sets up" {
     project types
     [ "$status" -eq 0 ]
     for template in base python fastapi ruby rails rust typescript convex; do
         [[ "$output" == *"$template"* ]]
     done
+    [[ "$output" == *"python"*"Setup Python project"* ]]
+}
+
+@test "lsprojects only lists: completion's names live in a hidden task" {
+    project list --short
+    [ "$status" -ne 0 ]
+    run mise -C / tasks ls
+    [[ "$output" != *"project:names"* ]]
 }
 
 # =============================================================================

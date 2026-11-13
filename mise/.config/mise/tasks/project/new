@@ -4,7 +4,7 @@
 #MISE raw=true
 #USAGE arg "[name]" help="Name, or org/name; the org defaults to your GitHub login"
 #USAGE arg "[template]" default="base" help="Template to start from (list_project_types)"
-#USAGE complete "template" run="mise run project:types --names"
+#USAGE complete "template" run="mise run project:names --templates"
 #USAGE flag "-n --dry-run" help="Describe the project without creating it"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
@@ -22,7 +22,7 @@ valid_name "$org" && valid_name "$name" || die "Not a project name: $usage_name 
 dir=$projects_dir/$org/$name
 
 [[ -e $dir ]] && die "$dir already exists. Use workon $org/$name, or pick another name."
-templates=(${(f)"$(mise run project:types --names)"})
+templates=(${(f)"$(template_names)"})
 if (( ! ${templates[(Ie)$template]} )); then
     print -r -- "No template '$template'." >&2
     mise run project:types >&2

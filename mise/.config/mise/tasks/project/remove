@@ -3,7 +3,7 @@
 #MISE quiet=true
 #MISE raw=true
 #USAGE arg "[name]" help="org/repo, or a repo name one org has; without one, pick with fzf"
-#USAGE complete "name" run="mise run project:list --short"
+#USAGE complete "name" run="mise run project:names"
 #USAGE flag "--delete" help="Delete permanently instead of archiving"
 #USAGE flag "-y --yes" help="Don't ask (without a terminal, deleting needs it)"
 set -euo pipefail

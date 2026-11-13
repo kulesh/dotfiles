@@ -5,18 +5,8 @@
 #USAGE   choices "cloned" "created"
 #USAGE }
 #USAGE flag "--tools" help="Show each project's mise tools"
-#USAGE flag "--names" hide=#true help="org/repo, one per line (for the picker)"
-#USAGE flag "--short" hide=#true help="Shortest unambiguous names, one per line (for completion)"
-#USAGE flag "--orgs" hide=#true help="With --short, each org too, as org/ (for updateproject's completion)"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
-
-if [[ ${usage_names:-false} == true ]]; then project_names; exit 0; fi
-if [[ ${usage_short:-false} == true ]]; then
-    if [[ ${usage_orgs:-false} == true ]]; then print -rl -- ${^${(u)${(f)"$(project_names)"}%%/*}}/; fi
-    project_short_names
-    exit 0
-fi
 
 typeset -A count=(cloned 0 created 0 sandboxed 0)
 orgs=()
