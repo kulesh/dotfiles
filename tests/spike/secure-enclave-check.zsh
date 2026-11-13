@@ -47,10 +47,25 @@ step "sc_auth usage for create-ctk-identity"
 sc_auth help 2>&1 | grep -iA12 'create-ctk-identity' | head -30
 
 step "Create two enclave keys, no Touch ID (-t none)"
-for label in $labels; do
-    if sc_auth create-ctk-identity -l "$label" -k p-256-ne -t none 2>&1; then ok "created $label"; else bad "create $label"; fi
-done
+# sc_auth can print an error and still exit 0, so a key exists only once
+# the listing shows it.
+exists() { sc_auth list-ctk-identities 2>/dev/null | awk -v l="$1" '$4 == l { f = 1 } END { exit !f }'; }
+create() {   # create <label> [sc_auth options...]
+    sc_auth create-ctk-identity -l "$1" -k p-256-ne -t none "${@:2}" 2>&1
+    if exists "$1"; then ok "created $1 ${*:2}"; else bad "no identity $1 after: create ${*:2}"; fi
+}
+create dotfiles-check-a
+# The second key failed once with "Failed to create certificate", made in
+# the same second as the first: try after a pause, then with its own
+# common name, then with an email too.
+sleep 2
+create dotfiles-check-b
+exists dotfiles-check-b || { sleep 2; create dotfiles-check-b -N dotfiles-check-b; }
+exists dotfiles-check-b || { sleep 2; create dotfiles-check-b -N dotfiles-check-b -E check-b@example.com; }
 sc_auth list-ctk-identities 2>&1
+
+step "What the manual says about validity and expiry"
+man sc_auth 2>/dev/null | col -b | grep -inE -B1 -A3 'valid|expir|year|days' | head -40
 
 step "Export the key handles (press Enter at a PIN prompt)"
 ( cd "$work" && ssh-keygen -w "$provider" -K -N "" 2>&1 )
@@ -58,6 +73,7 @@ print -r -- "Files written:"
 ls -l "$work"
 for pub in $work/*.pub(N); do print -r -- "--- ${pub:t}"; cat "$pub"; done
 handles=($work/id_*~*.pub(N.))
+print -r -- "${#handles} handle(s): ${handles:t}"
 handle=${handles[1]:-}
 [[ -n $handle ]] && ok "handle: ${handle:t}" || { bad "no handle exported"; exit 1; }
 pub=$handle.pub
