@@ -39,11 +39,21 @@ setup() {
     [ "$output" = "ANTHROPIC_API_KEY" ]
 }
 
-@test "rm deletes, and get on a missing secret fails" {
+# A key this Mac doesn't have is an empty value, so mise still loads the
+# project's other keys and its tools; bootstrap lists what's missing.
+@test "rm deletes, and get on a key this Mac doesn't have prints nothing" {
     printf 'v\n' | "$SECRET" set GONE_API_KEY
     "$SECRET" rm GONE_API_KEY
     run "$SECRET" get GONE_API_KEY
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
+@test "get fails, and says why, when the Keychain itself fails" {
+    printf 'v\n' | "$SECRET" set LOCKED_API_KEY
+    SECURITY_FAILS=1 run "$SECRET" get LOCKED_API_KEY
     [ "$status" -ne 0 ]
+    [[ "$output" == *"not correct"* ]]
 }
 
 # =============================================================================
@@ -78,6 +88,14 @@ EOF
     run mise -C "$HOME/dev/site" env -s bash
     [ "$status" -eq 0 ]
     [[ "$output" != *"_API_KEY"* ]]
+
+    # A key this Mac lacks leaves that one empty, and the rest load.
+    cat >> "$HOME/dev/agent/.mise.toml" <<'EOF'
+OPENROUTER_API_KEY = "{{ exec(command='secret get OPENROUTER_API_KEY') }}"
+EOF
+    run mise -C "$HOME/dev/agent" env -s bash
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ANTHROPIC_API_KEY=anthropic-key"* ]]
 }
 
 @test "task output hides secret-looking values from every project under ~/dev" {

@@ -151,9 +151,8 @@ if command -v security >/dev/null; then
     # failure of the whole task.
     needed=(${(u)${(f)"$({ grep -ho 'secret get [A-Z_][A-Z0-9_]*' \
         $PROJECT_DIR/*/{,*/}{,.}mise{,.local}.toml(N.) /dev/null || true; } | cut -d' ' -f3)"}})
-    missing=()
-    for name in $needed; do
-        "$dotfiles/bin/.local/bin/secret" get "$name" &>/dev/null || missing+=("$name")
-    done
+    # Names only: secret ls reads no values.
+    have=(${(f)"$("$dotfiles/bin/.local/bin/secret" ls)"})
+    missing=(${needed:|have})
     if (( ${#missing} )); then echo "Missing secrets: ${missing[*]}  (add each with: secret set NAME)"; fi
 fi

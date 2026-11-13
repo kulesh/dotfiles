@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Stand-in for macOS `security`: generic passwords in $KC_STORE/<service>/<account>
 store=${KC_STORE:?}; cmd=$1; shift; s= a= w= wset=
+# $SECURITY_FAILS: the Keychain fails for a reason other than a missing item.
+[[ -n $SECURITY_FAILS ]] && { echo "security: The user name or passphrase you entered is not correct." >&2; exit 51; }
 while (($#)); do case $1 in -s) s=$2; shift 2;; -a) a=$2; shift 2;; -w) if (($# > 1)); then w=$2; wset=1; shift 2; else wset=prompt; shift; fi;; -U) shift;; *) shift;; esac; done
 case $cmd in
   add-generic-password) [[ $wset == prompt ]] && { printf 'password data for new item: ' >&2; IFS= read -r w; }; mkdir -p "$store/$s"; printf '%s' "$w" > "$store/$s/$a";;

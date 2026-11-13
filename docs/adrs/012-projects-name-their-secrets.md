@@ -37,6 +37,6 @@ ANTHROPIC_API_KEY = "{{ exec(command='secret get ANTHROPIC_API_KEY') }}"
 
 - A project's config says which keys it uses; `grep -r 'secret get' ~/dev` answers "who uses this key"
 - Agents and scripts in projects that name no keys can't pick one up from the environment
-- A project that names a missing key fails to load its environment, with `security`'s error, until `secret set NAME`; bootstrap lists such names ahead of time
+- A key this Mac doesn't have is empty in the project: `secret get` prints nothing for it (and still fails if the Keychain itself does). It used to fail the whole environment, the project's other keys and its tools with it, at every prompt. Bootstrap, and so `dsync`, lists such names (`secret ls`, names only)
 - The lines name a key, never a value, so they can be committed
 - Within a project that names a key, every process still sees it, agents included. Narrowing a key to one task (fnox, phase 5 of the mise-native plan) remains possible; it isn't needed yet
