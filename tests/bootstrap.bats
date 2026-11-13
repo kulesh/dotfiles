@@ -224,7 +224,8 @@ EOF
 @test "previews GitHub login over SSH when not authenticated" {
     preview
     [ "$status" -eq 0 ]
-    [[ "$output" == *"would run: gh auth login --hostname github.com --git-protocol ssh"* ]]
+    # The keys come from the Secure Enclave (ADR-015), not from gh.
+    [[ "$output" == *"would run: gh auth login --hostname github.com --git-protocol ssh --skip-ssh-key --scopes admin:public_key,admin:ssh_signing_key"* ]]
     [[ "$output" != *$'\ngh auth login'* ]]
 }
 
@@ -329,70 +330,51 @@ STUB
     [ "$(grep -c "Include ~/.config/colima/ssh_config" "$TARGET/.ssh/config")" -eq 1 ]
 }
 
-@test "previews generating and uploading a key when logged in without one" {
-    printf '#!/bin/sh\n[ "$1 $2" = "auth status" ] && exit 0\n' > "$STUBS/gh"
+@test "ssh signs in to GitHub with the enclave key first, through Apple's provider" {
     preview
     [ "$status" -eq 0 ]
-    [[ "$output" == *"would run: ssh-keygen -t ed25519 -f $TARGET/.ssh/id_ed25519"* ]]
-    [[ "$output" == *"would run: gh ssh-key add $TARGET/.ssh/id_ed25519.pub"* ]]
-}
-
-# A recording of today's traffic is what a quantum computer could break
-# later; GitHub negotiates hybrid post-quantum key exchange, so nothing else
-# is allowed, and no one in the path can force a classical one (ADR-015).
-@test "ssh to GitHub allows only post-quantum key exchange" {
-    preview
-    [ "$status" -eq 0 ]
-    local pq="mlkem768x25519-sha256,sntrup761x25519-sha512@openssh.com"
-    sed -n '/^Host github.com/,/^Host /p' "$TARGET/.ssh/config" | grep -qx "  KexAlgorithms $pq"
-    # What ssh itself makes of it, where this ssh knows ML-KEM (macOS does).
-    if ssh -Q kex | grep -qx mlkem768x25519-sha256; then
-        [ "$(HOME="$TARGET" ssh -G -F "$TARGET/.ssh/config" github.com | awk '$1 == "kexalgorithms" { print $2 }')" = "$pq" ]
-    fi
+    local block=$(sed -n '/^Host github.com/,/^Host /p' "$TARGET/.ssh/config")
+    [[ "$block" == *"SecurityKeyProvider /usr/lib/ssh-keychain.dylib"* ]]
+    [ "$(grep -m1 IdentityFile <<< "$block")" = "  IdentityFile ~/.ssh/id_enclave_auth" ]
 }
 
 @test "ssh config has no hardcoded home directory" {
     ! grep -q '/Users/' "$DOTFILES_ROOT/ssh/.ssh/config"
 }
 
-signing_gh_stub() {   # logged in; $1 = keys already registered for signing
-    cat > "$STUBS/gh" <<STUB
-#!/bin/sh
-case "\$1 \$2" in
-  "auth status") exit 0;;
-  "api user/ssh_signing_keys") printf '%s\n' "$1";;
-esac
-STUB
-    chmod +x "$STUBS/gh"
+enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged in to GitHub
+    printf '#!/bin/sh\n[ "$1" = list-ctk-identities ] && echo "Key Type Public Key Hash Prot Label"\nexit 0\n' > "$STUBS/sc_auth"
+    printf '#!/bin/sh\nexit 0\n' > "$STUBS/gh"
+    chmod +x "$STUBS/sc_auth" "$STUBS/gh"
 }
 
-@test "previews registering the key for signing when GitHub doesn't have it" {
-    command -v ssh-keygen >/dev/null || skip "ssh-keygen not installed"
-    mkdir -p -m 700 "$TARGET/.ssh"
-    ssh-keygen -q -t ed25519 -N '' -f "$TARGET/.ssh/id_ed25519" -C test
-    signing_gh_stub "ssh-ed25519 AAAAsomeothermachine"
+@test "previews making the auth key and the signing key in the Secure Enclave" {
+    enclave_stubs
     preview
     [ "$status" -eq 0 ]
-    [[ "$output" == *"would run: gh ssh-key add $TARGET/.ssh/id_ed25519.pub --type signing"* ]]
+    [[ "$output" == *"would run: sc_auth create-ctk-identity -l ssh-auth-"*" -k p-256-ne -t none"* ]]
+    [[ "$output" == *"would run: sc_auth create-ctk-identity -l ssh-sign-"*" -k p-256-ne -t none"* ]]
     [[ "$output" == *"would write $TARGET/.config/git/allowed_signers"* ]]
+    [[ "$output" != *"ssh-keygen -t ed25519"* ]]
 }
 
-@test "skips registering a signing key GitHub already has" {
-    command -v ssh-keygen >/dev/null || skip "ssh-keygen not installed"
-    mkdir -p -m 700 "$TARGET/.ssh"
-    ssh-keygen -q -t ed25519 -N '' -f "$TARGET/.ssh/id_ed25519" -C test
-    signing_gh_stub "$(cut -d' ' -f1,2 "$TARGET/.ssh/id_ed25519.pub")"
+@test "without a Secure Enclave, bootstrap makes no keys and says why" {
+    command -v sc_auth >/dev/null && skip "this machine has sc_auth"
+    printf '#!/bin/sh\nexit 0\n' > "$STUBS/gh"
+    chmod +x "$STUBS/gh"
     preview
     [ "$status" -eq 0 ]
-    [[ "$output" != *"--type signing"* ]]
+    [[ "$output" == *"No Secure Enclave keys"* ]]
+    [[ "$output" != *"create-ctk-identity"* && "$output" != *"ssh-keygen -t"* ]]
 }
 
 @test "the stowed git config signs commits that verify against allowed_signers" {
     command -v ssh-keygen >/dev/null || skip "ssh-keygen not installed"
     mkdir -p -m 700 "$TARGET/.ssh" "$TARGET/.config/git"
-    ssh-keygen -q -t ed25519 -N '' -f "$TARGET/.ssh/id_ed25519" -C test
+    # A file key stands in for the enclave key: git signs with the .pub.
+    ssh-keygen -q -t ed25519 -N '' -f "$TARGET/.ssh/id_enclave_sign" -C test
     local email=$(git config -f "$DOTFILES_ROOT/git/.gitconfig" user.email)
-    echo "$email namespaces=\"git\" $(cut -d' ' -f1,2 "$TARGET/.ssh/id_ed25519.pub")" > "$TARGET/.config/git/allowed_signers"
+    echo "$email namespaces=\"git\" $(cut -d' ' -f1,2 "$TARGET/.ssh/id_enclave_sign.pub")" > "$TARGET/.config/git/allowed_signers"
     local repo=$(scratch)
     git -C "$repo" init -q
     HOME="$TARGET" GIT_CONFIG_GLOBAL="$DOTFILES_ROOT/git/.gitconfig" git -C "$repo" commit -q --allow-empty -m signed </dev/null

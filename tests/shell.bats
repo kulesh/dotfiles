@@ -98,3 +98,23 @@ interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
     interactive 'printenv PROJECT_DIR'
     [ "${lines[-1]}" = "$HOME/dev" ]
 }
+
+# ssh-agent starts empty after a reboot; git signs through it (ADR-015).
+@test "a new shell puts this Mac's enclave keys back in the agent, once" {
+    mkdir -p "$HOME/.ssh"
+    for role in auth sign; do
+        echo handle > "$HOME/.ssh/id_enclave_$role"
+        echo "sk-ecdsa-sha2-nistp256@openssh.com AAAA$role ssh-$role-2026-11-13" > "$HOME/.ssh/id_enclave_$role.pub"
+    done
+    printf '%s\n' '#!/bin/sh' \
+        'case $1 in' \
+        '-L) cat "$HOME/agent" 2>/dev/null || exit 1 ;;' \
+        '-q) echo "$SSH_SK_PROVIDER $2" >> "$HOME/added"; cut -d" " -f1,2 "$2.pub" >> "$HOME/agent" ;;' \
+        'esac' > "$HOME/stubs/ssh-add"
+    chmod +x "$HOME/stubs/ssh-add"
+    interactive 'true'
+    [ "$(cat "$HOME/added")" = "/usr/lib/ssh-keychain.dylib $HOME/.ssh/id_enclave_auth
+/usr/lib/ssh-keychain.dylib $HOME/.ssh/id_enclave_sign" ]
+    interactive 'true'
+    [ "$(wc -l < "$HOME/added")" -eq 2 ]
+}

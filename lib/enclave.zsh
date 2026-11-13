@@ -108,8 +108,10 @@ enclave_key() {   # enclave_key <role: auth|sign>
 
     (( $#stale )) || return 0
     if [[ $role == auth ]]; then
-        # ssh -T always exits 1 at GitHub; what it says is the answer.
-        signed_in=$(ssh -o IdentitiesOnly=yes -o IdentityFile="$handle" -o SecurityKeyProvider="$enclave_provider" \
+        # ssh -T always exits 1 at GitHub; what it says is the answer. No
+        # config (-F /dev/null): its IdentityFile lines would let an older
+        # key answer for the new one.
+        signed_in=$(ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityFile="$handle" -o SecurityKeyProvider="$enclave_provider" \
             -T git@github.com 2>&1) || true
         if [[ $signed_in != *"successfully authenticated"* ]]; then
             print -r -- "The new key $current couldn't sign in to GitHub; the old one stays until it can. Run bootstrap again." >&2

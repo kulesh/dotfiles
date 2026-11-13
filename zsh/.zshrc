@@ -66,9 +66,18 @@ alias_if_exists() {
 # Alias only in interactive shell to avoid tripping Claude Code
 if [[ -o interactive ]]; then
     eval "$(zoxide init zsh --cmd cd)"
-    # Put the SSH key back in the agent after a reboot, passphrase from the
-    # Keychain, so git can sign commits without prompting.
+    # Put this Mac's keys back in the agent after a reboot, so git can sign
+    # without a prompt: the enclave keys through Apple's provider (ADR-015),
+    # and a file key with its passphrase from the Keychain.
     if [[ $OSTYPE == darwin* ]]; then /usr/bin/ssh-add --apple-load-keychain -q 2>/dev/null; fi
+    () {
+        local agent handle
+        agent=$(ssh-add -L 2>/dev/null)
+        for handle in ~/.ssh/id_enclave_{auth,sign}(N); do
+            [[ $agent == *"$(cut -d' ' -f2 "$handle.pub" 2>/dev/null)"* ]] ||
+                SSH_SK_PROVIDER=/usr/lib/ssh-keychain.dylib ssh-add -q "$handle" 2>/dev/null
+        done
+    }
     alias_if_exists cat bat
     alias_if_exists top htop
     alias_if_exists grep rg

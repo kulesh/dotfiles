@@ -108,3 +108,16 @@ cannot_write() {   # cannot_write <file>: the sandbox may not create it
     cannot_write "$HOME/.dotfiles/claude/.local/bin/git"
     cannot_write "$HOME/.dotfiles/pi/.pi/agents/other.json"
 }
+
+# Git signs through the agent with the .pub (ADR-015); the handles stay out
+# of reach, as private keys always were.
+@test "the enclave keys' public halves are readable, their handles aren't" {
+    for role in auth sign; do
+        echo handle > "$HOME/.ssh/id_enclave_$role"
+        echo "sk-ecdsa-sha2-nistp256@openssh.com AAAA ssh-$role" > "$HOME/.ssh/id_enclave_$role.pub"
+        sandboxed cat "$HOME/.ssh/id_enclave_$role.pub"
+        [ "$status" -eq 0 ]
+        sandboxed cat "$HOME/.ssh/id_enclave_$role"
+        [ "$status" -ne 0 ]
+    done
+}

@@ -30,52 +30,19 @@ if [[ $OSTYPE == darwin* ]]; then
     fi
 fi
 
-# A developer machine should be ready to push. gh's login flow generates
-# ~/.ssh/id_ed25519 if it's missing, uploads it, and sets git to use SSH.
-# Already logged in but no key (e.g. a reinstall): make one and upload it.
-key=$HOME/.ssh/id_ed25519
+# GitHub: log in, then this Mac's two keys, made in the Secure Enclave
+# (ADR-015): one signs you in, one signs commits. gh makes no key of its
+# own; the scopes let lib/enclave.zsh register keys and retire old ones.
+scopes=admin:public_key,admin:ssh_signing_key
 if ! gh auth status &>/dev/null; then
-    # The extra scope lets the signing step below register the same key.
-    run gh auth login --hostname github.com --git-protocol ssh --web --scopes admin:ssh_signing_key
-elif [[ ! -f $key ]]; then
-    run ssh-keygen -t ed25519 -f "$key" -C "$(id -un)@$(hostname -s)"
-    run gh ssh-key add "$key.pub" --title "$(hostname -s)"
-fi
-
-# Git signs commits and tags with this key (.gitconfig). ssh-keygen does the
-# signing and only asks the agent, so on macOS keep the passphrase in the
-# Keychain and the key in the agent; .zshrc reloads it after a reboot. Then
-# editors, coding agents, and sandboxed shells can sign without a prompt.
-if [[ $OSTYPE == darwin* && -f $key.pub ]] && ! ssh-add -L 2>/dev/null | grep -qF "$(cut -d' ' -f2 "$key.pub")"; then
-    run /usr/bin/ssh-add --apple-use-keychain "$key"
-fi
-
-# GitHub marks a commit Verified only if the key is registered for signing,
-# which is separate from authentication and needs its own token scope.
-if gh auth status &>/dev/null && [[ -f $key.pub ]]; then
-    signing_keys() { gh api user/ssh_signing_keys --jq '.[].key' 2>/dev/null; }
-    if ! signing_keys >/dev/null; then
-        run gh auth refresh --hostname github.com --scopes admin:ssh_signing_key
-    fi
-    if ! signing_keys | grep -qxF "$(cut -d' ' -f1,2 "$key.pub")"; then
-        run gh ssh-key add "$key.pub" --type signing --title "$(hostname -s) signing"
-    fi
-    # git log --show-signature trusts every key you've registered for
-    # signing, so commits made on your other machines verify here too.
-    allowed=$HOME/.config/git/allowed_signers
-    if previewing; then
-        echo "would write $allowed"
-    else
-        mkdir -p "${allowed:h}"
-        # Fetched first: a failed fetch leaves the old file, not an empty one.
-        keys=$(signing_keys)
-        print -r -- "$keys" | sed "s|^|$(git config --get user.email) namespaces=\"git\" |" > "$allowed"
-    fi
+    run gh auth login --hostname github.com --git-protocol ssh --skip-ssh-key --scopes $scopes
+elif ! gh api user/keys --jq length &>/dev/null || ! gh api user/ssh_signing_keys --jq length &>/dev/null; then
+    run gh auth refresh --hostname github.com --scopes $scopes
 fi
 
 # GitHub's host keys as GitHub publishes them, before the first ssh to it
-# (the clones below, git push): ssh's accept-new would otherwise trust
-# whatever answered first as github.com on a new Mac.
+# (the key check below, the clones, git push): ssh's accept-new would
+# otherwise trust whatever answered first as github.com on a new Mac.
 if gh auth status &>/dev/null; then
     hostkeys=$(gh api meta --jq '.ssh_keys[]' 2>/dev/null || true)
     if [[ -n $hostkeys ]]; then
@@ -84,6 +51,28 @@ if gh auth status &>/dev/null; then
         for hostkey in ${(f)hostkeys}; do
             grep -qxF "github.com $hostkey" "$known" || print -r -- "github.com $hostkey" >> "$known"
         done
+    fi
+fi
+
+if gh auth status &>/dev/null; then
+    if command -v sc_auth &>/dev/null; then
+        source "$dotfiles/lib/enclave.zsh"
+        enclave_key auth
+        enclave_key sign
+    else
+        echo "No Secure Enclave keys: sc_auth needs macOS 26 or later, so git can't sign commits here."
+    fi
+    # git log --show-signature trusts every key you've registered for
+    # signing, so commits made on your other machines verify here too.
+    signing_keys() { gh api user/ssh_signing_keys --jq '.[].key' 2>/dev/null; }
+    allowed=$HOME/.config/git/allowed_signers
+    if previewing; then
+        echo "would write $allowed"
+    else
+        mkdir -p "${allowed:h}"
+        # Fetched first: a failed fetch leaves the old file, not an empty one.
+        keys=$(signing_keys)
+        print -r -- "$keys" | sed "s|^|$(git config --get user.email) namespaces=\"git\" |" > "$allowed"
     fi
 fi
 

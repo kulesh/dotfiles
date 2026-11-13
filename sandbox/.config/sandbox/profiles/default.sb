@@ -47,6 +47,10 @@
 (allow file-read* (literal (string-append SSH_REAL "/id_ed25519.pub")))
 (allow file-read* (literal (string-append SSH_REAL "/id_ecdsa.pub")))
 (allow file-read* (literal (string-append SSH_REAL "/id_dsa.pub")))
+;; This Mac's Secure Enclave keys (ADR-015): git signs through the agent
+;; with the .pub; the handles stay hidden, as private keys do.
+(allow file-read* (literal (string-append SSH_REAL "/id_enclave_auth.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_enclave_sign.pub")))
 
 ;; Deny other secrets
 (deny file-read* (subpath (string-append HOME "/.aws")))
