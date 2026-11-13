@@ -131,6 +131,25 @@ in_terminal() {   # run a command with a terminal attached, as on a real Mac
     [[ "$output" != *"mise trust"* ]]
 }
 
+@test "a failed org lookup leaves the trust list as it was" {
+    cat > "$STUBS/gh" <<'STUB'
+#!/bin/sh
+case "$*" in
+  "auth status"*) exit 0 ;;
+  "config get -h github.com user") echo kulesh ;;
+  "api user/orgs --jq .[].login") [ -e "$ORGS_DOWN" ] && exit 1; echo acme ;;
+esac
+STUB
+    chmod +x "$STUBS/gh"
+    export ORGS_DOWN=$TARGET/orgs-down
+    preview
+    grep -q '"~/dev/acme"' "$TARGET/.config/mise/conf.d/trust.toml"
+    touch "$ORGS_DOWN"
+    preview
+    [ "$status" -eq 0 ]
+    grep -q '"~/dev/acme"' "$TARGET/.config/mise/conf.d/trust.toml"
+}
+
 # A cloned repo's mise config can run commands, so only repos you or your
 # GitHub orgs own load without asking; anyone else's clone asks first.
 @test "your own and your orgs' projects load without a trust prompt; other owners' and other places ask" {
@@ -269,26 +288,60 @@ STUB
     [[ "$output" != *"would clone kulesh/dotfiles"* ]]
 }
 
-# accept-new would trust whatever answers first as github.com on a new Mac.
-@test "records GitHub's published host keys before the first ssh to it" {
+# GitHub's host keys, as GitHub publishes them, are the only ones ssh
+# accepts for github.com: nothing is trusted on first use, and rotated keys
+# leave with the next run.
+github_meta_stub() {   # github_meta_stub <host key lines, or "fail">
+    printf '#!/bin/sh\ncase "$*" in\n  "auth status"*) exit 0 ;;\n' > "$STUBS/gh"
+    if [ "$1" = fail ]; then
+        printf '  "api meta"*) exit 1 ;;\n' >> "$STUBS/gh"
+    else
+        printf '  "api meta"*) printf "%%s\\n" %s ;;\n' "$1" >> "$STUBS/gh"
+    fi
+    printf 'esac\n' >> "$STUBS/gh"
+    chmod +x "$STUBS/gh"
+}
+
+@test "GitHub's host keys are exactly what GitHub publishes, in a file of their own" {
+    mkdir -p -m 700 "$TARGET/.ssh"
+    echo "example.com ssh-rsa KEEP" > "$TARGET/.ssh/known_hosts"
+    github_meta_stub "'ssh-ed25519 AAAAED' 'ecdsa-sha2-nistp256 AAAAEC'"
+    preview
+    [ "$status" -eq 0 ]
+    [ "$(cat "$TARGET/.ssh/known_hosts.d/github")" = "github.com ssh-ed25519 AAAAED
+github.com ecdsa-sha2-nistp256 AAAAEC" ]
+    [ "$(cat "$TARGET/.ssh/known_hosts")" = "example.com ssh-rsa KEEP" ]
+    github_meta_stub "'ssh-ed25519 AAAAROTATED'"
+    preview
+    [ "$(cat "$TARGET/.ssh/known_hosts.d/github")" = "github.com ssh-ed25519 AAAAROTATED" ]
+    local block=$(sed -n '/^Host github.com/,/^Host /p' "$TARGET/.ssh/config")
+    [[ "$block" == *"UserKnownHostsFile ~/.ssh/known_hosts.d/github"* ]]
+    [[ "$block" == *"StrictHostKeyChecking yes"* ]]
+}
+
+@test "a failed host key fetch leaves the recorded keys as they were" {
+    github_meta_stub "'ssh-ed25519 AAAAED'"
+    preview
+    github_meta_stub fail
+    preview
+    [ "$status" -eq 0 ]
+    [ "$(cat "$TARGET/.ssh/known_hosts.d/github")" = "github.com ssh-ed25519 AAAAED" ]
+}
+
+@test "a failed signing key fetch is reported, and bootstrap carries on" {
     cat > "$STUBS/gh" <<'STUB'
 #!/bin/sh
 case "$*" in
   "auth status"*) exit 0 ;;
-  "api meta --jq .ssh_keys[]") printf 'ssh-ed25519 AAAAED\necdsa-sha2-nistp256 AAAAEC\n' ;;
-  *) echo "gh $*" ;;
+  "api user/ssh_signing_keys"*) exit 1 ;;
+  "repo list"*) echo kulesh/alpha ;;
 esac
 STUB
-    echo "example.com ssh-rsa KEEP" > "$TARGET/known_hosts.seed"
-    mkdir -p -m 700 "$TARGET/.ssh"
-    cp "$TARGET/known_hosts.seed" "$TARGET/.ssh/known_hosts"
+    chmod +x "$STUBS/gh"
     preview
     [ "$status" -eq 0 ]
-    grep -qx "github.com ssh-ed25519 AAAAED" "$TARGET/.ssh/known_hosts"
-    grep -qx "github.com ecdsa-sha2-nistp256 AAAAEC" "$TARGET/.ssh/known_hosts"
-    grep -qx "example.com ssh-rsa KEEP" "$TARGET/.ssh/known_hosts"
-    preview
-    [ "$(grep -c '^github.com ssh-ed25519' "$TARGET/.ssh/known_hosts")" -eq 1 ]
+    [[ "$output" == *"allowed_signers stays as it was"* ]]
+    [[ "$output" == *"would clone kulesh/alpha"* ]]
 }
 
 # brew trust run on a Mac before the link existed leaves a real trust.json,
@@ -348,7 +401,7 @@ STUB
 
 enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged in to GitHub
     printf '#!/bin/sh\n[ "$1" = list-ctk-identities ] && echo "Key Type Public Key Hash Prot Label"\nexit 0\n' > "$STUBS/sc_auth"
-    printf '#!/bin/sh\nexit 0\n' > "$STUBS/gh"
+    printf '#!/bin/sh\n[ "$2" = user/ssh_signing_keys ] && echo "ssh-ed25519 AAAAsigning"\nexit 0\n' > "$STUBS/gh"
     chmod +x "$STUBS/sc_auth" "$STUBS/gh"
 }
 

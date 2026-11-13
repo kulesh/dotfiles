@@ -52,12 +52,15 @@ enclave_export() {   # enclave_export <label> <handle>
 }
 
 # GitHub accepts this handle's key, and only it. No config (-F /dev/null):
-# its IdentityFile lines would let another key answer. ssh -T always exits 1
-# at GitHub; what it says is the answer.
+# its IdentityFile lines would let another key answer; GitHub's host keys
+# come from the file bootstrap records them in. ssh -T always exits 1 at
+# GitHub; what it says is the answer.
 enclave_signs_in() {   # enclave_signs_in <handle>
     local said
     said=$(ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityFile="$1" \
-        -o SecurityKeyProvider="$enclave_provider" -T git@github.com 2>&1) || true
+        -o SecurityKeyProvider="$enclave_provider" \
+        -o UserKnownHostsFile="$HOME/.ssh/known_hosts.d/github" -o StrictHostKeyChecking=yes \
+        -T git@github.com 2>&1) || true
     [[ $said == *"successfully authenticated"* ]]
 }
 

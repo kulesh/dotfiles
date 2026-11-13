@@ -30,9 +30,9 @@ if [[ $OSTYPE == darwin* ]]; then
     fi
 fi
 
-# GitHub: log in, then this Mac's two keys, made in the Secure Enclave
-# (ADR-015): one signs you in, one signs commits. gh makes no key of its
-# own; the scopes let lib/enclave.zsh register keys and retire old ones.
+# GitHub: log in, then everything that needs the login. gh makes no key of
+# its own (ADR-015); the scopes let lib/enclave.zsh register keys and
+# retire old ones.
 scopes=admin:public_key,admin:ssh_signing_key
 if ! gh auth status &>/dev/null; then
     run gh auth login --hostname github.com --git-protocol ssh --skip-ssh-key --scopes $scopes
@@ -40,42 +40,47 @@ elif ! gh api user/keys --jq length &>/dev/null || ! gh api user/ssh_signing_key
     run gh auth refresh --hostname github.com --scopes $scopes
 fi
 
-# GitHub's host keys as GitHub publishes them, before the first ssh to it
-# (the key check below, the clones, git push): ssh's accept-new would
-# otherwise trust whatever answered first as github.com on a new Mac.
-if gh auth status &>/dev/null; then
-    hostkeys=$(gh api meta --jq '.ssh_keys[]' 2>/dev/null || true)
-    if [[ -n $hostkeys ]]; then
-        known=$HOME/.ssh/known_hosts
-        touch "$known"
-        for hostkey in ${(f)hostkeys}; do
-            grep -qxF "github.com $hostkey" "$known" || print -r -- "github.com $hostkey" >> "$known"
-        done
-    fi
-fi
+# GitHub's host keys, exactly as GitHub publishes them, in a file of their
+# own: ~/.ssh/config checks github.com against it alone (StrictHostKeyChecking
+# yes), so nothing is trusted on first use and rotated keys leave with the
+# next run. A failed fetch leaves the file as it was.
+github_host_keys() {
+    local keys file=$HOME/.ssh/known_hosts.d/github
+    keys=$(gh api meta --jq '.ssh_keys[]' 2>/dev/null) && [[ -n $keys ]] || {
+        echo "Couldn't read GitHub's host keys; $file stays as it was"
+        return 0
+    }
+    local -a lines=(${(f)keys})
+    mkdir -p "${file:h}"
+    print -rl -- ${lines/#/github.com } > "$file"
+}
 
-if gh auth status &>/dev/null; then
-    if command -v sc_auth &>/dev/null; then
-        source "$dotfiles/lib/enclave.zsh"
-        enclave_key auth
-        enclave_key sign
-        retire_file_key
-    else
+# This Mac's keys, in the Secure Enclave (lib/enclave.zsh, ADR-015).
+enclave_keys() {
+    if ! command -v sc_auth &>/dev/null; then
         echo "No Secure Enclave keys: sc_auth needs macOS 26 or later, so git can't sign commits here."
+        return 0
     fi
-    # git log --show-signature trusts every key you've registered for
-    # signing, so commits made on your other machines verify here too.
-    signing_keys() { gh api user/ssh_signing_keys --jq '.[].key' 2>/dev/null; }
-    allowed=$HOME/.config/git/allowed_signers
-    if previewing; then
-        echo "would write $allowed"
-    else
-        mkdir -p "${allowed:h}"
-        # Fetched first: a failed fetch leaves the old file, not an empty one.
-        keys=$(signing_keys)
-        print -r -- "$keys" | sed "s|^|$(git config --get user.email) namespaces=\"git\" |" > "$allowed"
-    fi
-fi
+    source "$dotfiles/lib/enclave.zsh"
+    enclave_key auth
+    enclave_key sign
+    retire_file_key
+}
+
+# git log --show-signature trusts every key you've registered for signing,
+# so commits made on your other Macs verify here too. A failed fetch leaves
+# the file as it was.
+allowed_signers() {
+    local keys file=$HOME/.config/git/allowed_signers
+    keys=$(gh api user/ssh_signing_keys --jq '.[].key' 2>/dev/null) && [[ -n $keys ]] || {
+        echo "Couldn't read your signing keys from GitHub; allowed_signers stays as it was"
+        return 0
+    }
+    if previewing; then echo "would write $file"; return 0; fi
+    local -a lines=(${(f)keys})
+    mkdir -p "${file:h}"
+    print -rl -- ${lines/#/$(git config --get user.email) namespaces=\"git\" } > "$file"
+}
 
 # Trust: mise loads a project's config without asking only for repos you or
 # your GitHub orgs own (~/dev/<owner>/...); anyone else's clone asks first,
@@ -83,31 +88,35 @@ fi
 # file of its own in conf.d rather than the linked config.toml. It holds the
 # whole list (separate files' lists replace, not add to, each other),
 # starting with ~/dev/.mise.toml, which every project loads. Without a
-# GitHub login it trusts that file alone; if the lookup fails while logged
-# in, the file stays as it was.
-trust=${XDG_CONFIG_HOME:-$HOME/.config}/mise/conf.d/trust.toml
-owners=()
-if gh auth status &>/dev/null; then
-    owners=(${(u)${(L)${(f)"$( { gh config get -h github.com user; gh api user/orgs --jq '.[].login'; } 2>/dev/null || true)"}}})
-fi
-if (( ${#owners} )) || [[ ! -e $trust ]]; then
-    paths=('"~/dev/.mise.toml"')
-    for owner in $owners; do paths+=("\"~/dev/$owner\""); done
+# GitHub login it trusts that file alone; if a lookup fails, the file stays
+# as it was.
+mise_trust() {   # mise_trust [owner...]
+    local file=${XDG_CONFIG_HOME:-$HOME/.config}/mise/conf.d/trust.toml owner
+    local -a paths=('"~/dev/.mise.toml"')
+    (( $# )) || [[ ! -e $file ]] || return 0
+    for owner; do paths+=("\"~/dev/$owner\""); done
+    mkdir -p "${file:h}"
     # Built whole, then written: a failure can't leave a half-written file.
-    content="# Written by bootstrap: the shared ~/dev config, and repos owned by you
+    print -r -- "# Written by bootstrap: the shared ~/dev config, and repos owned by you
 # or your GitHub orgs. Anyone else's clone asks before mise loads its config.
 [settings]
-trusted_config_paths = [${(j:, :)paths}]"
-    mkdir -p "${trust:h}"
-    print -r -- "$content" > "$trust"
-fi
+trusted_config_paths = [${(j:, :)paths}]" > "$file"
+}
+
+github_owners() {   # you and your orgs, lowercase, one per line; fails if either lookup does
+    local login orgs
+    login=$(gh config get -h github.com user 2>/dev/null) && [[ -n $login ]] || return 1
+    orgs=$(gh api user/orgs --jq '.[].login' 2>/dev/null) || return 1
+    print -rl -- ${(u)${(L)${(f)"$(print -rl -- $login $orgs)"}}}
+}
 
 # Clone your own repos (no forks, no archived) into ~/dev/<owner> as
 # projects, with the same command as cloneproject. One bad repo is reported,
 # not fatal, and no clone moves the shell (DOTFILES_FOLLOW, lib/follow.zsh).
-if gh auth status &>/dev/null; then
+clone_repos() {
+    local self repo
+    local -a failed=()
     self=$(git -C "$dotfiles" remote get-url origin 2>/dev/null || true)
-    failed=()
     for repo in ${(f)"$(gh repo list --source --no-archived --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner')"}; do
         [[ ${self%.git} == *[:/]$repo ]] && continue   # already at ~/.dotfiles
         [[ -d $PROJECT_DIR/${${repo%%/*}:l}/${repo#*/} ]] && continue   # ~/dev/<owner>/<repo>
@@ -115,7 +124,20 @@ if gh auth status &>/dev/null; then
         DOTFILES_FOLLOW=/dev/null mise -C / run project:clone "$repo" || failed+=("$repo")
     done
     if (( ${#failed} )); then echo "Could not clone: ${failed[*]}"; fi
+}
+
+if gh auth status &>/dev/null; then
+    github_host_keys   # before the first ssh to GitHub: the key check, the clones
+    enclave_keys
+    allowed_signers
+    if owners=(${(f)"$(github_owners)"}); then
+        mise_trust $owners
+    else
+        echo "Couldn't look up your GitHub orgs; mise's trust list stays as it was"
+    fi
+    clone_repos
 else
+    mise_trust
     echo "would clone your GitHub repos into $PROJECT_DIR"
 fi
 
