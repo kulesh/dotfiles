@@ -29,16 +29,6 @@ repo_copy() {
     echo "$repo"
 }
 
-stowed_by_stow() {   # $1 = repo; linked the way the Stow-based bootstrap did it
-    command -v stow >/dev/null || skip "stow not installed"
-    mkdir -p "$TARGET/dev" "$TARGET/.local/bin"
-    mkdir -p -m 700 "$TARGET/.ssh"
-    local package
-    for package in bin claude dev ghostty git mise nvim pi sandbox ssh starship yazi zsh; do
-        stow --dir="$1" --target="$TARGET" "$package"
-    done
-}
-
 mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 
 @test "previews with a terminal attached, without stopping to ask" {
@@ -419,7 +409,7 @@ enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged 
     [[ "$output" != *"create-ctk-identity"* && "$output" != *"ssh-keygen -t"* ]]
 }
 
-@test "the stowed git config signs commits that verify against allowed_signers" {
+@test "the linked git config signs commits that verify against allowed_signers" {
     command -v ssh-keygen >/dev/null || skip "ssh-keygen not installed"
     mkdir -p -m 700 "$TARGET/.ssh" "$TARGET/.config/git"
     # A file key stands in for the enclave key: git signs with the .pub.
@@ -434,7 +424,7 @@ enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged 
     [[ "$output" == *"Good \"git\" signature for $email"* ]]
 }
 
-@test "the stowed git config pushes HTTPS GitHub clones over SSH, and fetches anonymously" {
+@test "the linked git config pushes HTTPS GitHub clones over SSH, and fetches anonymously" {
     local repo=$(scratch)
     git -C "$repo" init -q
     git -C "$repo" remote add origin https://github.com/kulesh/dotfiles.git
@@ -449,128 +439,16 @@ enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged 
     done
 }
 
-@test "migrates a home linked by GNU Stow, writing nothing into the repo" {
+# Keys would live inside the checkout; moving them is a decision for a person.
+@test "refuses to run when ~/.ssh is a link into the repo, and changes nothing" {
     local repo=$(repo_copy)
-    stowed_by_stow "$repo"
-    [ -L "$TARGET/.config/nvim" ]
-    local before=$(git -C "$repo" status --porcelain)
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"unstow"* ]]
-    [ "$(readlink "$TARGET/.zshrc")" = "$repo/zsh/.zshrc" ]
-    [ ! -L "$TARGET/.claude" ]
-    [ ! -L "$TARGET/.ssh/config" ]
-    grep -q "Include ~/.config/colima/ssh_config" "$TARGET/.ssh/config"
-    [ "$(git -C "$repo" status --porcelain)" = "$before" ]
-}
-
-# Stow linked ~/.claude to the repo as a whole, so Claude Code wrote its
-# state (history, todos, sessions) into the checkout, where git ignores it.
-claude_state_in_repo() {   # $1 = repo
-    mkdir -p "$1/claude/.claude/projects/app"
-    echo history > "$1/claude/.claude/projects/app/session.jsonl"
-}
-
-@test "agent state Stow left in the checkout goes back home as real files" {
-    local repo=$(repo_copy)
-    claude_state_in_repo "$repo"
-    ln -s "$repo" "$TARGET/.dotfiles"   # this checkout is ~/.dotfiles
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    local state=$TARGET/.claude/projects/app/session.jsonl
-    [ -f "$state" ] && [ ! -L "$state" ]
-    [ "$(cat "$state")" = "history" ]
-    [ ! -e "$repo/claude/.claude/projects" ]
-    [ -L "$TARGET/.claude/settings.json" ]
-    # Whole directories move at once, each named as it goes.
-    [[ "$output" == *"~/.claude/projects (1 file)"* ]]
-}
-
-@test "agent state already linked file by file goes back home too" {
-    local repo=$(repo_copy)
-    claude_state_in_repo "$repo"
-    ln -s "$repo" "$TARGET/.dotfiles"
-    mkdir -p "$TARGET/.claude/projects/app"
-    ln -s "$repo/claude/.claude/projects/app/session.jsonl" "$TARGET/.claude/projects/app/session.jsonl"
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    local state=$TARGET/.claude/projects/app/session.jsonl
-    [ -f "$state" ] && [ ! -L "$state" ]
-    [ "$(cat "$state")" = "history" ]
-}
-
-@test "agent state merges into a home directory that has real files of its own, keeping them" {
-    local repo=$(repo_copy)
-    claude_state_in_repo "$repo"
-    ln -s "$repo" "$TARGET/.dotfiles"
-    mkdir -p "$TARGET/.claude/projects/app"
-    echo newer > "$TARGET/.claude/projects/app/today.jsonl"
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    [ "$(cat "$TARGET/.claude/projects/app/today.jsonl")" = "newer" ]
-    [ "$(cat "$TARGET/.claude/projects/app/session.jsonl")" = "history" ]
-    [ ! -e "$repo/claude/.claude/projects" ]
-}
-
-@test "a file already home with the same content leaves no duplicate; a different one is kept beside it" {
-    local repo=$(repo_copy)
-    mkdir -p "$repo/claude/.claude/plugins/p" "$TARGET/.claude/plugins/p"
-    echo same > "$repo/claude/.claude/plugins/p/plugin.json"
-    echo same > "$TARGET/.claude/plugins/p/plugin.json"
-    echo older > "$repo/claude/.claude/plugins/p/notes.md"
-    echo newer > "$TARGET/.claude/plugins/p/notes.md"
-    ln -s "$repo" "$TARGET/.dotfiles"
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    [ ! -e "$TARGET/.claude/plugins/p/plugin.json.from-dotfiles" ]
-    [ "$(cat "$TARGET/.claude/plugins/p/notes.md")" = "newer" ]
-    [ "$(cat "$TARGET/.claude/plugins/p/notes.md.from-dotfiles")" = "older" ]
-    [ ! -e "$repo/claude/.claude/plugins" ]
-}
-
-@test "symlinks in agent state go home too" {
-    local repo=$(repo_copy)
-    mkdir -p "$repo/claude/.claude/debug"
-    echo log > "$repo/claude/.claude/debug/run.txt"
-    ln -s run.txt "$repo/claude/.claude/debug/latest"
-    mkdir -p "$TARGET/.claude/debug" && echo mine > "$TARGET/.claude/debug/other.txt"
-    ln -s "$repo" "$TARGET/.dotfiles"
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    [ -L "$TARGET/.claude/debug/latest" ]
-    [ ! -e "$repo/claude/.claude/debug" ]
-    [[ "$output" == *"~/.claude/debug (2 files)"* ]]
-}
-
-@test "a preview never moves agent state out of a checkout that isn't ~/.dotfiles" {
-    local repo=$(repo_copy)
-    claude_state_in_repo "$repo"
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    [ -f "$repo/claude/.claude/projects/app/session.jsonl" ]
-}
-
-@test "a migrated home is left alone by the Stow cleanup" {
-    local repo=$(repo_copy)
-    stowed_by_stow "$repo"
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    preview "$repo"
-    [ "$status" -eq 0 ]
-    [[ "$output" != *"unstow"* ]]
-}
-
-@test "refuses to migrate when ~/.ssh is a link into the repo, and changes nothing" {
-    local repo=$(repo_copy)
-    stowed_by_stow "$repo"
-    rm -r "$TARGET/.ssh"
     ln -s "$repo/ssh/.ssh" "$TARGET/.ssh"
     local before=$(git -C "$repo" status --porcelain)
     preview "$repo"
     [ "$status" -ne 0 ]
     [[ "$output" == *"SSH keys"* ]]
     [ -L "$TARGET/.ssh" ]
-    [ -L "$TARGET/.zshrc" ]
+    [ ! -e "$TARGET/.zshrc" ]
     [ -f "$repo/ssh/.ssh/config" ]
     [ "$(git -C "$repo" status --porcelain)" = "$before" ]
 }

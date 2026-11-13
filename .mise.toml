@@ -139,19 +139,12 @@ root = "nvim"
 # Before mise links anything:
 # 1. Stop if ~/.ssh or ~/dev resolves into the repo: keys or projects would be
 #    inside the checkout, and moving them is a decision for a person.
-# 2. Remove links GNU Stow made on Macs set up before ADR-010. Stow's dry run
-#    lists only its own links, so this is silent once a Mac has moved over.
-# 3. Move agent state back home. Stow linked ~/.claude to the repo as a whole,
-#    so Claude Code wrote its state (history, todos, sessions) into the
-#    checkout, where git ignores it; linking it would keep it there, one link
-#    per file. What git ignores under claude/ goes to ~/.claude as real
-#    files, a directory at a time; a real file already there stays, and a
-#    different copy from the checkout sits beside it as <name>.from-dotfiles
-#    (an identical one just goes). Only for the checkout
-#    at ~/.dotfiles: a preview's scratch home takes nothing out.
-# 4. Make way for the linked ~/.config/homebrew/trust.json where brew trust
-#    wrote a real one, keeping it aside if it trusted anything more.
-# 5. Create ~/.ssh, private, for the config block below and for keys.
+# 2. Make way for the linked ~/.config/homebrew/trust.json where brew trust
+#    wrote a real one (on a new Mac, packages come before links), keeping it
+#    aside if it trusted anything more.
+# 3. Create ~/.ssh, private, for the config block below and for keys.
+# (Moving Macs off GNU Stow, and Claude Code's state out of the checkout,
+# happened here until every Mac had done it; see ADR-010.)
 [bootstrap.hooks.pre-dotfiles]
 description = "Prepare the home for linking"
 run = """
@@ -164,48 +157,6 @@ fi
 if inside_repo dev dev/dev; then
     echo "~/dev is a link into the repo, so your projects live inside the checkout. Replace it with a real ~/dev, move the projects there, and run bootstrap again." >&2
     exit 1
-fi
-if command -v stow >/dev/null; then
-    set --
-    for package in */; do set -- "$@" "${package%/}"; done
-    if stow --simulate --verbose --delete --dir=. --target="$HOME" "$@" 2>&1 | grep -q '^UNLINK:'; then
-        echo "unstow: removing links made by GNU Stow"
-        stow --delete --dir=. --target="$HOME" "$@"
-    fi
-fi
-if [ "$(cd -P "$HOME/.dotfiles" 2>/dev/null && pwd)" = "$(pwd -P)" ]; then
-    # Home it: a link or a gap is replaced; a real file stays, and the
-    # checkout's copy goes, or sits beside it if it differs.
-    home_it() {   # home_it <file in the checkout> <path in the home>
-        mkdir -p "$(dirname "$2")"
-        if [ -L "$2" ] || [ ! -e "$2" ]; then rm -f "$2"; mv "$1" "$2"
-        elif cmp -s "$1" "$2"; then rm -f "$1"
-        else mv "$1" "$2.from-dotfiles"; fi
-    }
-    # A whole directory at a time, in one rename, unless the home already has
-    # real files of its own there; then file by file, keeping them.
-    git ls-files --others --ignored --exclude-standard --directory -- claude | while IFS= read -r entry; do
-        entry=${entry%/}
-        target=$HOME/${entry#claude/}
-        count=$(find "$entry" ! -type d | wc -l | tr -d ' ')
-        [ "$count" = 1 ] && files="1 file" || files="$count files"
-        echo "Claude Code state back home: ~/${entry#claude/} ($files)"
-        if [ ! -d "$entry" ]; then home_it "$entry" "$target"; continue; fi
-        # Only links and directories (an earlier run's links): nothing to lose.
-        if [ -d "$target" ] && [ ! -L "$target" ] && [ -z "$(find "$target" ! -type d ! -type l -print -quit)" ]; then
-            rm -rf "$target"
-        fi
-        if [ -L "$target" ] || [ ! -e "$target" ]; then
-            mkdir -p "$(dirname "$target")"
-            rm -f "$target"
-            mv "$entry" "$target"
-        else
-            (cd "$entry" && find . ! -type d) | while IFS= read -r file; do
-                home_it "$entry/${file#./}" "$target/${file#./}"
-            done
-            find "$entry" -depth -type d -empty -delete
-        fi
-    done
 fi
 # brew trust run before the link existed leaves a real trust.json, which
 # would stop the linking: it gives way when the repo's copy covers it (an
