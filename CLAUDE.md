@@ -52,7 +52,6 @@ rmproject [name] [--delete]       # Archive (default) or delete; no name opens a
 lsprojects [--type=cloned|created] [--tools]
 list_project_types                # Available templates
 cdproject                         # cd to current mise project root
-mise -C / run project:migrate     # once: ~/dev/<repo> → ~/dev/<org>/<repo> (--dry-run first)
 ```
 
 Projects are `~/dev/<org>/<repo>`; an org directory is a plain folder, and a `mise.toml` you put there (tools, `[env]`) reaches every repo in it. See ADR-013.

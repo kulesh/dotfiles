@@ -35,30 +35,9 @@ pick_project() {   # pick_project <usage>
 # A project is a git repo, or a directory with a mise config of its own.
 is_project() { [[ -e $1/.git || -e $1/.mise.toml || -e $1/.tool-versions ]]; }
 
-# An org or repo name: one path segment, never hidden (.archive and .migrating
-# are ours), so a name can't reach outside ~/dev or into its own parts.
+# An org or repo name: one path segment, never hidden (.archive is ours),
+# so a name can't reach outside ~/dev or into its own parts.
 valid_name() { [[ $1 =~ '^[A-Za-z0-9_][A-Za-z0-9_.-]*$' ]]; }
-
-# An org is a directory of projects. Whatever config it holds, such as
-# org-wide [env] or [tools], doesn't make it a project; a repo whose packages
-# have configs is still one project. A clone inside it (a .git directory, not
-# a submodule's .git file) makes it an org even when it's a repo of its own.
-is_org() {
-    local child clones=($1/*/.git(N/))
-    (( $#clones )) && return 0
-    [[ ! -e $1/.git ]] || return 1
-    for child in $1/*(N/); do is_project "$child" && return 0; done
-    return 1
-}
-
-# Projects still in the flat layout, ~/dev/<repo>, from before ADR-013.
-flat_projects() {
-    local dir
-    for dir in $projects_dir/*(N/); do
-        is_project "$dir" && ! is_org "$dir" && print -r -- "$dir"
-    done
-    return 0
-}
 
 # The GitHub login gh uses here, in lowercase: the org for projects you
 # create. gh keeps it in its own config, so this works offline.

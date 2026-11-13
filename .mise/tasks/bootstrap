@@ -73,33 +73,6 @@ if gh auth status &>/dev/null && [[ -f $key.pub ]]; then
     fi
 fi
 
-# Projects left in the flat layout, ~/dev/<repo>, from before ADR-013: the
-# same rule as project:migrate uses, so the two never disagree.
-source "$dotfiles/mise/.config/mise/tasks/project/_lib.zsh"
-flat=(${(f)"$(flat_projects)"})
-if (( ${#flat} )); then
-    echo "${#flat} project(s) in ~/dev/<repo> predate ~/dev/<org>/<repo>. Move them: mise -C / run project:migrate --dry-run"
-fi
-
-# Before ADR-013 dropped monorepo mode, the project commands wrote this
-# ~/dev/<org>/mise.toml into every org. Remove it while it's unedited; one
-# you've changed is yours. (Once every Mac has run this, it can go.)
-generated_org_config() {   # generated_org_config <org>
-    cat <<EOF
-# The $1 projects, one repo each, as a mise monorepo:
-#   mise run '//...:test'     runs test in every $1 repo
-#   mise run //<repo>:test    runs it in one, from anywhere in $1
-# Tools and [env] here reach every $1 repo.
-monorepo_root = true
-
-[monorepo]
-config_roots = ["*"]
-EOF
-}
-for config in $PROJECT_DIR/*/mise.toml(N.); do
-    if [[ "$(<$config)" == "$(generated_org_config ${config:h:t})" ]]; then run rm "$config"; fi
-done
-
 # GitHub's host keys as GitHub publishes them, before the first ssh to it
 # (the clones below, git push): ssh's accept-new would otherwise trust
 # whatever answered first as github.com on a new Mac.
@@ -148,7 +121,6 @@ if gh auth status &>/dev/null; then
     for repo in ${(f)"$(gh repo list --source --no-archived --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner')"}; do
         [[ ${self%.git} == *[:/]$repo ]] && continue   # already at ~/.dotfiles
         [[ -d $PROJECT_DIR/${${repo%%/*}:l}/${repo#*/} ]] && continue   # ~/dev/<owner>/<repo>
-        (( ${flat[(Ie)$PROJECT_DIR/${repo#*/}]} )) && continue   # not migrated yet
         if previewing; then echo "would clone $repo"; continue; fi
         DOTFILES_FOLLOW=/dev/null mise -C / run project:clone "$repo" || failed+=("$repo")
     done
