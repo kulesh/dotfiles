@@ -59,6 +59,7 @@ if gh auth status &>/dev/null; then
         source "$dotfiles/lib/enclave.zsh"
         enclave_key auth
         enclave_key sign
+        retire_file_key
     else
         echo "No Secure Enclave keys: sc_auth needs macOS 26 or later, so git can't sign commits here."
     fi

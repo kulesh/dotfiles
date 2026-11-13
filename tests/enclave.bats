@@ -216,3 +216,77 @@ old_pair() {   # old_pair <date> [valid]
     grep -q "^OTHER " "$HOME/enclave"
     grep -q "AAAAlaptop" "$HOME/github"
 }
+
+# =============================================================================
+# Retiring the file key the Mac used before (~/.ssh/id_ed25519)
+# =============================================================================
+
+in_terminal() {   # in_terminal <answer> <zsh code>: run it at a terminal, typing the answer
+    printf '%s\n' "source '$DOTFILES_ROOT/lib/enclave.zsh'" 'run() { "$@"; }' 'previewing() { false; }' "$2" > "$HOME/script.zsh"
+    if script --version >/dev/null 2>&1; then
+        run sh -c "printf '%s\n' '$1' | script -qec 'zsh $HOME/script.zsh' /dev/null"
+    else
+        run sh -c "printf '%s\n' '$1' | script -q /dev/null zsh $HOME/script.zsh"
+    fi
+}
+
+file_key() {   # the key bootstrap made before ADR-015, on GitHub for both jobs
+    echo private > "$HOME/.ssh/id_ed25519"
+    echo "ssh-ed25519 AAAAfile kulesh@orion" > "$HOME/.ssh/id_ed25519.pub"
+    echo "ssh-ed25519 AAAAfile" >> "$HOME/agent"
+    printf '7\tauthentication\tssh-ed25519 AAAAfile\torion\n' >> "$HOME/github"
+    printf '8\tsigning\tssh-ed25519 AAAAfile\torion signing\n' >> "$HOME/github"
+}
+
+@test "a yes retires the old file key: it leaves GitHub's sign-in keys and this Mac, and stays a signing key" {
+    command -v script >/dev/null || skip "script not installed"
+    enclave 'enclave_key auth && enclave_key sign'
+    file_key
+    in_terminal y 'retire_file_key'
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"servers"* ]]   # the question says what else stops working
+    [ ! -e "$HOME/.ssh/id_ed25519" ] && [ ! -e "$HOME/.ssh/id_ed25519.pub" ]
+    ! grep -q $'\tauthentication\tssh-ed25519 AAAAfile' "$HOME/github" || false
+    grep -q $'\tsigning\tssh-ed25519 AAAAfile' "$HOME/github"
+    ! grep -q "AAAAfile" "$HOME/agent" || false
+}
+
+@test "a no keeps the old file key, and the next run asks again" {
+    command -v script >/dev/null || skip "script not installed"
+    enclave 'enclave_key auth && enclave_key sign'
+    file_key
+    in_terminal n 'retire_file_key'
+    [ "$status" -eq 0 ]
+    [ -f "$HOME/.ssh/id_ed25519" ]
+    grep -q $'\tauthentication\tssh-ed25519 AAAAfile' "$HOME/github"
+    in_terminal y 'retire_file_key'
+    [ ! -e "$HOME/.ssh/id_ed25519" ]
+}
+
+@test "without a terminal the old file key is kept, and nothing asks" {
+    enclave 'enclave_key auth && enclave_key sign'
+    file_key
+    enclave 'retire_file_key' </dev/null
+    [ "$status" -eq 0 ]
+    [ -f "$HOME/.ssh/id_ed25519" ]
+    grep -q $'\tauthentication\tssh-ed25519 AAAAfile' "$HOME/github"
+}
+
+@test "the old file key stays while the enclave key can't sign in to GitHub" {
+    command -v script >/dev/null || skip "script not installed"
+    enclave 'enclave_key auth && enclave_key sign'
+    file_key
+    stub ssh 'exit 255'
+    in_terminal y 'retire_file_key'
+    [ "$status" -eq 0 ]
+    [ -f "$HOME/.ssh/id_ed25519" ]
+    [[ "$output" != *"Retire"* ]]
+}
+
+@test "a Mac without the old file key has nothing to retire" {
+    enclave 'enclave_key auth && enclave_key sign'
+    : > "$HOME/calls"
+    enclave 'retire_file_key'
+    [ "$status" -eq 0 ]
+    [ ! -s "$HOME/calls" ]
+}

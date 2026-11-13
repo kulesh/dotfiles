@@ -123,3 +123,36 @@ enclave_key() {   # enclave_key <role: auth|sign>
     fi
     for hash in $stale; do run sc_auth delete-ctk-identity -h "$hash"; done
 }
+
+# The file key this Mac used before (~/.ssh/id_ed25519) could be copied off
+# it; once the enclave auth key signs in, ask to retire it. On yes, its
+# sign-in entry leaves GitHub, its signing entry stays so the commits it
+# signed stay Verified, and the files go. Asked again on every run until
+# answered yes; without a terminal, never asked.
+retire_file_key() {
+    local file=$HOME/.ssh/id_ed25519 key keys id k title signed_in reply
+    [[ -f $file.pub ]] || return 0
+    if previewing; then print -r -- "would ask to retire $file"; return 0; fi
+    [[ -t 0 ]] || return 0
+    signed_in=$(ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityFile="$HOME/.ssh/id_enclave_auth" \
+        -o SecurityKeyProvider="$enclave_provider" -T git@github.com 2>&1) || true
+    [[ $signed_in == *"successfully authenticated"* ]] || return 0
+
+    print -r -- "This Mac signs in to GitHub and signs commits with its Secure Enclave keys now."
+    print -r -- "Retiring $file removes it from GitHub's sign-in keys and deletes it here; servers or"
+    print -r -- "other services that accept it stop accepting it. Commits it signed stay Verified."
+    read -r "reply?Retire it? [y/N] " || reply=
+    if [[ $reply != [yY]* ]]; then
+        print -r -- "Kept $file; bootstrap asks again next time."
+        return 0
+    fi
+
+    key=$(cut -d' ' -f1,2 "$file.pub")
+    keys=$(gh api user/keys --jq '.[] | [.id, .key, .title] | @tsv') || return 1
+    while IFS=$'\t' read -r id k title; do
+        [[ -n $id && $k == $key ]] && run gh ssh-key delete "$id" --yes
+    done <<< "$keys"
+    run ssh-add -d "$file" 2>/dev/null || true
+    run rm -f -- "$file" "$file.pub"
+    print -r -- "Retired $file"
+}

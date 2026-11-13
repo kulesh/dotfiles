@@ -11,21 +11,9 @@ After ADR-004, a fresh Mac had packages, dotfiles and tools, but still needed ma
 
 The bootstrap task ends by authenticating with GitHub and cloning the user's repos into `~/dev` as managed projects.
 
-### GitHub identity
+### GitHub identity and commit signing
 
-| State | Action |
-|-------|--------|
-| Not logged in to gh | `gh auth login --git-protocol ssh --web`: generates `~/.ssh/id_ed25519`, uploads it, configures git for SSH |
-| Logged in, no key | `ssh-keygen`, then `gh ssh-key add` |
-| Logged in, key present | Nothing |
-
-### Commit signing
-
-Every commit and tag is signed with the same SSH key (`gpg.format = ssh` in `.gitconfig`). Per machine, bootstrap:
-
-- registers the key on GitHub as a *signing* key (separate from authentication; needs the `admin:ssh_signing_key` scope, requested at login or added with `gh auth refresh`), so GitHub shows commits as Verified
-- writes `~/.config/git/allowed_signers` from all of the account's signing keys, so `git log --show-signature` verifies commits from every machine
-- on macOS, stores the passphrase in the Keychain and loads the key into the agent. `ssh-keygen` signs via the agent and ignores `UseKeychain`; `.zshrc` reloads the key after a reboot so non-interactive tools (editors, coding agents, sandboxed shells) can sign
+Superseded by [ADR-015](015-github-keys-in-the-secure-enclave.md): `gh auth login` makes no key, and each Mac's auth and signing keys are made in the Secure Enclave. Bootstrap still writes `~/.config/git/allowed_signers` from all of the account's signing keys, so `git log --show-signature` verifies commits from every machine.
 
 `StrictHostKeyChecking accept-new` for github.com means the first clone doesn't stop to confirm GitHub's host key; a changed key is still rejected.
 

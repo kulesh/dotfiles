@@ -66,6 +66,7 @@ Projects are `~/dev/<org>/<repo>`; an org directory is a plain folder, and a `mi
 ├── .mise/tasks/preview       # Link into a scratch home; print machine-level steps
 ├── .mise/tasks/sync          # dsync: reconcile this Mac with GitHub
 ├── include/shared_vars.sh    # Shared configuration variables
+├── lib/enclave.zsh           # GitHub keys in the Secure Enclave (ADR-015)
 ├── lib/follow.zsh            # Shell follows a command to a new directory
 ├── lib/reload.zsh            # Shell reloads when a file it loaded changes
 ├── lib/sandbox.sh            # Per-project macOS sandbox (chpwd)
@@ -87,7 +88,7 @@ Projects are `~/dev/<org>/<repo>`; an org directory is a plain folder, and a `mi
 | File | Purpose |
 |------|---------|
 | `.mise.toml` | Bootstrap config: `[bootstrap.packages]`, dotfile groups, pre-dotfiles hook, `[bootstrap.user]`, taps |
-| `.mise/tasks/bootstrap` | GitHub login and keys, signing, Claude Code, clones, missing secrets |
+| `.mise/tasks/bootstrap` | GitHub login, Secure Enclave keys (`lib/enclave.zsh`), Claude Code, clones, missing secrets |
 | `mise/.config/mise/config.toml` | Runtime config: `[settings]`, `[tools]` (linked) |
 | `include/shared_vars.sh` | `PROJECT_DIR` (`~/dev`), exported: where bootstrap clones and the project commands look |
 | `mise/.config/mise/tasks/project/` | Project commands as tasks; `_lib.zsh` holds shared helpers |

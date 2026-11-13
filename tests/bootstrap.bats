@@ -348,12 +348,15 @@ enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged 
     chmod +x "$STUBS/sc_auth" "$STUBS/gh"
 }
 
-@test "previews making the auth key and the signing key in the Secure Enclave" {
+@test "previews making the auth key and the signing key in the Secure Enclave, and retiring the old key" {
     enclave_stubs
+    mkdir -p -m 700 "$TARGET/.ssh"
+    echo "ssh-ed25519 AAAAfile" > "$TARGET/.ssh/id_ed25519.pub"
     preview
     [ "$status" -eq 0 ]
     [[ "$output" == *"would run: sc_auth create-ctk-identity -l ssh-auth-"*" -k p-256-ne -t none"* ]]
     [[ "$output" == *"would run: sc_auth create-ctk-identity -l ssh-sign-"*" -k p-256-ne -t none"* ]]
+    [[ "$output" == *"would ask to retire $TARGET/.ssh/id_ed25519"* ]]
     [[ "$output" == *"would write $TARGET/.config/git/allowed_signers"* ]]
     [[ "$output" != *"ssh-keygen -t ed25519"* ]]
 }
