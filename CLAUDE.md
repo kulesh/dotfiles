@@ -90,7 +90,7 @@ Projects are `~/dev/<org>/<repo>`; an org directory is a plain folder, and a `mi
 | `.mise.toml` | Bootstrap config: `[bootstrap.packages]`, dotfile groups, pre-dotfiles hook, `[bootstrap.user]`, taps |
 | `.mise/tasks/bootstrap` | GitHub login and keys, signing, Claude Code, clones, missing secrets |
 | `mise/.config/mise/config.toml` | Runtime config: `[settings]`, `[tools]` (linked) |
-| `include/shared_vars.sh` | `PROJECT_DIR` (`~/dev`) |
+| `include/shared_vars.sh` | `PROJECT_DIR` (`~/dev`), exported: where bootstrap clones and the project commands look |
 | `mise/.config/mise/tasks/project/` | Project commands as tasks; `_lib.zsh` holds shared helpers |
 | `mise/.config/mise/config.toml` `[shell_alias]` | Short names for the tasks (`mkproject`, `workon`, …), plus `mup` and `dsync` |
 

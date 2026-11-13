@@ -8,7 +8,7 @@
 # lives under its owner, a created one under your GitHub login. An org
 # directory is a plain folder; a mise.toml you put there reaches all its repos.
 
-projects_dir=$HOME/dev
+projects_dir=${PROJECT_DIR:-$HOME/dev}   # include/shared_vars.sh, exported by .zshenv
 templates_dir=${${(%):-%x}:A:h:h}/mkproject
 
 typeset -gA c=(cyan $'\e[36m' green $'\e[32m' yellow $'\e[33m' magenta $'\e[35m'

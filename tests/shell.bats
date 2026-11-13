@@ -91,3 +91,10 @@ interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
     [[ "$output" == *"_dotfiles_follow: function"* ]]
     [[ "$output" == *"_dotfiles_reload_if_changed: function"* ]]
 }
+
+# The project commands are mise tasks, separate processes: they see where
+# projects live only if the shell exports it.
+@test "the shell exports where projects live to the commands it runs" {
+    interactive 'printenv PROJECT_DIR'
+    [ "${lines[-1]}" = "$HOME/dev" ]
+}

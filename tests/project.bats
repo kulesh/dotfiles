@@ -10,7 +10,7 @@ load test_helper
 setup() {
     command -v mise >/dev/null || skip "mise not installed"
     export HOME=$(scratch)
-    export DEV=$HOME/dev
+    export DEV=$HOME/dev PROJECT_DIR=$HOME/dev
     mkdir -p "$DEV"
     # mise reads the repo's global config and tasks directly.
     export MISE_CONFIG_DIR="$DOTFILES_ROOT/mise/.config/mise"
@@ -103,6 +103,19 @@ completions() {   # the candidates zsh would offer for a command line
         [ "$status" -ne 0 ]
     done
     [ ! -e "$HOME/escape" ] && [ ! -e "$HOME/mise.toml" ] && [ ! -e "$DEV/.hidden" ]
+}
+
+# PROJECT_DIR (include/shared_vars.sh, exported by .zshenv) is the one
+# setting for where projects live; bootstrap clones there too.
+@test "projects live wherever PROJECT_DIR points" {
+    export PROJECT_DIR=$HOME/code MISE_TRUSTED_CONFIG_PATHS=$HOME/code
+    mkdir -p "$PROJECT_DIR"
+    project new demo
+    [ "$status" -eq 0 ]
+    [ -d "$PROJECT_DIR/kulesh/demo/.git" ]
+    [ ! -e "$DEV/kulesh" ]
+    project list
+    [[ "$output" == *"in $PROJECT_DIR"* && "$output" == *demo* ]]
 }
 
 @test "mkproject without a GitHub login asks for the org instead of guessing" {
