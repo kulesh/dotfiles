@@ -346,6 +346,27 @@ STUB
     [ "$(grep -c '^github.com ssh-ed25519' "$TARGET/.ssh/known_hosts")" -eq 1 ]
 }
 
+# brew trust run on a Mac before the link existed leaves a real trust.json,
+# which would stop the linking.
+@test "a trust.json brew wrote with nothing extra gives way to the link" {
+    mkdir -p "$TARGET/.config/homebrew"
+    printf '{\n  "trustedformulae": ["kulesh/tap/tc", "jnsahaj/lumen/lumen"]\n}\n' > "$TARGET/.config/homebrew/trust.json"
+    preview
+    [ "$status" -eq 0 ]
+    [ -L "$TARGET/.config/homebrew/trust.json" ]
+    [ ! -e "$TARGET/.config/homebrew/trust.json.before-dotfiles" ]
+}
+
+@test "a trust.json with entries of its own is kept aside, and they're named" {
+    mkdir -p "$TARGET/.config/homebrew"
+    printf '{\n  "trustedtaps": ["acme/tools"]\n}\n' > "$TARGET/.config/homebrew/trust.json"
+    preview
+    [ "$status" -eq 0 ]
+    [ -L "$TARGET/.config/homebrew/trust.json" ]
+    grep -q acme/tools "$TARGET/.config/homebrew/trust.json.before-dotfiles"
+    [[ "$output" == *"acme/tools"* ]]
+}
+
 @test "creates ~/.ssh as a private real directory, with our settings in a real config file" {
     preview
     [ "$status" -eq 0 ]

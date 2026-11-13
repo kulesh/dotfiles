@@ -149,7 +149,9 @@ root = "nvim"
 #    different copy from the checkout sits beside it as <name>.from-dotfiles
 #    (an identical one just goes). Only for the checkout
 #    at ~/.dotfiles: a preview's scratch home takes nothing out.
-# 4. Create ~/.ssh, private, for the config block below and for keys.
+# 4. Make way for the linked ~/.config/homebrew/trust.json where brew trust
+#    wrote a real one, keeping it aside if it trusted anything more.
+# 5. Create ~/.ssh, private, for the config block below and for keys.
 [bootstrap.hooks.pre-dotfiles]
 description = "Prepare the home for linking"
 run = """
@@ -204,6 +206,24 @@ if [ "$(cd -P "$HOME/.dotfiles" 2>/dev/null && pwd)" = "$(pwd -P)" ]; then
             find "$entry" -depth -type d -empty -delete
         fi
     done
+fi
+# brew trust run before the link existed leaves a real trust.json, which
+# would stop the linking: it gives way when the repo's copy covers it (an
+# entry, or its whole tap), else it's kept aside and its extras are named.
+trust=$HOME/.config/homebrew/trust.json
+if [ -f "$trust" ] && [ ! -L "$trust" ]; then
+    extra=""
+    for entry in $(grep -o '"[^"]*/[^"]*"' "$trust" | tr -d '"'); do
+        tap=$(echo "$entry" | cut -d/ -f1-2)
+        grep -q "\"$entry\"" homebrew/.config/homebrew/trust.json ||
+            grep -q "\"$tap\"" homebrew/.config/homebrew/trust.json || extra="$extra $entry"
+    done
+    if [ -n "$extra" ]; then
+        mv "$trust" "$trust.before-dotfiles"
+        echo "~/.config/homebrew/trust.json trusted more than the repo's copy:$extra. Kept as trust.json.before-dotfiles; add what you need to homebrew/.config/homebrew/trust.json."
+    else
+        rm "$trust"
+    fi
 fi
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"
