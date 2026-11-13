@@ -337,6 +337,20 @@ STUB
     [[ "$output" == *"would run: gh ssh-key add $TARGET/.ssh/id_ed25519.pub"* ]]
 }
 
+# A recording of today's traffic is what a quantum computer could break
+# later; GitHub negotiates hybrid post-quantum key exchange, so nothing else
+# is allowed, and no one in the path can force a classical one (ADR-015).
+@test "ssh to GitHub allows only post-quantum key exchange" {
+    preview
+    [ "$status" -eq 0 ]
+    local pq="mlkem768x25519-sha256,sntrup761x25519-sha512@openssh.com"
+    sed -n '/^Host github.com/,/^Host /p' "$TARGET/.ssh/config" | grep -qx "  KexAlgorithms $pq"
+    # What ssh itself makes of it, where this ssh knows ML-KEM (macOS does).
+    if ssh -Q kex | grep -qx mlkem768x25519-sha256; then
+        [ "$(HOME="$TARGET" ssh -G -F "$TARGET/.ssh/config" github.com | awk '$1 == "kexalgorithms" { print $2 }')" = "$pq" ]
+    fi
+}
+
 @test "ssh config has no hardcoded home directory" {
     ! grep -q '/Users/' "$DOTFILES_ROOT/ssh/.ssh/config"
 }
