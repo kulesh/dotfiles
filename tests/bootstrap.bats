@@ -354,8 +354,8 @@ enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged 
     echo "ssh-ed25519 AAAAfile" > "$TARGET/.ssh/id_ed25519.pub"
     preview
     [ "$status" -eq 0 ]
-    [[ "$output" == *"would run: sc_auth create-ctk-identity -l ssh-auth-"*" -k p-256-ne -t none"* ]]
-    [[ "$output" == *"would run: sc_auth create-ctk-identity -l ssh-sign-"*" -k p-256-ne -t none"* ]]
+    [[ "$output" == *"would make sure this Mac has a current auth key in the Secure Enclave"* ]]
+    [[ "$output" == *"would make sure this Mac has a current sign key in the Secure Enclave"* ]]
     [[ "$output" == *"would ask to retire $TARGET/.ssh/id_ed25519"* ]]
     [[ "$output" == *"would write $TARGET/.config/git/allowed_signers"* ]]
     [[ "$output" != *"ssh-keygen -t ed25519"* ]]

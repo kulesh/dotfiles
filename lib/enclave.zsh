@@ -7,14 +7,15 @@
 #
 # The private keys never leave the chip. A handle only tells ssh which key
 # to ask the enclave for; it's useless on any other Mac. Bootstrap sources
-# this file and calls enclave_key for each role. Every change goes through
-# bootstrap's run(), so a preview prints it instead.
+# this file, calls enclave_key for each role, then retire_file_key.
 
 zmodload zsh/datetime
 
 enclave_provider=/usr/lib/ssh-keychain.dylib
 # sc_auth gives each key a certificate for a year: replace keys a month early.
 enclave_renew_days=335
+# When this run last made a key: two made in the same second get no certificate.
+enclave_made_at=0
 
 # This Mac's keys for a role, newest first, one "<hash> <label> <YES|NO>"
 # per line; YES while the enclave counts the key valid.
@@ -36,33 +37,44 @@ enclave_age() {   # enclave_age <label>: days since the date in it
 # The handle of an enclave key, at <handle>, with <handle>.pub naming the
 # key it belongs to. ssh-keygen -K exports every key's handle at once.
 enclave_export() {   # enclave_export <label> <handle>
-    if previewing; then print -r -- "would export the handle of $1 to $2"; return 0; fi
     local tmp exported
     tmp=$(mktemp -d "${TMPDIR:-/tmp}/enclave.XXXXXX") || return 1
     exported=$tmp/id_ecdsa_sk_rk_$1
     print -r -- "Exporting the handle of $1 (if ssh-keygen asks for a PIN, press Enter)"
-    ( cd "$tmp" && ssh-keygen -w "$enclave_provider" -K -N "" >/dev/null )
-    if [[ ! -f $exported ]]; then
-        rm -rf -- "$tmp"
-        print -r -- "ssh-keygen exported no handle for $1" >&2
-        return 1
-    fi
-    mv -f -- "$exported" "$2" && chmod 600 "$2"
-    print -r -- "$(cut -d' ' -f1,2 "$exported.pub") $1" > "$2.pub"
+    ( cd "$tmp" && ssh-keygen -w "$enclave_provider" -K -N "" >/dev/null ) &&
+        [[ -f $exported ]] &&
+        mv -f -- "$exported" "$2" && chmod 600 "$2" &&
+        print -r -- "$(cut -d' ' -f1,2 "$exported.pub") $1" > "$2.pub"
+    local made=$?
     rm -rf -- "$tmp"
+    (( made == 0 )) || print -r -- "Couldn't export the handle of $1" >&2
+    return made
 }
 
-# Make sure this Mac has a current enclave key for <role>: made, exported,
-# registered on GitHub for its job, and in the agent. A key 11 months old,
-# or one the enclave no longer counts valid, is replaced; the one it
-# replaces leaves the enclave once the new one works, and an auth key's
-# GitHub entry goes with it. A signing key's entry stays, so the commits
-# it signed stay Verified.
+# GitHub accepts this handle's key, and only it. No config (-F /dev/null):
+# its IdentityFile lines would let another key answer. ssh -T always exits 1
+# at GitHub; what it says is the answer.
+enclave_signs_in() {   # enclave_signs_in <handle>
+    local said
+    said=$(ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityFile="$1" \
+        -o SecurityKeyProvider="$enclave_provider" -T git@github.com 2>&1) || true
+    [[ $said == *"successfully authenticated"* ]]
+}
+
+# Make sure this Mac has a current enclave key for <role>, in the agent and
+# registered on GitHub for its job. A key 11 months old, or one the enclave
+# no longer counts valid, is replaced: the new key's handle is exported
+# beside the one in use, registered, proven (an auth key signs in), and only
+# then swapped in. The old key then leaves the enclave, and an old auth key
+# leaves GitHub; an old signing key stays there, so its commits stay Verified.
 enclave_key() {   # enclave_key <role: auth|sign>
-    local role=$1 handle=$HOME/.ssh/id_enclave_$1 host
-    local hash label valid current= key keys agent signed_in id k title
+    local role=$1 handle=$HOME/.ssh/id_enclave_$1
+    if previewing; then
+        print -r -- "would make sure this Mac has a current $role key in the Secure Enclave"
+        return 0
+    fi
+    local hash label valid current= in_use= key keys agent id k title
     local -a stale=()
-    host=$(hostname -s)
 
     while read -r hash label valid; do
         [[ -n $hash ]] || continue
@@ -75,53 +87,53 @@ enclave_key() {   # enclave_key <role: auth|sign>
 
     if [[ -z $current ]]; then
         current=ssh-$role-$(strftime %Y-%m-%d $EPOCHSECONDS)
-        run sc_auth create-ctk-identity -l "$current" -k p-256-ne -t none
-        previewing && return 0
+        (( EPOCHSECONDS - enclave_made_at < 2 )) && sleep 2
+        sc_auth create-ctk-identity -l "$current" -k p-256-ne -t none
+        enclave_made_at=$EPOCHSECONDS
         # sc_auth can print an error and exit 0: the listing decides.
-        if [[ $'\n'"$(enclave_identities "$role")" != *" $current "* ]]; then
+        if [[ "$(enclave_identities "$role")" != *" $current "* ]]; then
             print -r -- "$current isn't in the Secure Enclave after sc_auth made it; run bootstrap again" >&2
             return 1
         fi
-        # Two keys made in the same second get no certificate.
-        sleep 2
     fi
 
-    if [[ ! -f $handle || "$(cut -d' ' -f3 "$handle.pub" 2>/dev/null)" != $current ]]; then
-        enclave_export "$current" "$handle" || return 1
+    # The handle in use stays until the new one has proven itself.
+    local next=$handle
+    if [[ "$(cut -d' ' -f3 "$handle.pub" 2>/dev/null)" != $current ]]; then
+        [[ -f $handle.pub ]] && { next=$handle.next; in_use=$(cut -d' ' -f1,2 "$handle.pub"); }
+        enclave_export "$current" "$next" || return 1
     fi
-    previewing && [[ ! -f $handle.pub ]] && return 0
-    key=$(cut -d' ' -f1,2 "$handle.pub")
+    key=$(cut -d' ' -f1,2 "$next.pub")
 
     case $role in
         auth)
             keys=$(gh api user/keys --jq '.[] | [.id, .key, .title] | @tsv') || return 1
             [[ $'\n'$keys$'\n' == *$'\t'"$key"$'\t'* ]] ||
-                run gh ssh-key add "$handle.pub" --type authentication --title "$host enclave" ;;
+                gh ssh-key add "$next.pub" --type authentication --title "$(hostname -s) enclave" ;;
         sign)
             keys=$(gh api user/ssh_signing_keys --jq '.[].key') || return 1
             [[ $'\n'$keys$'\n' == *$'\n'"$key"$'\n'* ]] ||
-                run gh ssh-key add "$handle.pub" --type signing --title "$host enclave signing" ;;
+                gh ssh-key add "$next.pub" --type signing --title "$(hostname -s) enclave signing" ;;
     esac
 
-    agent=$(ssh-add -L 2>/dev/null) || true
-    [[ $agent == *"$key"* ]] || run env SSH_SK_PROVIDER="$enclave_provider" ssh-add -q "$handle"
+    if [[ $role == auth ]] && [[ -n $in_use || $#stale -gt 0 ]] && ! enclave_signs_in "$next"; then
+        print -r -- "The new key $current couldn't sign in to GitHub; the old one stays until it can. Run bootstrap again." >&2
+        return 1
+    fi
+    if [[ $next != $handle ]]; then
+        ssh-add -d "$handle" &>/dev/null
+        mv -f -- "$next" "$handle" && mv -f -- "$next.pub" "$handle.pub" || return 1
+    fi
 
-    (( $#stale )) || return 0
-    if [[ $role == auth ]]; then
-        # ssh -T always exits 1 at GitHub; what it says is the answer. No
-        # config (-F /dev/null): its IdentityFile lines would let an older
-        # key answer for the new one.
-        signed_in=$(ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityFile="$handle" -o SecurityKeyProvider="$enclave_provider" \
-            -T git@github.com 2>&1) || true
-        if [[ $signed_in != *"successfully authenticated"* ]]; then
-            print -r -- "The new key $current couldn't sign in to GitHub; the old one stays until it can. Run bootstrap again." >&2
-            return 1
-        fi
+    agent=$(ssh-add -L 2>/dev/null) || true
+    [[ $agent == *"$key"* ]] || SSH_SK_PROVIDER=$enclave_provider ssh-add -q "$handle"
+
+    if [[ $role == auth && -n $in_use ]]; then
         while IFS=$'\t' read -r id k title; do
-            [[ -n $id && $title == "$host enclave" && $k != $key ]] && run gh ssh-key delete "$id" --yes
+            [[ -n $id && $k == $in_use ]] && gh ssh-key delete "$id" --yes
         done <<< "$keys"
     fi
-    for hash in $stale; do run sc_auth delete-ctk-identity -h "$hash"; done
+    for hash in $stale; do sc_auth delete-ctk-identity -h "$hash"; done
 }
 
 # The file key this Mac used before (~/.ssh/id_ed25519) could be copied off
@@ -130,13 +142,11 @@ enclave_key() {   # enclave_key <role: auth|sign>
 # signed stay Verified, and the files go. Asked again on every run until
 # answered yes; without a terminal, never asked.
 retire_file_key() {
-    local file=$HOME/.ssh/id_ed25519 key keys id k title signed_in reply
+    local file=$HOME/.ssh/id_ed25519 key keys id k title reply
     [[ -f $file.pub ]] || return 0
     if previewing; then print -r -- "would ask to retire $file"; return 0; fi
     [[ -t 0 ]] || return 0
-    signed_in=$(ssh -F /dev/null -o IdentitiesOnly=yes -o IdentityFile="$HOME/.ssh/id_enclave_auth" \
-        -o SecurityKeyProvider="$enclave_provider" -T git@github.com 2>&1) || true
-    [[ $signed_in == *"successfully authenticated"* ]] || return 0
+    enclave_signs_in "$HOME/.ssh/id_enclave_auth" || return 0
 
     print -r -- "This Mac signs in to GitHub and signs commits with its Secure Enclave keys now."
     print -r -- "Retiring $file removes it from GitHub's sign-in keys and deletes it here; servers or"
@@ -150,9 +160,9 @@ retire_file_key() {
     key=$(cut -d' ' -f1,2 "$file.pub")
     keys=$(gh api user/keys --jq '.[] | [.id, .key, .title] | @tsv') || return 1
     while IFS=$'\t' read -r id k title; do
-        [[ -n $id && $k == $key ]] && run gh ssh-key delete "$id" --yes
+        [[ -n $id && $k == $key ]] && gh ssh-key delete "$id" --yes
     done <<< "$keys"
-    run ssh-add -d "$file" 2>/dev/null || true
-    run rm -f -- "$file" "$file.pub"
+    ssh-add -d "$file" &>/dev/null
+    rm -f -- "$file" "$file.pub"
     print -r -- "Retired $file"
 }

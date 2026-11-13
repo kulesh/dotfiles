@@ -197,7 +197,7 @@ old_pair() {   # old_pair <date> [valid]
     ! grep -q "^OLDauth " "$HOME/enclave" || false
 }
 
-@test "an old auth key stays until the new one signs in to GitHub" {
+@test "an old auth key stays, in use, until the new one signs in to GitHub" {
     old_pair "$(days_ago 340)"
     stub ssh 'exit 255'
     enclave 'enclave_key auth'
@@ -205,6 +205,19 @@ old_pair() {   # old_pair <date> [valid]
     [[ "$output" == *"couldn't sign in to GitHub"* ]]
     grep -q "AAAAOLDauth" "$HOME/github"
     grep -q "^OLDauth " "$HOME/enclave"
+    [ "$(cut -d' ' -f2 "$HOME/.ssh/id_enclave_auth.pub")" = AAAAOLDauth ]   # ssh still signs in with it
+}
+
+# GitHub entries are found by key: titles repeat (two Macs with one name)
+# and change (a renamed Mac).
+@test "renewing deletes this Mac's old auth key by key, whatever its title" {
+    old_pair "$(days_ago 340)"
+    sed -i.bak 's/\torion enclave$/\tbefore-rename enclave/' "$HOME/github"
+    printf '5\tauthentication\tsk-ecdsa-sha2-nistp256@openssh.com AAAAtwin\torion enclave\n' >> "$HOME/github"
+    enclave 'enclave_key auth'
+    [ "$status" -eq 0 ]
+    ! grep -q "AAAAOLDauth" "$HOME/github" || false
+    grep -q "AAAAtwin" "$HOME/github"
 }
 
 @test "only this Mac's own enclave keys are touched" {
