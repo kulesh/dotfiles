@@ -39,12 +39,14 @@ is_project() { [[ -e $1/.git || -e $1/.mise.toml || -e $1/.tool-versions ]]; }
 # are ours), so a name can't reach outside ~/dev or into its own parts.
 valid_name() { [[ $1 =~ '^[A-Za-z0-9_][A-Za-z0-9_.-]*$' ]]; }
 
-# An org is a directory of projects that isn't a repo itself (no .git of its
-# own). Whatever config it holds, such as org-wide [env] or [tools], doesn't
-# make it a project; a repo whose packages have configs is still one project.
+# An org is a directory of projects. Whatever config it holds, such as
+# org-wide [env] or [tools], doesn't make it a project; a repo whose packages
+# have configs is still one project. A clone inside it (a .git directory, not
+# a submodule's .git file) makes it an org even when it's a repo of its own.
 is_org() {
+    local child clones=($1/*/.git(N/))
+    (( $#clones )) && return 0
     [[ ! -e $1/.git ]] || return 1
-    local child
     for child in $1/*(N/); do is_project "$child" && return 0; done
     return 1
 }

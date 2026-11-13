@@ -297,6 +297,12 @@ STUB
     [[ "$output" != *"predate"* ]]
 }
 
+@test "an org that is a git repo of its own, holding clones, isn't counted as a flat project" {
+    mkdir -p "$TARGET/dev/kulesh/.git" "$TARGET/dev/kulesh/app/.git"
+    preview
+    [[ "$output" != *"predate"* ]]
+}
+
 # The monorepo root ~/dev/<org>/mise.toml that mkproject, cloneproject and
 # migrate wrote before ADR-013 dropped it; removed while it's unedited.
 generated_org_config() {   # generated_org_config <org>

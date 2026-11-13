@@ -590,6 +590,17 @@ old_layout() {   # projects as the flat layout left them, one per kind
     [[ "$output" == *"Nothing to migrate"* ]]
 }
 
+# An org folder that is a git repo of its own (notes, a README), holding
+# clones: moving it into ~/dev/<org>/<org> would bury the whole org in it.
+@test "migrate leaves an org that is also a repo where it is, with its clones" {
+    project new demo
+    git -C "$MINE" init -q
+    project migrate --yes
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Nothing to migrate"* ]]
+    [ -d "$MINE/.git" ] && [ -d "$MINE/demo/.git" ]
+}
+
 @test "migrate --dry-run lists the moves and moves nothing" {
     old_layout
     project migrate --dry-run
