@@ -18,8 +18,3 @@ npm = "latest"
 # model API names the keys it uses in its own .mise.toml:
 #   [env]
 #   ANTHROPIC_API_KEY = "{{ exec(command='secret get ANTHROPIC_API_KEY') }}"
-
-[hooks]
-# Sandbox entry/exit handled by zsh chpwd hooks, not mise
-enter = 'true'
-leave = 'true'

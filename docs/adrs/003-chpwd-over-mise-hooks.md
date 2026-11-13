@@ -36,4 +36,4 @@ Zsh `chpwd` gives direct control over timing:
 **Tradeoffs:**
 - Runs on every `cd`, even for non-sandboxed projects (guard clause is cheap: two file existence checks).
 - Couples sandbox behavior to zsh specifically (not portable to bash/fish, but this system is zsh-only).
-- Mise hooks are still present as no-ops (`enter = 'true'`) to prevent mise from complaining.
+- `~/dev/.mise.toml` declares no mise hooks; the no-op `enter`/`leave` it once carried started a process on every `cd` and kept nothing from complaining.

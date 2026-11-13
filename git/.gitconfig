@@ -17,28 +17,21 @@
 
 [core]
 	editor = vim
-  pager = delta
+	pager = delta
 	whitespace = trailing-space,space-before-tab,cr-at-eol
-
-[color]
-	ui = true
-	diff = true
 
 [alias]
 	last = cat-file commit HEAD
 	st = status
 	ci = commit
 	co = checkout
-  sme = shortlog -sn
-
-[branch]
-	autosetupmerge = true
+	sme = shortlog -sn
 
 [format]
 	pretty = oneline
 
 [credential]
-        helper = osxkeychain
+	helper = osxkeychain
 [init]
 	defaultBranch = main
 
