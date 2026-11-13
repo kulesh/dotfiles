@@ -590,6 +590,19 @@ EOF
     [[ "$output" != *"skipped"* && "$output" != *"Fast-forward"* ]]
 }
 
+# A worktree whose main repo moved, or a half-deleted clone: .git is there
+# but git can't use it.
+@test "updateproject on an org lists a broken repo as one, without git's own errors" {
+    github_repo kulesh/alpha
+    project clone kulesh/alpha
+    mkdir -p "$MINE/stale"
+    echo "gitdir: /nowhere/.git/worktrees/stale" > "$MINE/stale/.git"
+    project update kulesh/
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"stale"*"isn't a git repository"* ]]
+    [[ "$output" != *"fatal"* ]]
+}
+
 @test "updateproject on an org that doesn't exist says so" {
     project update nosuch/
     [ "$status" -ne 0 ]

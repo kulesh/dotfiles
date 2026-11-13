@@ -21,7 +21,9 @@ update() {   # update <what> <repo dir>...
     local -A why incoming   # repo dir -> what keeps it from moving / commits coming
 
     for dir in $repos; do
-        if [[ ! -e $dir/.git ]]; then why[$dir]="isn't a git repository"
+        # Its own .git, and one git can use: a .git can point nowhere.
+        if [[ ! -e $dir/.git ]] || ! git -C "$dir" rev-parse --git-dir &>/dev/null; then
+            why[$dir]="isn't a git repository"
         elif [[ -z $(git -C "$dir" branch --show-current) ]]; then why[$dir]="isn't on a branch"
         elif ! git -C "$dir" rev-parse -q --verify '@{upstream}' &>/dev/null; then
             why[$dir]="has no upstream to pull from (git branch -u <remote>/<branch>)"
