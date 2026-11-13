@@ -61,7 +61,7 @@ Projects are `~/dev/<org>/<repo>`; an org directory is a plain folder, and a `mi
 
 ```
 ~/.dotfiles/
-├── mise.sh                   # Bootloader: Xcode CLI tools, Homebrew, mise, clone, mise bootstrap
+├── mise.sh                   # Bootloader: Xcode CLI tools, Homebrew, clone, mise (if below the floor), mise bootstrap
 ├── .mise.toml                # Bootstrap config: packages, dotfile groups, login shell
 ├── .mise/tasks/bootstrap     # Bootstrap task: GitHub, signing, Claude Code, clones
 ├── .mise/tasks/preview       # Link into a scratch home; print machine-level steps

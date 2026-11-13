@@ -31,14 +31,32 @@ brew=${HOMEBREW_PREFIX:-$prefix}/bin/brew
 [[ -x $brew ]] || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 eval "$("$brew" shellenv)"
 
-# 3. mise, via Homebrew so `mup` upgrades it along with everything else.
-#    .mise.toml sets min_version, and an older mise misreads the config, so a
-#    Homebrew mise that's already here is upgraded. One installed another way
-#    keeps its own updater; min_version says if it's too old.
+# 3. The repo lives at ~/.dotfiles, where .zshenv and dsync expect it. It
+#    comes before mise: its .mise.toml says how new a mise it needs.
+[[ -d $dotfiles ]] || git clone "$repo" "$dotfiles"
+
+# 4. mise, via Homebrew so `mup` upgrades it along with everything else. An
+#    older mise than the config's min_version misreads it, so a Homebrew mise
+#    below that (or one that doesn't run) is upgraded; one that meets it is
+#    left alone, since keeping it current is mup's job and brew upgrade can
+#    hang. A mise installed another way keeps its own updater.
+version_ge() {   # version_ge A B: dotted version A is at least B
+    local IFS=. i a b
+    read -ra a <<< "$1"; read -ra b <<< "$2"
+    for ((i = 0; i < ${#b[@]}; i++)); do
+        (( 10#${a[i]:-0} > 10#${b[i]} )) && return 0
+        (( 10#${a[i]:-0} < 10#${b[i]} )) && return 1
+    done
+    return 0
+}
+floor=$(awk -F'"' '/^min_version/ { for (i = 2; i <= NF; i += 2) v = $i; print v }' "$dotfiles/.mise.toml" 2>/dev/null || true)
+current=$(mise --version 2>/dev/null | grep -Eo '^[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
 relink="If Homebrew says the link step failed, run: $brew link --overwrite mise
 Then run mise.sh again."
 if "$brew" list --formula mise &>/dev/null; then
-    "$brew" upgrade mise || { echo "mise.sh: Homebrew couldn't upgrade mise. $relink" >&2; exit 1; }
+    if [[ -z $current ]] || { [[ -n $floor ]] && ! version_ge "$current" "$floor"; }; then
+        "$brew" upgrade mise || { echo "mise.sh: Homebrew couldn't upgrade mise. $relink" >&2; exit 1; }
+    fi
 elif ! command -v mise &>/dev/null; then
     "$brew" install mise
 fi
@@ -46,9 +64,6 @@ fi
 # one isn't on PATH. Stop here rather than partway through bootstrap.
 hash -r
 mise --version &>/dev/null || { echo "mise.sh: mise doesn't run. $relink" >&2; exit 1; }
-
-# 4. The repo lives at ~/.dotfiles, where .zshenv and dsync expect it.
-[[ -d $dotfiles ]] || git clone "$repo" "$dotfiles"
 
 # 5. Hand off: mise reads .mise.toml and runs .mise/tasks/bootstrap.
 cd "$dotfiles"

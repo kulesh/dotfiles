@@ -10,6 +10,8 @@ setup() {
     grep -q 'HOMEBREW_PREFIX' "$DOTFILES_ROOT/mise.sh" || skip "mise.sh ignores HOMEBREW_PREFIX"
     export HOME=$(scratch)
     mkdir "$HOME/.dotfiles"
+    # The checkout states the oldest mise it works with.
+    printf 'min_version = { soft = "2026.10.22" }\n' > "$HOME/.dotfiles/.mise.toml"
     STUBS=$(scratch)
     export HOMEBREW_PREFIX=$(scratch)
     export CALLS=$HOME/calls
@@ -38,7 +40,8 @@ stub() {   # stub <command> <shell body>
     chmod +x "$STUBS/$1"
 }
 
-mise_stub() { stub mise 'echo "mise $*" >> "$CALLS"'; }
+# A mise that reports $MISE_STUB_VERSION (default: newer than the floor).
+mise_stub() { stub mise 'echo "mise $*" >> "$CALLS"; [ "$1" = --version ] && echo "${MISE_STUB_VERSION:-2026.11.1} macos-arm64 (2026-11-04)"; exit 0'; }
 
 bootload() {
     PATH="$STUBS:/usr/bin:/bin" run bash "$DOTFILES_ROOT/mise.sh"
@@ -53,13 +56,23 @@ bootload() {
 
 # An older mise misreads the config (.mise.toml sets min_version), so a
 # Homebrew mise that's already here is brought up to date first.
-@test "a Homebrew mise that's already installed is upgraded before bootstrap" {
+@test "a Homebrew mise below the config's floor is upgraded before bootstrap" {
     mise_stub
-    BREW_HAS_MISE=1 bootload
+    MISE_STUB_VERSION=2026.10.18 BREW_HAS_MISE=1 bootload
     [ "$status" -eq 0 ]
     grep -qx "brew upgrade mise" "$CALLS"
     ! grep -q "brew install mise" "$CALLS"
     [ "$(grep -n 'brew upgrade mise' "$CALLS" | cut -d: -f1)" -lt "$(grep -n 'mise bootstrap' "$CALLS" | cut -d: -f1)" ]
+}
+
+# brew upgrade can hang (Spotlight on a managed Mac), and keeping mise current
+# is mup's job: a re-run leaves a mise that can read the config alone.
+@test "a Homebrew mise that meets the config's floor isn't upgraded" {
+    mise_stub
+    BREW_HAS_MISE=1 bootload
+    [ "$status" -eq 0 ]
+    ! grep -q "brew upgrade mise" "$CALLS" || false
+    grep -qx "mise bootstrap" "$CALLS"
 }
 
 @test "a mise installed some other way is left to its own updater" {
@@ -81,7 +94,7 @@ bootload() {
 
 @test "a failed upgrade stops before bootstrap and says how to fix the link" {
     mise_stub
-    BREW_HAS_MISE=1 BREW_UPGRADE_FAILS=1 bootload
+    MISE_STUB_VERSION=2026.10.18 BREW_HAS_MISE=1 BREW_UPGRADE_FAILS=1 bootload
     [ "$status" -ne 0 ]
     [[ "$output" == *"brew link --overwrite mise"* ]]
     ! grep -q "mise bootstrap" "$CALLS"
