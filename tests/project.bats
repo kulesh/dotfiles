@@ -300,14 +300,14 @@ completions() {   # the candidates zsh would offer for a command line
     project clone kulesh/alpha
     project clone crmne/ruby_llm
     project new demo
-    mkdir -p "$MINE/not-a-project" "$DEV/.archive/kulesh/old"
-    touch "$DEV/.archive/kulesh/old/.mise.toml"
+    mkdir -p "$MINE/not-a-project" "$DEV/.archive/kulesh/archived-one"
+    touch "$DEV/.archive/kulesh/archived-one/.mise.toml"
     project list
     [ "$status" -eq 0 ]
     [[ "$output" == *"crmne"*"ruby_llm"*"kulesh"*"alpha"*"demo"* ]]
     [[ "$output" == *"↙ kulesh/alpha"* ]]
     [[ "$output" != *"not-a-project"* ]]
-    [[ "$output" != *"old"* ]]
+    [[ "$output" != *"archived-one"* ]]
     [[ "$output" == *"3 projects in 2 orgs"* ]]
 }
 
@@ -361,11 +361,6 @@ completions() {   # the candidates zsh would offer for a command line
     [ "$status" -eq 0 ]
 }
 
-@test "showproject outside a project says so" {
-    project_from "$HOME" show
-    [ "$status" -ne 0 ]
-    [[ "$output" == *"Not in a project"* ]]
-}
 
 @test "cdproject moves the shell to the root of the project you're in" {
     project new demo

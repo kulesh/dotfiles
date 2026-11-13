@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-#MISE hide=true
+# Sourced by the templates (mkproject/*.sh); not a task.
 
 # The mkproject directory, found from this file. Not from $0: inside a
 # function, zsh sets $0 to the function's name.
