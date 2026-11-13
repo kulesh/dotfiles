@@ -2,12 +2,12 @@
 #MISE description="Clone a GitHub repo into ~/dev/<owner> as a project (cloneproject)"
 #MISE quiet=true
 #MISE raw=true
-#USAGE arg "[repo]" var=#true var_max=2 help="user/repo, or a GitHub URL (gh user/repo also works)"
+#USAGE arg "[repo]" help="user/repo, or a GitHub URL"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
 need "${usage_repo:-}" "cloneproject <user>/<repo>   (or a GitHub URL)"
-parsed=$(parse_github_repo ${(z)usage_repo}) ||
+parsed=$(parse_github_repo "$usage_repo") ||
     die "Not a GitHub repo: $usage_repo (use user/repo, or a GitHub URL)"
 url=${parsed%|*} slug=${parsed#*|}
 # GitHub owners are case-insensitive; one directory per owner.

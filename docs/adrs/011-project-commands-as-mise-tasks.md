@@ -36,5 +36,5 @@ The sandbox stays in zsh (`lib/sandbox.sh`), and [ADR-003](003-chpwd-over-mise-h
 - 416 lines of tasks, helpers and `follow.zsh` replace about 1,550 lines of shell functions; `lib/` keeps only what has to run inside the shell.
 - Each command starts a `mise run` (tens of milliseconds) instead of calling a function.
 - The aliases exist only in shells where mise is activated. Scripts call the tasks directly: `mise -C / run project:clone kulesh/foo`.
-- `cloneproject user/repo` replaces `cloneproject gh user/repo`; the old form still works.
+- `cloneproject user/repo` replaces `cloneproject gh user/repo` (the old form was dropped on 2026-11-13).
 - mise treats every file in a tasks directory as a task, so helper files (`project/_lib.zsh`, `mkproject/_shared/template_helpers.sh`) carry `#MISE hide=true`.

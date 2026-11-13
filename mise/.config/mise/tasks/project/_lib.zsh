@@ -125,22 +125,13 @@ github_slug() {
     print -r -- "${match[1]}/${match[2]%.git}"
 }
 
-# What a user types for a GitHub repo → "clone URL|owner/repo". Accepts
-# user/repo, gh user/repo, and HTTPS or SSH URLs; clones always use SSH.
-parse_github_repo() {
-    local spec=$1
-    [[ $1 == gh && -n ${2:-} ]] && spec=$2
-    local user repo
-    if [[ $spec =~ '^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$' ]]; then
-        user=${match[1]} repo=${match[2]%.git}
-    elif [[ $spec =~ '^https://github\.com/([^/]+)/([^/]+)/?$' ]]; then
-        user=${match[1]} repo=${match[2]%.git}
-    elif [[ $spec =~ '^git@github\.com:([^/]+)/([^/]+)$' ]]; then
-        user=${match[1]} repo=${match[2]%.git}
-    else
-        return 1
-    fi
-    print -r -- "git@github.com:$user/$repo.git|$user/$repo"
+# What a user types for a GitHub repo, user/repo or an HTTPS or SSH URL,
+# as "clone URL|owner/repo". Clones always use SSH.
+parse_github_repo() {   # parse_github_repo <spec>
+    local spec=${${${1#https://github.com/}#git@github.com:}%/}
+    spec=${spec%.git}
+    [[ $spec =~ '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' ]] || return 1
+    print -r -- "git@github.com:$spec.git|$spec"
 }
 
 last_modified() {

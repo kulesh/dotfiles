@@ -237,10 +237,10 @@ completions() {   # the candidates zsh would offer for a command line
     [ -d "$DEV/crmne/ruby_llm/.git" ]
 }
 
-@test "cloneproject accepts gh user/repo and GitHub URLs" {
+@test "cloneproject accepts user/repo and GitHub URLs" {
     github_repo kulesh/alpha
     github_repo kulesh/beta
-    project clone gh kulesh/alpha
+    project clone kulesh/alpha
     [ "$status" -eq 0 ]
     project clone https://github.com/kulesh/beta.git
     [ "$status" -eq 0 ]

@@ -26,12 +26,6 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
     [ "$output" = "git@github.com:kulesh/dotfiles.git|kulesh/dotfiles" ]
 }
 
-@test "parse_github_repo: gh user/repo, the older form" {
-    lib parse_github_repo "gh" "kulesh/dotfiles"
-    [ "$status" -eq 0 ]
-    [ "$output" = "git@github.com:kulesh/dotfiles.git|kulesh/dotfiles" ]
-}
-
 @test "parse_github_repo: HTTPS URL with and without .git, and with a trailing slash" {
     for url in https://github.com/kulesh/dotfiles.git https://github.com/kulesh/dotfiles https://github.com/kulesh/dotfiles/; do
         lib parse_github_repo "$url"
@@ -61,12 +55,10 @@ lib() {   # run a helper from _lib.zsh: lib <function> [args...]
 }
 
 @test "parse_github_repo: rejects anything else" {
-    for bad in "not-a-url" "" "just-a-user" "a/b/c"; do
+    for bad in "not-a-url" "" "just-a-user" "a/b/c" "https://github.com/a/b/c" "https://gitlab.com/a/b"; do
         lib parse_github_repo "$bad"
         [ "$status" -eq 1 ]
     done
-    lib parse_github_repo "gh" "just-a-user"
-    [ "$status" -eq 1 ]
 }
 
 # =============================================================================
