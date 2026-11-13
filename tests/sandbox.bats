@@ -22,7 +22,7 @@ setup() {
 
 sandboxed() {   # sandboxed <command...>: run it under the profile
     run sandbox-exec -f "$DOTFILES_ROOT/sandbox/.config/sandbox/profiles/default.sb" \
-        -D "HOME=$HOME" -D "PROJECT_DIR=$PROJECT" -D "SSH_REAL=$HOME/.ssh" "$@"
+        -D "HOME=$HOME" -D "PROJECT=$PROJECT" -D "SSH_REAL=$HOME/.ssh" "$@"
 }
 
 can_write() {   # can_write <file>: the sandbox may create it

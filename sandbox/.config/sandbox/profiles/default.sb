@@ -14,7 +14,7 @@
 ;;
 ;; Parameters passed via sandbox-exec -D:
 ;;   HOME        - user home directory
-;;   PROJECT_DIR - current project directory
+;;   PROJECT - current project directory
 ;;   SSH_REAL    - real path to ~/.ssh (resolving symlinks)
 
 ;; =============================================================================
@@ -22,7 +22,7 @@
 ;; =============================================================================
 
 (define HOME (param "HOME"))
-(define PROJECT_DIR (param "PROJECT_DIR"))
+(define PROJECT (param "PROJECT"))
 (define SSH_REAL (param "SSH_REAL"))
 
 ;; =============================================================================
@@ -96,7 +96,7 @@
 ;; configs and the shared ~/dev/.mise.toml all run on your Mac, unprompted
 ;; for repos mise trusts (ADR-014).
 (deny file-write* (subpath (string-append HOME "/dev")))
-(allow file-write* (subpath PROJECT_DIR))
+(allow file-write* (subpath PROJECT))
 
 ;; Configs that make a tool run commands: mise tasks and hooks, git hooks and
 ;; aliases, gh shell aliases, starship custom modules, ghostty's command,
@@ -122,21 +122,21 @@
 ;; command outside the sandbox would run what they name. Commits, branches and
 ;; fetches still work; git push -u can't record the upstream, so push without
 ;; -u here.
-(deny file-write* (literal (string-append PROJECT_DIR "/.git")))
-(deny file-write* (subpath (string-append PROJECT_DIR "/.git/hooks")))
-(deny file-write* (literal (string-append PROJECT_DIR "/.git/config")))
+(deny file-write* (literal (string-append PROJECT "/.git")))
+(deny file-write* (subpath (string-append PROJECT "/.git/hooks")))
+(deny file-write* (literal (string-append PROJECT "/.git/config")))
 
 ;; The project's mise config: mise loads it unprompted (ADR-014), and it can
 ;; run commands. Change tools outside the sandbox (mise use).
-(deny file-write* (literal (string-append PROJECT_DIR "/.mise.toml")))
-(deny file-write* (literal (string-append PROJECT_DIR "/mise.toml")))
-(deny file-write* (literal (string-append PROJECT_DIR "/.mise.local.toml")))
-(deny file-write* (literal (string-append PROJECT_DIR "/mise.local.toml")))
-(deny file-write* (literal (string-append PROJECT_DIR "/.tool-versions")))
-(deny file-write* (literal (string-append PROJECT_DIR "/.config/mise.toml")))
-(deny file-write* (subpath (string-append PROJECT_DIR "/.config/mise")))
-(deny file-write* (literal (string-append PROJECT_DIR "/.mise/config.toml")))
-(deny file-write* (literal (string-append PROJECT_DIR "/mise/config.toml")))
+(deny file-write* (literal (string-append PROJECT "/.mise.toml")))
+(deny file-write* (literal (string-append PROJECT "/mise.toml")))
+(deny file-write* (literal (string-append PROJECT "/.mise.local.toml")))
+(deny file-write* (literal (string-append PROJECT "/mise.local.toml")))
+(deny file-write* (literal (string-append PROJECT "/.tool-versions")))
+(deny file-write* (literal (string-append PROJECT "/.config/mise.toml")))
+(deny file-write* (subpath (string-append PROJECT "/.config/mise")))
+(deny file-write* (literal (string-append PROJECT "/.mise/config.toml")))
+(deny file-write* (literal (string-append PROJECT "/mise/config.toml")))
 
 ;; Keys and credentials
 (deny file-write* (subpath (string-append HOME "/.ssh")))

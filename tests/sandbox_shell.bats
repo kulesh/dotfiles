@@ -69,7 +69,7 @@ outer_shell() {   # cd into the sandboxed project, then report where it ended up
     ln -s "$HOME/keys" "$HOME/.ssh"
     CHILD=true outer_shell
     grep -qx "SSH_REAL=$HOME/keys" "$HOME/sandbox-exec.args"
-    grep -qx "PROJECT_DIR=$PROJECT" "$HOME/sandbox-exec.args"
+    grep -qx "PROJECT=$PROJECT" "$HOME/sandbox-exec.args"
     grep -qx "HOME=$HOME" "$HOME/sandbox-exec.args"
 }
 

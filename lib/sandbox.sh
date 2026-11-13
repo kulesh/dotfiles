@@ -42,7 +42,7 @@ if [[ -z $IN_SANDBOX ]]; then
         _SANDBOX_SPAWNING=1   # this cd mustn't start another sandbox
         builtin cd -- "$dir"
         sandbox-exec -f "$SANDBOX_PROFILE" \
-            -D "HOME=$HOME" -D "PROJECT_DIR=$dir" -D "SSH_REAL=${${:-$HOME/.ssh}:A}" \
+            -D "HOME=$HOME" -D "PROJECT=$dir" -D "SSH_REAL=${${:-$HOME/.ssh}:A}" \
             env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$name" SANDBOX_PROJECT_DIR="$dir" \
                 SANDBOX_EXIT_FILE="$exit_file" /bin/zsh -i
         local code=$? said=$(<"$exit_file")

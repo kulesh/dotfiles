@@ -178,7 +178,7 @@ cd ~/dev/sandboxed-project   (or: workon project -s)
 │   makes $SANDBOX_EXIT_FILE (mktemp)       │
 │   sandbox-exec -f default.sb              │
 │     -D HOME=$HOME                         │
-│     -D PROJECT_DIR=~/dev/org/project      │
+│     -D PROJECT=~/dev/org/project          │
 │     -D SSH_REAL=/real/path/to/.ssh        │
 │   → spawns /bin/zsh -i inside sandbox     │
 └────────┬──────────────────────────────────┘
