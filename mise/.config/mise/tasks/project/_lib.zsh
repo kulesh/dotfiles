@@ -9,8 +9,9 @@
 # directory is a plain folder; a mise.toml you put there reaches all its repos.
 
 projects_dir=${PROJECT_DIR:-$HOME/dev}   # include/shared_vars.sh, exported by .zshenv
-# Where the command was typed: mise sets it, while -C / runs the task from /.
-here=${MISE_ORIGINAL_CWD:-$PWD}
+# Where the command was typed: the aliases pass it as --from, as -C / runs
+# the task from /.
+here=${usage_from:-$PWD}
 templates_dir=${${(%):-%x}:A:h:h}/mkproject
 
 typeset -gA c=(cyan $'\e[36m' green $'\e[32m' yellow $'\e[33m' magenta $'\e[35m'
@@ -30,7 +31,7 @@ need() {   # need <value> <usage>
 pick_project() {   # pick_project <usage>
     [[ -t 0 ]] && command -v fzf >/dev/null || die "Usage: $1   (lsprojects lists them)"
     project_names | fzf --height=60% --reverse --prompt="${1%% *}> " \
-        --preview="cd ${(q)projects_dir}/{} && mise -C / run project:show" \
+        --preview="mise -C / run project:show --from ${(q)projects_dir}/{}" \
         --preview-window=right,60% || true
 }
 

@@ -74,7 +74,7 @@ before the next prompt               lib/follow.zsh: cd ~/dev/kulesh/demo
 chpwd                                lib/sandbox.sh: .sandbox marker? enter the sandbox
 ```
 
-`-C /` keeps the current project's config from loading, or being trusted, on the way. Commands that need to know where you are (`showproject`, `cdproject`, `updateproject`, `rmproject`) read `MISE_ORIGINAL_CWD`, which mise sets to the directory the command was typed in.
+`-C /` keeps the current project's config from loading, or being trusted, on the way. Commands that need to know where you are (`showproject`, `cdproject`, `updateproject`, `rmproject`) receive it as a hidden `--from "$PWD"`.
 
 ## Sync Flow
 

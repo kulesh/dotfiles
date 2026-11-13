@@ -43,8 +43,11 @@ project() {   # project <command> [args...]
     run mise -C / run "project:$1" "${@:2}" </dev/null
 }
 
+# As the aliases run them (mise/.config/mise/config.toml): the directory goes
+# in as --from, since what mise reports for it changes between versions.
 project_from() {   # project_from <dir> <command> [args...]: as typed in <dir>
-    run sh -c 'cd "$1" && shift && exec mise -C / run "project:$@"' _ "$1" "$2" "${@:3}" </dev/null
+    run sh -c 'cd "$1" && command=$2 && shift 2 && exec mise -C / run "project:$command" --from "$PWD" "$@"' \
+        _ "$1" "$2" "${@:3}" </dev/null
 }
 
 github_repo() {   # github_repo <owner/name> [default branch]: a bare repo with one commit

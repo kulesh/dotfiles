@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 #MISE description="Describe the project you're in: tools, git state, recent commits (showproject)"
 #MISE quiet=true
+#USAGE flag "--from <dir>" hide=#true help="Directory the command was typed in"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 

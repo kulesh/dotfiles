@@ -26,7 +26,7 @@ Three mechanisms make tasks fit where functions used to:
 
 - **Following.** A task is a child process and can't change the shell's directory. It writes the destination to `$DOTFILES_FOLLOW`, a file per shell. `lib/follow.zsh` reads it in a `precmd` hook and `cd`s before the next prompt. Without an interactive shell, the task prints `cd <dir>` instead. Bootstrap's clone loop sets `DOTFILES_FOLLOW=/dev/null`.
 - **`mise -C /`.** `mise run` loads the current directory's config and records trust for any config it loads. The aliases run from `/`, so running `lsprojects` inside a stranger's repository neither loads nor trusts its config.
-- **Where you are: `MISE_ORIGINAL_CWD`.** The commands that act on "the project you're in" read the directory mise records for every task, the one the command was typed in, as `-C /` moves the task itself to `/`. (A hidden `--from "$PWD"` flag on the aliases did this first; a `VAR=value` prefix before that broke mise's completion.)
+- **`--from "$PWD"`.** The commands that act on "the project you're in" receive the caller's directory as a hidden flag. A `VAR=value` prefix on the alias broke mise's completion. `MISE_ORIGINAL_CWD` was tried and dropped: mise 2026.11.7 sets it to the directory you typed in, 2026.11.5 to the `-C` directory, `/`.
 
 The sandbox stays in zsh (`lib/sandbox.sh`), and [ADR-003](003-chpwd-over-mise-hooks.md) stands. Entering a sandbox spawns a shell inside yours at the moment you arrive, which `chpwd` does and mise's prompt-time hooks don't. Following uses that: `workon` moves the shell, and the move triggers `chpwd`.
 
