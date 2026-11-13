@@ -6,6 +6,9 @@ load test_helper
 
 setup() {
     WORK=$(scratch)
+    # zsh reads ~/.zshenv, which puts ~/.local/bin ahead of the stubs.
+    export HOME=$WORK/home
+    mkdir "$HOME"
     STUBS="$WORK/stubs"; mkdir "$STUBS"
     export GIT_CONFIG_GLOBAL="$WORK/gitconfig"
     git config --global user.name Test
@@ -39,8 +42,8 @@ EOF
 }
 
 
-sync() {   # $1 = answer to the commit prompt
-    PATH="$STUBS:$PATH" run zsh "$WORK/this/.mise/tasks/sync" <<< "${1:-}"
+sync() {   # sync [answer to commit?] [answer to apply?]: empty means Enter
+    PATH="$STUBS:$PATH" run zsh "$WORK/this/.mise/tasks/sync" <<< "${1:-}"$'\n'"${2:-}"
 }
 
 other_mac_commits() {   # $1 = new contents of settings
@@ -262,6 +265,27 @@ conflicting_change() {   # this Mac edits a line another Mac changed too
     [[ "$(calls)" != *bootstrap* ]]
     sync
     [ "$(calls)" = "mise bootstrap --yes" ]
+}
+
+# The commit this Mac recorded as applied is rewritten when its own commit
+# is replayed on another Mac's; what came in is still shown.
+@test "after this Mac's commit is replayed on another Mac's, shows what came in before applying" {
+    echo "local" > "$WORK/this/new-file"
+    other_mac_commits "three"
+    sync y ""
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"other: update settings"* ]]
+    [[ "$output" == *"settings"*"|"* ]]
+    [[ "$output" != *"hasn't applied any commit"* ]]
+    [ "$(calls)" = "mise bootstrap --yes" ]
+}
+
+@test "with no one to answer, nothing is applied" {
+    other_mac_commits "three"
+    PATH="$STUBS:$PATH" run zsh "$WORK/this/.mise/tasks/sync" </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Not applied"* ]]
+    [[ "$(calls)" != *bootstrap* ]]
 }
 
 # dsync commits into a public repo: files that are usually secrets never go.
