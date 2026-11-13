@@ -15,6 +15,7 @@ setup() {
     export HOME=$(scratch)
     mkdir -m 700 "$HOME/.ssh"
     : > "$HOME/enclave"; : > "$HOME/agent"; : > "$HOME/github"; : > "$HOME/calls"
+    echo 1000 > "$HOME/clock"   # what sc_auth takes for now; sleep moves it on
     STUBS=$(scratch)
     export PATH=$STUBS:$PATH
 
@@ -27,7 +28,7 @@ list-ctk-identities)
     done < "$HOME/enclave" ;;
 create-ctk-identity)
     while [ $# -gt 0 ]; do [ "$1" = -l ] && label=$2; shift; done
-    now=$(date +%s)
+    now=$(cat "$HOME/clock")
     last=$(tail -n 1 "$HOME/enclave" | cut -d' ' -f4)
     # macOS: a second key in the same second gets no certificate, and
     # sc_auth exits 0 all the same.
@@ -81,6 +82,7 @@ fi
 exit 1
 EOF
     stub hostname 'echo orion'
+    stub sleep 'echo $(( $(cat "$HOME/clock") + ${1%.*} )) > "$HOME/clock"'
 }
 
 stub() {   # stub <command> [body]: a stand-in that logs each call; body from stdin without one
@@ -234,22 +236,9 @@ old_pair() {   # old_pair <date> [valid]
 # Retiring the file key the Mac used before (~/.ssh/id_ed25519)
 # =============================================================================
 
-# zsh's own pseudo-terminal, the same on macOS and Linux: the answer is
-# typed once the question shows, as a person would. (script(1) typed it
-# ahead, and macOS's lost it.)
-in_terminal() {   # in_terminal <answer> <zsh code>: run it at a terminal, answering its [y/N]
-    printf '%s\n' "source '$DOTFILES_ROOT/lib/enclave.zsh'" 'run() { "$@"; }' 'previewing() { false; }' \
-        "$2" 'print -r -- "exit=$?"' > "$HOME/script.zsh"
-    run zsh -c '
-        zmodload zsh/zpty
-        zpty session zsh "$HOME/script.zsh"
-        seen=
-        zpty -r session seen "*\[y/N\]*" && zpty -w session "$1"
-        while zpty -r session chunk; do seen+=$chunk; done
-        zpty -d session
-        print -r -- "$seen"
-        [[ $seen == *exit=0* ]]
-    ' _ "$1"
+retire_at_terminal() {   # retire_at_terminal <answer>: retire_file_key, answered at a terminal
+    printf '%s\n' "source '$DOTFILES_ROOT/lib/enclave.zsh'" 'previewing() { false; }' retire_file_key > "$HOME/retire.zsh"
+    at_terminal --answer "$1" "zsh '$HOME/retire.zsh'"
 }
 
 file_key() {   # the key bootstrap made before ADR-015, on GitHub for both jobs
@@ -263,7 +252,7 @@ file_key() {   # the key bootstrap made before ADR-015, on GitHub for both jobs
 @test "a yes retires the old file key: it leaves GitHub's sign-in keys and this Mac, and stays a signing key" {
     enclave 'enclave_key auth && enclave_key sign'
     file_key
-    in_terminal y 'retire_file_key'
+    retire_at_terminal y
     [ "$status" -eq 0 ]
     [[ "$output" == *"servers"* ]]   # the question says what else stops working
     [ ! -e "$HOME/.ssh/id_ed25519" ]
@@ -276,11 +265,11 @@ file_key() {   # the key bootstrap made before ADR-015, on GitHub for both jobs
 @test "a no keeps the old file key, and the next run asks again" {
     enclave 'enclave_key auth && enclave_key sign'
     file_key
-    in_terminal n 'retire_file_key'
+    retire_at_terminal n
     [ "$status" -eq 0 ]
     [ -f "$HOME/.ssh/id_ed25519" ]
     grep -q $'\tauthentication\tssh-ed25519 AAAAfile' "$HOME/github"
-    in_terminal y 'retire_file_key'
+    retire_at_terminal y
     [ ! -e "$HOME/.ssh/id_ed25519" ]
 }
 
@@ -297,7 +286,7 @@ file_key() {   # the key bootstrap made before ADR-015, on GitHub for both jobs
     enclave 'enclave_key auth && enclave_key sign'
     file_key
     stub ssh 'exit 255'
-    in_terminal y 'retire_file_key'
+    retire_at_terminal y
     [ "$status" -eq 0 ]
     [ -f "$HOME/.ssh/id_ed25519" ]
     [[ "$output" != *"Retire"* ]]

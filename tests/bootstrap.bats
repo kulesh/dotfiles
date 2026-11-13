@@ -41,18 +41,9 @@ stowed_by_stow() {   # $1 = repo; linked the way the Stow-based bootstrap did it
 
 mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 
-in_terminal() {   # run a command with a terminal attached, as on a real Mac
-    if script --version >/dev/null 2>&1; then
-        script -qec "$*" /dev/null </dev/null 3>&-
-    else
-        script -q /dev/null sh -c "$*" </dev/null 3>&-
-    fi
-}
-
 @test "previews with a terminal attached, without stopping to ask" {
-    command -v script >/dev/null || skip "script not installed"
     # Output to a terminal, input from nowhere: how mise run starts a task.
-    run in_terminal "HOME='$TARGET' PATH='$STUBS:$PATH' zsh '$DOTFILES_ROOT/.mise/tasks/preview' '$TARGET' </dev/null"
+    at_terminal "HOME='$TARGET' PATH='$STUBS:$PATH' zsh '$DOTFILES_ROOT/.mise/tasks/preview' '$TARGET' </dev/null"
     [ -L "$TARGET/.zshrc" ]
 }
 

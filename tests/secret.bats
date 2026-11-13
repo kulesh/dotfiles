@@ -54,9 +54,8 @@ setup() {
     command -v mise >/dev/null || skip "mise not installed"
     export HOME=$(scratch)
     export PATH="$DOTFILES_ROOT/bin/.local/bin:$PATH"
-    export MISE_CONFIG_DIR=$HOME/.config/mise MISE_STATE_DIR=$HOME/.state
-    export MISE_DATA_DIR=$HOME/.data MISE_CACHE_DIR=$HOME/.cache
-    export MISE_OFFLINE=1 MISE_AUTO_INSTALL=0 MISE_TRUSTED_CONFIG_PATHS=$HOME/dev
+    export MISE_CONFIG_DIR=$HOME/.config/mise MISE_TRUSTED_CONFIG_PATHS=$HOME/dev
+    isolate_mise "$HOME"
     printf 'anthropic-key\n' | secret set ANTHROPIC_API_KEY
     printf 'openai-key\n' | secret set OPENAI_API_KEY
     mkdir -p "$HOME/dev/agent" "$HOME/dev/site"
@@ -84,9 +83,8 @@ EOF
 @test "task output hides secret-looking values from every project under ~/dev" {
     command -v mise >/dev/null || skip "mise not installed"
     export HOME=$(scratch)
-    export MISE_CONFIG_DIR=$HOME/.config/mise MISE_STATE_DIR=$HOME/.state
-    export MISE_DATA_DIR=$HOME/.data MISE_CACHE_DIR=$HOME/.cache
-    export MISE_OFFLINE=1 MISE_AUTO_INSTALL=0 MISE_TRUSTED_CONFIG_PATHS=$HOME/dev
+    export MISE_CONFIG_DIR=$HOME/.config/mise MISE_TRUSTED_CONFIG_PATHS=$HOME/dev
+    isolate_mise "$HOME"
     mkdir -p "$HOME/dev/acme/app"
     ln -s "$DOTFILES_ROOT/dev/dev/.mise.toml" "$HOME/dev/.mise.toml"
     cat > "$HOME/dev/acme/app/.mise.toml" <<'EOF'

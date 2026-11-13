@@ -14,8 +14,7 @@ setup() {
     mkdir -p "$DEV"
     # mise reads the repo's global config and tasks directly.
     export MISE_CONFIG_DIR="$DOTFILES_ROOT/mise/.config/mise"
-    export MISE_STATE_DIR=$HOME/.state MISE_DATA_DIR=$HOME/.data MISE_CACHE_DIR=$HOME/.cache
-    export MISE_OFFLINE=1 MISE_VERSION_CHECK=0 MISE_AUTO_INSTALL=0
+    isolate_mise "$HOME"
     # Bootstrap writes which orgs are trusted on each Mac; here, all of ~/dev.
     export MISE_TRUSTED_CONFIG_PATHS=$DEV
     # Where a command leaves the directory the shell should move to.
@@ -451,8 +450,7 @@ echo "$first"
 EOF
     chmod +x "$HOME/stubs/fzf"
     # The pickers open only in a terminal.
-    PATH=$HOME/stubs:$PATH run python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' \
-        mise -C / run project:workon </dev/null
+    at_terminal "PATH='$HOME/stubs:$PATH' mise -C / run project:workon"
     [ "$(followed)" = "$MINE/demo" ]
     [[ "$(cat "$HOME/preview")" == *"kulesh/demo"*"Git"* ]]
 }

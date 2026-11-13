@@ -20,8 +20,7 @@ setup() {
     done
     export PATH=$HOME/stubs:$PATH
     export MISE_CONFIG_DIR="$DOTFILES_ROOT/mise/.config/mise"
-    export MISE_STATE_DIR=$HOME/.state MISE_DATA_DIR=$HOME/.data MISE_CACHE_DIR=$HOME/.cache
-    export MISE_OFFLINE=1 MISE_VERSION_CHECK=0 MISE_AUTO_INSTALL=0
+    isolate_mise "$HOME"
 }
 
 interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
