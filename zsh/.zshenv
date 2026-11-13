@@ -11,7 +11,6 @@ export XDG_CACHE_HOME=$HOME/.cache
 export XDG_STATE_HOME=$HOME/.local/state
 
 # Tool-specific paths
-export PROJECTS=$PROJECT_DIR
 export STARSHIP_CONFIG=$XDG_CONFIG_HOME/starship/starship.toml
 export _ZO_DATA_DIR=$XDG_CONFIG_HOME/zoxide/
 
