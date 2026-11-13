@@ -6,7 +6,6 @@
 #USAGE complete "name" run="mise run project:list --short"
 #USAGE flag "--delete" help="Delete permanently instead of archiving"
 #USAGE flag "-y --yes" help="Don't ask (without a terminal, deleting needs it)"
-#USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
@@ -41,6 +40,6 @@ else
 fi
 
 # The shell was inside what just went away; its org is the nearest place.
-if [[ -n ${usage_from:-} && ${usage_from:A}/ == ${dir:A}/* ]]; then
+if [[ ${here:A}/ == ${dir:A}/* ]]; then
     follow "${dir:h}"
 fi

@@ -1,11 +1,10 @@
 #!/usr/bin/env zsh
 #MISE description="Describe the project you're in: tools, git state, recent commits (showproject)"
 #MISE quiet=true
-#USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
-root=$(project_root "${usage_from:-$PWD}") || die "Not in a project"
+root=$(project_root "$here") || die "Not in a project"
 cd "$root"
 
 print -r -- "${c[bold]}${c[cyan]}$(project_label "$root")${c[reset]}"

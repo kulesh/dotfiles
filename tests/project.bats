@@ -44,6 +44,10 @@ project() {   # project <command> [args...]
     run mise -C / run "project:$1" "${@:2}" </dev/null
 }
 
+project_from() {   # project_from <dir> <command> [args...]: as typed in <dir>
+    run sh -c 'cd "$1" && shift && exec mise -C / run "project:$@"' _ "$1" "$2" "${@:3}" </dev/null
+}
+
 github_repo() {   # github_repo <owner/name> [default branch]: a bare repo with one commit
     local seed=$HOME/seed/$1
     git init -q -b "${2:-main}" "$seed"
@@ -219,7 +223,7 @@ completions() {   # the candidates zsh would offer for a command line
     [ -z "$(git -C "$MINE/alpha" status --porcelain)" ]
     project list
     [[ "$output" == *"alpha"* ]]
-    project show --from "$MINE/alpha"
+    project_from "$MINE/alpha" show
     [ "$status" -eq 0 ]
     [[ "$output" == *"clean"* ]]
 }
@@ -317,7 +321,7 @@ completions() {   # the candidates zsh would offer for a command line
 @test "showproject describes the project you're in, from any directory inside it" {
     project new demo
     mkdir -p "$MINE/demo/src/deep"
-    project show --from "$MINE/demo/src/deep"
+    project_from "$MINE/demo/src/deep" show
     [ "$status" -eq 0 ]
     [[ "$output" == *"kulesh/demo"* ]]
     [[ "$output" == *"main"* ]]
@@ -327,7 +331,7 @@ completions() {   # the candidates zsh would offer for a command line
     printf '[tools]\nuv = "0.5.0"\n' > "$DEV/.mise.toml"
     mkdir -p "$MINE/tooled"
     printf '[tools]\nnode = "20.1.0"\npython = "3.11.1"\n' > "$MINE/tooled/.mise.toml"
-    MISE_TRUSTED_CONFIG_PATHS=$DEV project show --from "$MINE/tooled"
+    MISE_TRUSTED_CONFIG_PATHS=$DEV project_from "$MINE/tooled" show
     [ "$status" -eq 0 ]
     local node=$'\n  node +20\.1\.0' python=$'\n  python +3\.11\.1'
     [[ "$output" =~ $node ]]
@@ -342,16 +346,16 @@ completions() {   # the candidates zsh would offer for a command line
     printf '[tools]\n' > "$DEV/.mise.toml"
     printf '[tools]\n' > "$HOME/.mise.toml"
     for dir in "$DEV" "$MINE" "$HOME"; do
-        project show --from "$dir"
+        project_from "$dir" show
         [ "$status" -ne 0 ]
         [[ "$output" == *"Not in a project"* ]]
     done
-    project show --from "$MINE/demo"
+    project_from "$MINE/demo" show
     [ "$status" -eq 0 ]
 }
 
 @test "showproject outside a project says so" {
-    project show --from "$HOME"
+    project_from "$HOME" show
     [ "$status" -ne 0 ]
     [[ "$output" == *"Not in a project"* ]]
 }
@@ -362,13 +366,13 @@ completions() {   # the candidates zsh would offer for a command line
     mkdir -p "$MINE/demo/src/deep/pkg"
     # A config deeper in the repo (a package of its own) doesn't make it the root.
     : > "$MINE/demo/src/deep/pkg/.mise.toml"
-    project root --from "$MINE/demo/src/deep/pkg"
+    project_from "$MINE/demo/src/deep/pkg" root
     [ "$status" -eq 0 ]
     [ "$(followed)" = "$MINE/demo" ]
 }
 
 @test "cdproject outside a project says so and goes nowhere" {
-    project root --from "$HOME"
+    project_from "$HOME" root
     [ "$status" -ne 0 ]
     [ -z "$(followed)" ]
 }
@@ -468,7 +472,7 @@ EOF
     [ "$status" -eq 0 ]
     [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "second" ]
     push_commit kulesh/alpha third
-    project update --from "$MINE/alpha"
+    project_from "$MINE/alpha" update
     [ "$status" -eq 0 ]
     [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "third" ]
 }
@@ -540,7 +544,7 @@ EOF
     github_repo kulesh/alpha
     project clone kulesh/alpha
     push_commit kulesh/alpha second
-    project update --from "$MINE"
+    project_from "$MINE" update
     [ "$status" -eq 0 ]
     [ "$(git -C "$MINE/alpha" log -1 --format=%s)" = "second" ]
 }
@@ -613,7 +617,8 @@ EOF
 @test "rmproject from inside the project moves the shell to its org" {
     project new demo
     rm -f "$DOTFILES_FOLLOW"
-    project remove demo --from "$MINE/demo/src"
+    mkdir -p "$MINE/demo/src"
+    project_from "$MINE/demo/src" remove demo
     [ "$status" -eq 0 ]
     [ "$(followed)" = "$MINE" ]
 }

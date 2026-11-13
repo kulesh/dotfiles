@@ -4,7 +4,6 @@
 #MISE raw=true
 #USAGE arg "[name]" help="org/repo, a repo name one org has, or org/ for every repo in it (default: the project or org you're in)"
 #USAGE complete "name" run="mise run project:list --short --orgs"
-#USAGE flag "--from <dir>" hide=#true help="Directory the command was run from"
 set -euo pipefail
 source "${0:A:h}/_lib.zsh"
 
@@ -108,7 +107,6 @@ update_org() {   # update_org <org dir>
     (( $#stuck == 0 )) || die "Could not fast-forward: ${(j:, :)stuck}"
 }
 
-from=${usage_from:-$PWD}
 if [[ ${usage_name:-} == */ ]]; then
     org=${${usage_name%/}:l}
     valid_name "$org" || die "Not an org name: $usage_name"
@@ -117,10 +115,10 @@ if [[ ${usage_name:-} == */ ]]; then
 elif [[ -n ${usage_name:-} ]]; then
     dir=$(project_dir "$usage_name") || exit 1
     update_one "$dir"
-elif dir=$(project_root "$from"); then
+elif dir=$(project_root "$here"); then
     update_one "$dir"
-elif [[ ${from:A:h} == ${projects_dir:A} ]] && valid_name "${from:A:t}"; then
-    update_org "${from:A}"
+elif [[ ${here:A:h} == ${projects_dir:A} ]] && valid_name "${here:A:t}"; then
+    update_org "${here:A}"
 else
     die "Not in a project or an org; name one: updateproject <name>, or <org>/ for all its repos"
 fi

@@ -8,16 +8,16 @@ uv = "latest"
 
 # Commands for every shell with mise activated. Tasks run from / so the
 # project you're in neither loads nor gets trusted on the way; commands that
-# care where you are get it as --from.
+# care where you are read MISE_ORIGINAL_CWD, which mise sets to where you typed.
 [shell_alias]
 mkproject = "mise -C / run project:new"
 cloneproject = "mise -C / run project:clone"
 lsprojects = "mise -C / run project:list"
-showproject = "mise -C / run project:show --from \"$PWD\""
-updateproject = "mise -C / run project:update --from \"$PWD\""
-rmproject = "mise -C / run project:remove --from \"$PWD\""
+showproject = "mise -C / run project:show"
+updateproject = "mise -C / run project:update"
+rmproject = "mise -C / run project:remove"
 workon = "mise -C / run project:workon"
-cdproject = "mise -C / run project:root --from \"$PWD\""
+cdproject = "mise -C / run project:root"
 list_project_types = "mise -C / run project:types"
 # Upgrade packages (~/.dotfiles/.mise.toml, read only from there) and global
 # tools in one run; share and apply dotfile changes between Macs.
