@@ -3,7 +3,6 @@
   "env": {
     "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
     "DISABLE_TELEMETRY": "1",
-    "PROJECTS": "~/dev/",
     "USE_BUILTIN_RIPGREP": "1"
   },
   "includeCoAuthoredBy": false,

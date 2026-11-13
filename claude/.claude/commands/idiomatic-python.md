@@ -5,9 +5,9 @@ allowed-tools: Bash(*:*), Read, Write, Edit, Glob, Grep, Task, TodoWrite
 
 ## Context
 
-• PROJECTS Directory: Current working directory
-• Permissions: Full permission to execute actions within the PROJECTS directory
-• Dependency Isolation: All dependencies must be installed locally (under PROJECTS or ~/.local/). Do not rely on system-level dependencies.
+• Project directory: the current working directory
+• Permissions: Full permission to execute actions within the project directory
+• Dependency Isolation: All dependencies must be installed locally (under the project directory or ~/.local/). Do not rely on system-level dependencies.
 • Language Baseline: Python ≥ 3.11
 • Typing Mode: Strict (mypy / pyright equivalent)
 
