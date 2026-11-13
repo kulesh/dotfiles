@@ -16,8 +16,16 @@
 typeset -g SANDBOX_PROFILE=${XDG_CONFIG_HOME:-$HOME/.config}/sandbox/profiles/default.sb
 typeset -g SANDBOX_LOG_DIR=${XDG_STATE_HOME:-$HOME/.local/state}/sandbox/logs
 
-# workon -s writes the marker; it alone decides.
-_sandbox_is_project() { [[ -f $1/.sandbox ]]; }
+# The sandboxed project this directory is in, if any: the nearest directory
+# up with the .sandbox marker workon -s writes, resolved, in REPLY.
+_sandbox_root() {
+    local dir=${PWD:A}
+    until [[ -f $dir/.sandbox ]]; do
+        [[ $dir == / ]] && return 1
+        dir=${dir:h}
+    done
+    REPLY=$dir
+}
 
 _sandbox_log() {   # _sandbox_log <project> <event> <message>; never fails
     mkdir -p "$SANDBOX_LOG_DIR" 2>/dev/null || return 0
@@ -39,15 +47,14 @@ if [[ -z $IN_SANDBOX ]]; then
         print -P "  %F{8}project%f  $dir"
         print -P "  %F{8}network%f  outbound allowed"
 
-        _SANDBOX_SPAWNING=1   # this cd mustn't start another sandbox
-        builtin cd -- "$dir"
+        # Seatbelt matches resolved paths, so every path it gets is resolved.
         sandbox-exec -f "$SANDBOX_PROFILE" \
             -D "HOME=$HOME" -D "PROJECT=$dir" -D "SSH_REAL=${${:-$HOME/.ssh}:A}" \
+            -D "DOTFILES=${${DOTFILES:-$HOME/.dotfiles}:A}" -D "PROJECTS=${${PROJECT_DIR:-$HOME/dev}:A}" \
             env TERM="$TERM" IN_SANDBOX=1 SANDBOX_PROJECT="$name" SANDBOX_PROJECT_DIR="$dir" \
                 SANDBOX_EXIT_FILE="$exit_file" /bin/zsh -i
         local code=$? said=$(<"$exit_file")
         rm -f "$exit_file"
-        unset _SANDBOX_SPAWNING
 
         print -P "%B%F{red}▸ sandbox exited%f%b: %F{cyan}[$name]%f"
         case $said in
@@ -65,7 +72,7 @@ if [[ -z $IN_SANDBOX ]]; then
     }
 
     _sandbox_entry_chpwd() {
-        [[ -z $_SANDBOX_SPAWNING ]] && _sandbox_is_project "$PWD" && _workon_sandboxed "$PWD"
+        _sandbox_root && _workon_sandboxed "$REPLY"
         return 0
     }
     chpwd_functions+=(_sandbox_entry_chpwd)
@@ -77,7 +84,9 @@ else
     # went when it leaves the project.
     [[ -n $SANDBOX_EXIT_FILE ]] && print entered > "$SANDBOX_EXIT_FILE"
     _sandbox_chpwd() {
-        if [[ $PWD != $SANDBOX_PROJECT_DIR && $PWD != $SANDBOX_PROJECT_DIR/* ]]; then
+        # zsh runs chpwd in subshells too; only this shell's own cd counts.
+        (( ZSH_SUBSHELL )) && return
+        if [[ ${PWD:A} != $SANDBOX_PROJECT_DIR && ${PWD:A} != $SANDBOX_PROJECT_DIR/* ]]; then
             print -r -- "$PWD" > "$SANDBOX_EXIT_FILE"
             exit
         fi

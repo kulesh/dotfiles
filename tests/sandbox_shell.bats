@@ -48,7 +48,27 @@ outer_shell() {   # cd into the sandboxed project, then report where it ended up
 
 @test "exiting the sandboxed shell closes the shell it ran in" {
     CHILD="exit 3" outer_shell
+    [ "$status" -eq 3 ]
     [[ "$output" != *"after="* ]]
+}
+
+# zsh runs chpwd in subshells too: ( cd x ) and $(cd x && ...) inside the
+# sandbox must neither end it nor tell the outer shell to go anywhere.
+@test "a cd in a subshell inside the sandbox leaves the sandbox as it was" {
+    CHILD="(cd $HOME/elsewhere && print sub=\$PWD); x=\$(cd $HOME/elsewhere && pwd); print inner=\$PWD; exit 3" outer_shell
+    [ "$status" -eq 3 ]
+    [[ "$output" == *"sub=$HOME/elsewhere"* ]]
+    [[ "$output" == *"inner=$PROJECT"* ]]
+    [[ "$output" != *"after="* ]]
+}
+
+# A terminal opening in src/, or a zoxide jump, lands below the project root.
+@test "arriving anywhere inside a sandboxed project sandboxes the whole project" {
+    mkdir -p "$PROJECT/src/deep"
+    CHILD="cd $PROJECT/src && cd $HOME/elsewhere" run zsh -c 'source "$LIB"; cd "$1"; print -r -- "after=$PWD"' _ "$PROJECT/src/deep"
+    [[ "$output" == *"sandbox entered"* ]]
+    grep -qx "PROJECT=$PROJECT" "$HOME/sandbox-exec.args"
+    [[ "$output" == *"after=$HOME/elsewhere"* ]]
 }
 
 @test "a sandbox that can't start leaves the shell open where it was, and says why" {
@@ -71,6 +91,19 @@ outer_shell() {   # cd into the sandboxed project, then report where it ended up
     grep -qx "SSH_REAL=$HOME/keys" "$HOME/sandbox-exec.args"
     grep -qx "PROJECT=$PROJECT" "$HOME/sandbox-exec.args"
     grep -qx "HOME=$HOME" "$HOME/sandbox-exec.args"
+}
+
+# Seatbelt matches resolved paths. The checkout can live anywhere (.zshenv
+# resolves DOTFILES) and projects wherever PROJECT_DIR points.
+@test "the profile gets the dotfiles, the projects and this project as real paths" {
+    mkdir -p "$HOME/code/dots"
+    ln -s "$HOME/dev" "$HOME/devlink"
+    ln -s "$HOME/code/dots" "$HOME/dots"
+    DOTFILES=$HOME/dots PROJECT_DIR=$HOME/devlink CHILD=true \
+        run zsh -c 'source "$LIB"; cd "$1"' _ "$HOME/devlink/acme/foo"
+    grep -qx "PROJECT=$PROJECT" "$HOME/sandbox-exec.args"
+    grep -qx "DOTFILES=$HOME/code/dots" "$HOME/sandbox-exec.args"
+    grep -qx "PROJECTS=$HOME/dev" "$HOME/sandbox-exec.args"
 }
 
 @test "the .sandbox marker alone is enough: a clone without mise config is sandboxed" {

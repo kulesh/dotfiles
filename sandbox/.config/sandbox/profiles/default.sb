@@ -12,10 +12,13 @@
 ;; NOTE: Setuid binaries (ps, top, sudo, su, etc.) blocked by macOS kernel.
 ;; Use alternatives: pgrep (for ps), htop (for top)
 ;;
-;; Parameters passed via sandbox-exec -D:
-;;   HOME        - user home directory
-;;   PROJECT - current project directory
-;;   SSH_REAL    - real path to ~/.ssh (resolving symlinks)
+;; Parameters passed via sandbox-exec -D, all resolved (Seatbelt matches real
+;; paths):
+;;   HOME      - the home directory
+;;   PROJECT   - the project being sandboxed
+;;   PROJECTS  - where all projects live (PROJECT_DIR, ~/dev)
+;;   DOTFILES  - the dotfiles checkout, wherever it is
+;;   SSH_REAL  - ~/.ssh
 
 ;; =============================================================================
 ;; PARAMETERS
@@ -23,6 +26,8 @@
 
 (define HOME (param "HOME"))
 (define PROJECT (param "PROJECT"))
+(define PROJECTS (param "PROJECTS"))
+(define DOTFILES (param "DOTFILES"))
 (define SSH_REAL (param "SSH_REAL"))
 
 ;; =============================================================================
@@ -92,14 +97,14 @@
 ;; dsync, this profile, its .git. Only the two agent settings files linked
 ;; into it stay writable: a new file there would be linked into your home by
 ;; the next bootstrap, and dsync would carry it to your other Macs.
-(deny file-write* (subpath (string-append HOME "/.dotfiles")))
-(allow file-write* (literal (string-append HOME "/.dotfiles/claude/.claude/settings.json")))
-(allow file-write* (literal (string-append HOME "/.dotfiles/pi/.pi/agents/settings.json")))
+(deny file-write* (subpath DOTFILES))
+(allow file-write* (literal (string-append DOTFILES "/claude/.claude/settings.json")))
+(allow file-write* (literal (string-append DOTFILES "/pi/.pi/agents/settings.json")))
 
-;; ~/dev: only this project. Other repos' git hooks and mise configs, org
+;; ~/dev (PROJECTS): only this project. Other repos' git hooks and mise configs, org
 ;; configs and the shared ~/dev/.mise.toml all run on your Mac, unprompted
 ;; for repos mise trusts (ADR-014).
-(deny file-write* (subpath (string-append HOME "/dev")))
+(deny file-write* (subpath PROJECTS))
 (allow file-write* (subpath PROJECT))
 
 ;; Configs that make a tool run commands: mise tasks and hooks, git hooks and
@@ -130,17 +135,21 @@
 (deny file-write* (subpath (string-append PROJECT "/.git/hooks")))
 (deny file-write* (literal (string-append PROJECT "/.git/config")))
 
-;; The project's mise config: mise loads it unprompted (ADR-014), and it can
-;; run commands. Change tools outside the sandbox (mise use).
+;; The project's mise config and tasks, local ones too: mise loads config
+;; unprompted (ADR-014) and its hooks run commands; tasks run when you run
+;; them, outside the sandbox. Change tools outside the sandbox (mise use).
 (deny file-write* (literal (string-append PROJECT "/.mise.toml")))
 (deny file-write* (literal (string-append PROJECT "/mise.toml")))
 (deny file-write* (literal (string-append PROJECT "/.mise.local.toml")))
 (deny file-write* (literal (string-append PROJECT "/mise.local.toml")))
 (deny file-write* (literal (string-append PROJECT "/.tool-versions")))
 (deny file-write* (literal (string-append PROJECT "/.config/mise.toml")))
+(deny file-write* (literal (string-append PROJECT "/.config/mise.local.toml")))
 (deny file-write* (subpath (string-append PROJECT "/.config/mise")))
-(deny file-write* (literal (string-append PROJECT "/.mise/config.toml")))
-(deny file-write* (literal (string-append PROJECT "/mise/config.toml")))
+(deny file-write* (subpath (string-append PROJECT "/.mise")))
+(deny file-write* (subpath (string-append PROJECT "/mise")))
+(deny file-write* (subpath (string-append PROJECT "/mise-tasks")))
+(deny file-write* (subpath (string-append PROJECT "/.mise-tasks")))
 
 ;; Keys and credentials
 (deny file-write* (subpath (string-append HOME "/.ssh")))

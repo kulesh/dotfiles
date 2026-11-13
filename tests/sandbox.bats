@@ -22,7 +22,8 @@ setup() {
 
 sandboxed() {   # sandboxed <command...>: run it under the profile
     run sandbox-exec -f "$DOTFILES_ROOT/sandbox/.config/sandbox/profiles/default.sb" \
-        -D "HOME=$HOME" -D "PROJECT=$PROJECT" -D "SSH_REAL=$HOME/.ssh" "$@"
+        -D "HOME=$HOME" -D "PROJECT=$PROJECT" -D "SSH_REAL=$HOME/.ssh" \
+        -D "DOTFILES=${DOTFILES:-$HOME/.dotfiles}" -D "PROJECTS=$HOME/dev" "$@"
 }
 
 can_write() {   # can_write <file>: the sandbox may create it
@@ -67,6 +68,12 @@ cannot_write() {   # cannot_write <file>: the sandbox may not create it
     cannot_write "$HOME/.dotfiles/claude/.claude/skills/evil/SKILL.md"
 }
 
+@test "a checkout outside ~/.dotfiles is just as read-only" {
+    DOTFILES=$HOME/code/dots
+    cannot_write "$HOME/code/dots/lib/reload.zsh"
+    can_write "$HOME/code/dots/claude/.claude/settings.json"
+}
+
 @test "shell startup files and login items are read-only" {
     for file in .zshrc .zshenv .zprofile .zlogin .zlogout .bashrc .bash_profile .profile; do
         cannot_write "$HOME/$file"
@@ -90,7 +97,11 @@ cannot_write() {   # cannot_write <file>: the sandbox may not create it
 }
 
 @test "the project's own mise config and its .git can't be swapped" {
-    for file in .mise.toml mise.toml .mise.local.toml mise.local.toml .tool-versions .config/mise.toml .mise/config.toml mise/config.toml; do
+    # Every file mise reads config or tasks from in a project, local ones too.
+    for file in .mise.toml mise.toml .mise.local.toml mise.local.toml .tool-versions \
+        .config/mise.toml .config/mise.local.toml .config/mise/conf.d/x.toml \
+        .mise/config.toml .mise/config.local.toml .mise/tasks/build \
+        mise/config.toml mise/config.local.toml mise-tasks/build .mise-tasks/build; do
         cannot_write "$PROJECT/$file"
     done
     sandboxed mv "$PROJECT/.git" "$HOME/elsewhere-git"
