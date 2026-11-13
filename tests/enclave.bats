@@ -221,13 +221,22 @@ old_pair() {   # old_pair <date> [valid]
 # Retiring the file key the Mac used before (~/.ssh/id_ed25519)
 # =============================================================================
 
-in_terminal() {   # in_terminal <answer> <zsh code>: run it at a terminal, typing the answer
-    printf '%s\n' "source '$DOTFILES_ROOT/lib/enclave.zsh'" 'run() { "$@"; }' 'previewing() { false; }' "$2" > "$HOME/script.zsh"
-    if script --version >/dev/null 2>&1; then
-        run sh -c "printf '%s\n' '$1' | script -qec 'zsh $HOME/script.zsh' /dev/null"
-    else
-        run sh -c "printf '%s\n' '$1' | script -q /dev/null zsh $HOME/script.zsh"
-    fi
+# zsh's own pseudo-terminal, the same on macOS and Linux: the answer is
+# typed once the question shows, as a person would. (script(1) typed it
+# ahead, and macOS's lost it.)
+in_terminal() {   # in_terminal <answer> <zsh code>: run it at a terminal, answering its [y/N]
+    printf '%s\n' "source '$DOTFILES_ROOT/lib/enclave.zsh'" 'run() { "$@"; }' 'previewing() { false; }' \
+        "$2" 'print -r -- "exit=$?"' > "$HOME/script.zsh"
+    run zsh -c '
+        zmodload zsh/zpty
+        zpty session zsh "$HOME/script.zsh"
+        seen=
+        zpty -r session seen "*\[y/N\]*" && zpty -w session "$1"
+        while zpty -r session chunk; do seen+=$chunk; done
+        zpty -d session
+        print -r -- "$seen"
+        [[ $seen == *exit=0* ]]
+    ' _ "$1"
 }
 
 file_key() {   # the key bootstrap made before ADR-015, on GitHub for both jobs
@@ -239,20 +248,19 @@ file_key() {   # the key bootstrap made before ADR-015, on GitHub for both jobs
 }
 
 @test "a yes retires the old file key: it leaves GitHub's sign-in keys and this Mac, and stays a signing key" {
-    command -v script >/dev/null || skip "script not installed"
     enclave 'enclave_key auth && enclave_key sign'
     file_key
     in_terminal y 'retire_file_key'
     [ "$status" -eq 0 ]
     [[ "$output" == *"servers"* ]]   # the question says what else stops working
-    [ ! -e "$HOME/.ssh/id_ed25519" ] && [ ! -e "$HOME/.ssh/id_ed25519.pub" ]
+    [ ! -e "$HOME/.ssh/id_ed25519" ]
+    [ ! -e "$HOME/.ssh/id_ed25519.pub" ]
     ! grep -q $'\tauthentication\tssh-ed25519 AAAAfile' "$HOME/github" || false
     grep -q $'\tsigning\tssh-ed25519 AAAAfile' "$HOME/github"
     ! grep -q "AAAAfile" "$HOME/agent" || false
 }
 
 @test "a no keeps the old file key, and the next run asks again" {
-    command -v script >/dev/null || skip "script not installed"
     enclave 'enclave_key auth && enclave_key sign'
     file_key
     in_terminal n 'retire_file_key'
@@ -273,7 +281,6 @@ file_key() {   # the key bootstrap made before ADR-015, on GitHub for both jobs
 }
 
 @test "the old file key stays while the enclave key can't sign in to GitHub" {
-    command -v script >/dev/null || skip "script not installed"
     enclave 'enclave_key auth && enclave_key sign'
     file_key
     stub ssh 'exit 255'
