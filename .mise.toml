@@ -140,8 +140,9 @@ root = "nvim"
 # 1. Stop if ~/.ssh or ~/dev resolves into the repo: keys or projects would be
 #    inside the checkout, and moving them is a decision for a person.
 # 2. Make way for the linked ~/.config/homebrew/trust.json where brew trust
-#    wrote a real one (on a new Mac, packages come before links), keeping it
-#    aside if it trusted anything more.
+#    wrote a real one (on a new Mac, packages come before links), and for
+#    ~/.config/git/ignore where Claude Code did, keeping either aside if it
+#    held anything more.
 # 3. Create ~/.ssh, private, for the config block below and for keys.
 # (Moving Macs off GNU Stow, and Claude Code's state out of the checkout,
 # happened here until every Mac had done it; see ADR-010.)
@@ -174,6 +175,19 @@ if [ -f "$trust" ] && [ ! -L "$trust" ]; then
         echo "~/.config/homebrew/trust.json trusted more than the repo's copy:$extra. Kept as trust.json.before-dotfiles; add what you need to homebrew/.config/homebrew/trust.json."
     else
         rm "$trust"
+    fi
+fi
+# Claude Code adds a line to git's global ignore, leaving a real file where
+# the link goes: it gives way when the repo's copy has every line, else it's
+# kept aside and its extra lines are named.
+ignore=$HOME/.config/git/ignore
+if [ -f "$ignore" ] && [ ! -L "$ignore" ]; then
+    extra=$(grep -vxF -f git/.config/git/ignore "$ignore" | grep -v '^[[:space:]]*$' | tr '\n' ' ' || true)
+    if [ -n "$extra" ]; then
+        mv "$ignore" "$ignore.before-dotfiles"
+        echo "~/.config/git/ignore had lines the repo's copy lacks: $extra. Kept as ignore.before-dotfiles; add what you need to git/.config/git/ignore."
+    else
+        rm "$ignore"
     fi
 fi
 mkdir -p "$HOME/.ssh"

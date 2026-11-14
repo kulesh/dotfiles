@@ -336,6 +336,27 @@ STUB
     [ ! -e "$TARGET/.config/homebrew/trust.json.before-dotfiles" ]
 }
 
+# Claude Code adds a line to git's global ignore, making a real file where
+# the link goes.
+@test "a git ignore file another tool wrote, with nothing extra, gives way to the link" {
+    mkdir -p "$TARGET/.config/git"
+    printf '**/.claude/settings.local.json\n' > "$TARGET/.config/git/ignore"
+    preview
+    [ "$status" -eq 0 ]
+    [ -L "$TARGET/.config/git/ignore" ]
+    [ ! -e "$TARGET/.config/git/ignore.before-dotfiles" ]
+}
+
+@test "a git ignore file with lines of its own is kept aside, and they're named" {
+    mkdir -p "$TARGET/.config/git"
+    printf '.DS_Store\n*.orig\n' > "$TARGET/.config/git/ignore"
+    preview
+    [ "$status" -eq 0 ]
+    [ -L "$TARGET/.config/git/ignore" ]
+    grep -qx '[*].orig' "$TARGET/.config/git/ignore.before-dotfiles"
+    [[ "$output" == *"*.orig"* ]]
+}
+
 @test "a trust.json with entries of its own is kept aside, and they're named" {
     mkdir -p "$TARGET/.config/homebrew"
     printf '{\n  "trustedtaps": ["acme/tools"]\n}\n' > "$TARGET/.config/homebrew/trust.json"

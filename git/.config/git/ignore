@@ -2,6 +2,8 @@
 # any setting; ~/.gitignore, where this file lived, it never read.
 # The sandbox marker workon -s writes is this Mac's choice, not the repo's.
 .sandbox
+# Claude Code's per-project local settings (it adds this line if it's missing).
+**/.claude/settings.local.json
 .DS_Store
 *~
 *.swp
