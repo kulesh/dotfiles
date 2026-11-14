@@ -95,7 +95,7 @@ interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
 # projects live only if the shell exports it.
 @test "the shell exports where projects live to the commands it runs" {
     interactive 'printenv PROJECT_DIR'
-    [ "${lines[-1]}" = "$HOME/dev" ]
+    [ "${lines[${#lines[@]}-1]}" = "$HOME/dev" ]   # the last line; bash 3.2 has no [-1]
 }
 
 # ssh-agent starts empty after a reboot; git signs through it (ADR-015).

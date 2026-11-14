@@ -10,9 +10,13 @@ bats_require_minimum_version 1.5.0   # run --separate-stderr
 # Path to the dotfiles root
 export DOTFILES_ROOT="${BATS_TEST_DIRNAME}/.."
 
-# Your shell exports where your projects live; a test that inherited it
-# would make and move projects in your real ~/dev.
-unset PROJECT_DIR
+# A test sees none of the runner's shell: .zshenv exports where projects
+# and the dotfiles live (a test that inherited PROJECT_DIR would make and
+# move projects in your real ~/dev), and an activated shell, or mise run,
+# exports mise's own state. Each test sets what it needs.
+unset PROJECT_DIR DOTFILES XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME
+for _var in ${!MISE_@} ${!__MISE_@}; do unset "$_var"; done
+unset _var
 
 # A fresh directory for this test. It lives in $BATS_TEST_TMPDIR, which bats
 # removes after the test, skipped or not, so tests never delete anything

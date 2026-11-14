@@ -23,7 +23,7 @@ setup() {
 [ -n "$SANDBOX_EXEC_FAILS" ] && { echo "sandbox-exec: invalid profile" >&2; exit 65; }
 printf '%s\n' "$@" > "$HOME/sandbox-exec.args"
 while [ "$1" != env ]; do shift; done
-args=("$@"); unset 'args[-1]' 'args[-1]'
+args=("${@:1:$#-2}")   # all but /bin/zsh -i (bash 3.2: no negative indexes)
 exec "${args[@]}" /bin/zsh -c 'source "$LIB"; '"$CHILD"
 EOF
     chmod +x "$HOME/stubs/sandbox-exec"

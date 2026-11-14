@@ -9,7 +9,9 @@ load test_helper
 
 setup() {
     command -v mise >/dev/null || skip "mise not installed"
-    export HOME=$(scratch)
+    # Resolved: on macOS the scratch directory is under /var, a link to
+    # /private/var, and the commands report real paths.
+    export HOME=$(cd "$(scratch)" && pwd -P)
     export DEV=$HOME/dev PROJECT_DIR=$HOME/dev
     mkdir -p "$DEV"
     # mise reads the repo's global config and tasks directly.
