@@ -67,6 +67,7 @@ interactive() {   # interactive <zsh code>: run it in a shell that loaded .zshrc
     cp "$DOTFILES_ROOT/zsh/.zshrc" "$HOME/.zshrc"
     interactive '
         _dotfiles_reload() { print RELOAD }
+        setopt no_monitor   # still a job, without notices to the terminal
         sleep 30 &
         touch -m -t 209901010000 ~/.zshrc
         _dotfiles_reload_if_changed
