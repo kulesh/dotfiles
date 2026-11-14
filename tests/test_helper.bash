@@ -30,17 +30,29 @@ isolate_mise() {   # isolate_mise <dir>
 # Run a shell command at a terminal, zsh's own pty, the same on macOS and
 # Linux, setting $output and $status as run does. With --answer, the reply
 # is typed once the command asks [y/N], as a person would; typing ahead
-# was lost by macOS's script(1).
+# was lost by macOS's script(1). It polls rather than blocks: on macOS a
+# read on a pty whose command has finished can wait forever.
 at_terminal() {   # at_terminal [--answer <reply>] <sh command>
     local answer=
     if [ "$1" = --answer ]; then answer=$2; shift 2; fi
     export AT_TERMINAL_COMMAND=$1
     run zsh -c '
-        zmodload zsh/zpty
+        zmodload zsh/zpty zsh/zselect
         zpty session '\''sh -c "$AT_TERMINAL_COMMAND"; print -r -- "exit=$?"'\''
-        seen=
-        if [[ -n $1 ]]; then zpty -r session seen "*\[y/N\]*" && zpty -w session "$1"; fi
-        while zpty -r session chunk; do seen+=$chunk; done
+        seen= answered=
+        while :; do
+            if zpty -r -t session chunk; then
+                seen+=$chunk
+                if [[ -n $1 && -z $answered && $seen == *"[y/N]"* ]]; then
+                    zpty -w session "$1"
+                    answered=1
+                fi
+            elif zpty -t session; then
+                zselect -t 5   # 50ms; not sleep, which some tests stub
+            else
+                break
+            fi
+        done
         zpty -d session
         print -r -- "${seen%exit=*}"
         code=${${seen##*exit=}%%[^0-9]*}
