@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+#MISE description="Run the test suite, each test timed; one that hangs fails instead"
+#MISE raw=true
+set -euo pipefail
+cd "${0:A:h:h:h}"
+# The slowest tests take a couple of seconds; one still running after a
+# minute is stuck, and fails with its name instead of hanging the run.
+export BATS_TEST_TIMEOUT=${BATS_TEST_TIMEOUT:-60}
+exec bats --timing tests/

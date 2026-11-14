@@ -41,6 +41,7 @@ mise -C ~/.dotfiles bootstrap packages use brew:foo
 mise -C ~/.dotfiles bootstrap packages use brew-cask:bar
 mup                               # upgrade all packages and global tools
 dsync                             # share this Mac's changes, apply other Macs'
+mise -C ~/.dotfiles run test      # the test suite, each test timed; one stuck past 60s fails
 
 # Project lifecycle
 mkproject [org/]name [template]   # Create in ~/dev/<org> (default: your GitHub login) from a template
@@ -105,6 +106,7 @@ Use Domain Driven Development methods to **create a ubiquitous language** that d
 - Using Behavior Driven Development methods, write useful acceptance tests
 - Changes to implementation and changes to tests MUST BE separated by a test suite run
 - Tests get scratch directories from `scratch` (tests/test_helper.bash), inside `$BATS_TEST_TMPDIR`, which bats removes itself. Tests never delete anything they didn't just create: a cleanup that ran after a skipped `setup` once removed the real `$HOME`. `tests/safety.bats` guards it.
+- Run the suite with `mise run test` (`bats --timing`, `BATS_TEST_TIMEOUT=60`): a test that hangs fails by name instead of stalling the run
 - Test coverage is not a measure of success
 
 ### Bugs and Fixes

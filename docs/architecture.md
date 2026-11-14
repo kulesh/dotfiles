@@ -135,7 +135,7 @@ Mac A ~/.dotfiles ──┐                 ┌── Mac B ~/.dotfiles
 │   ├── architecture.md        This file
 │   └── adrs/                  Architecture Decision Records
 │
-└── tests/                     bats acceptance tests (bats tests/)
+└── tests/                     bats acceptance tests (mise run test)
 ```
 
 ## Data Flow: Project Lifecycle
