@@ -427,6 +427,18 @@ enclave_stubs() {   # a Mac with a Secure Enclave and no keys in it yet, logged 
     [[ "$output" == *"Good \"git\" signature for $email"* ]]
 }
 
+# Per-Mac files git should never offer to commit, in any repo: the
+# sandbox marker workon -s writes, and macOS and editor droppings.
+@test "git ignores the sandbox marker and macOS files in every repo" {
+    preview
+    local repo=$(scratch)
+    git -C "$repo" init -q
+    touch "$repo/.sandbox" "$repo/.DS_Store" "$repo/notes.md"
+    run env -u XDG_CONFIG_HOME HOME="$TARGET" GIT_CONFIG_GLOBAL="$TARGET/.gitconfig" git -C "$repo" status --porcelain
+    [ "$status" -eq 0 ]
+    [ "$output" = "?? notes.md" ]
+}
+
 @test "the linked git config pushes HTTPS GitHub clones over SSH, and fetches anonymously" {
     local repo=$(scratch)
     git -C "$repo" init -q

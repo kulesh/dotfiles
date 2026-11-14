@@ -1,0 +1,11 @@
+# Ignored in every repo on this Mac. git reads ~/.config/git/ignore without
+# any setting; ~/.gitignore, where this file lived, it never read.
+# The sandbox marker workon -s writes is this Mac's choice, not the repo's.
+.sandbox
+.DS_Store
+*~
+*.swp
+*.pyc
+*.bak
+mise.local.toml
+mise.*.local.toml
