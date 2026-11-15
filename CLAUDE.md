@@ -137,6 +137,7 @@ Use Domain Driven Development methods to **create a ubiquitous language** that d
 - Commit history tells the story of the software
 - Write clear, descriptive commit messages
 - Keep commits focused and atomic
+- Everything on `main` is signed: a Mac signs with its Secure Enclave key (ADR-015). A session without one (Claude Code in the cloud) pushes a branch, opens a PR, and squash-merges it, so GitHub signs the commit that lands; one PR per logical change, its title and description written like a commit message
 
 ### Information Organization
 
