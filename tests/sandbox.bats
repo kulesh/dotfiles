@@ -115,9 +115,9 @@ cannot_write() {   # cannot_write <file>: the sandbox may not create it
 }
 
 @test "of the agents' linked settings, only the settings files themselves are writable" {
-    can_write "$HOME/.dotfiles/pi/.pi/agents/settings.json"
+    can_write "$HOME/.dotfiles/pi/.pi/agent/settings.json"
     cannot_write "$HOME/.dotfiles/claude/.local/bin/git"
-    cannot_write "$HOME/.dotfiles/pi/.pi/agents/other.json"
+    cannot_write "$HOME/.dotfiles/pi/.pi/agent/other.json"
 }
 
 # Git signs through the agent with the .pub (ADR-015); the handles stay out

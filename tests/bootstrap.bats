@@ -357,6 +357,26 @@ STUB
     [[ "$output" == *"*.orig"* ]]
 }
 
+# Pi reads ~/.pi/agent (getAgentDir in pi-coding-agent), singular.
+@test "Pi's settings are linked where Pi reads them" {
+    preview
+    [ "$status" -eq 0 ]
+    [ -L "$TARGET/.pi/agent/settings.json" ]
+    [ -f "$TARGET/.pi/agent/settings.json" ]
+    [ "$(readlink -f "$TARGET/.pi/agent/settings.json")" = "$(readlink -f "$DOTFILES_ROOT/pi/.pi/agent/settings.json")" ]
+}
+
+# Pi writes its own settings.json when it first runs, where the link goes.
+@test "a settings.json Pi wrote is kept aside, the repo's is linked, and the run goes on" {
+    mkdir -p "$TARGET/.pi/agent"
+    printf '{"defaultModel": "mine"}\n' > "$TARGET/.pi/agent/settings.json"
+    preview
+    [ "$status" -eq 0 ]
+    [ -L "$TARGET/.pi/agent/settings.json" ]
+    grep -q '"mine"' "$TARGET/.pi/agent/settings.json.before-dotfiles"
+    [[ "$output" == *"settings.json.before-dotfiles"* ]]
+}
+
 @test "a trust.json with entries of its own is kept aside, and they're named" {
     mkdir -p "$TARGET/.config/homebrew"
     printf '{\n  "trustedtaps": ["acme/tools"]\n}\n' > "$TARGET/.config/homebrew/trust.json"
