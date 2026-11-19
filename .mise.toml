@@ -142,7 +142,8 @@ root = "nvim"
 # 2. Make way for the linked ~/.config/homebrew/trust.json where brew trust
 #    wrote a real one (on a new Mac, packages come before links), and for
 #    ~/.config/git/ignore where Claude Code did, keeping either aside if it
-#    held anything more.
+#    held anything more; and for Pi's ~/.pi/agent/settings.json, which Pi
+#    writes on its first run, kept aside to compare.
 # 3. Create ~/.ssh, private, for the config block below and for keys.
 # (Moving Macs off GNU Stow, and Claude Code's state out of the checkout,
 # happened here until every Mac had done it; see ADR-010.)
@@ -189,6 +190,13 @@ if [ -f "$ignore" ] && [ ! -L "$ignore" ]; then
     else
         rm "$ignore"
     fi
+fi
+# Pi writes its own settings.json on its first run: kept aside, so the
+# repo's settings apply and the Mac's can be compared with them.
+pi=$HOME/.pi/agent/settings.json
+if [ -f "$pi" ] && [ ! -L "$pi" ]; then
+    mv "$pi" "$pi.before-dotfiles"
+    echo "~/.pi/agent/settings.json, Pi's own, is now settings.json.before-dotfiles; the repo's applies. Move anything you want from it into pi/.pi/agent/settings.json."
 fi
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"

@@ -110,7 +110,9 @@ completions() {   # the candidates zsh would offer for a command line
         project new "$name"
         [ "$status" -ne 0 ]
     done
-    [ ! -e "$HOME/escape" ] && [ ! -e "$HOME/mise.toml" ] && [ ! -e "$DEV/.hidden" ]
+    [ ! -e "$HOME/escape" ]
+    [ ! -e "$HOME/mise.toml" ]
+    [ ! -e "$DEV/.hidden" ]
 }
 
 # PROJECT_DIR (include/shared_vars.sh, exported by .zshenv) is the one

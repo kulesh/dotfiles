@@ -99,7 +99,7 @@
 ;; the next bootstrap, and dsync would carry it to your other Macs.
 (deny file-write* (subpath DOTFILES))
 (allow file-write* (literal (string-append DOTFILES "/claude/.claude/settings.json")))
-(allow file-write* (literal (string-append DOTFILES "/pi/.pi/agents/settings.json")))
+(allow file-write* (literal (string-append DOTFILES "/pi/.pi/agent/settings.json")))
 
 ;; ~/dev (PROJECTS): only this project. Other repos' git hooks and mise configs, org
 ;; configs and the shared ~/dev/.mise.toml all run on your Mac, unprompted
